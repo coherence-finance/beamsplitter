@@ -23,7 +23,7 @@ Prism is live 🎉.
 ## Testing 
 Anchor, and therefore Prism, uses [ts-Mocha](https://github.com/piotrwitek/ts-mocha) a Typescript wrapper around [Mocha](https://mochajs.org/).
 
-Integration tests can be added under the tests directory. You can run tests with the Anchor [test](https://project-serum.github.io/anchor/cli/commands.html#test) command:
+Integration tests can be added under the tests directory. You can run tests with the `yarn test` command:
 ```bash
-anchor test
+yarn test
 ```
