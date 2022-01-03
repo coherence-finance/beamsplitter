@@ -1,5 +1,5 @@
 # Prism 
-Prism is Splitcoin's asset conversion and arbitraging program built on Solana. This repo is for the on-chain program, if you are looking Prism's client you should go to [insert client repo here](https://www.youtube.com/watch?v=xuCO7-DLCaA)
+Prism is Splitcoin's asset conversion platform built on Solana. This repo is for the on-chain program, if you are looking for Prism's client you should go to [insert client repo here](https://www.youtube.com/watch?v=xuCO7-DLCaA)
 
 ## Installation
 First install [Anchor](https://project-serum.github.io/anchor/getting-started/installation.html) and it's dependencies.
