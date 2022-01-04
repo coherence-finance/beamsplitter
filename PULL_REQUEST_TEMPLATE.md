@@ -17,7 +17,7 @@ Is it possible and necessary to add unit tests? If so, what functionality is now
 
 ## Invocation
 
-If you're changes, modify or add some kind of user invoked script or command, please describe how to use what you've changed / added.
+If your changes, modify or add some kind of user invoked script or command, please describe how to use what you've changed / added.
 
 ### Sanity Check Steps
 
