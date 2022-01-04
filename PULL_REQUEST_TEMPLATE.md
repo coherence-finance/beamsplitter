@@ -15,6 +15,10 @@ Describe the modifications you've done.
 
 Is it possible and necessary to add unit tests? If so, what functionality is now being unit tested? If it is not possible or is unnecessary to add unit tests, explain why.
 
+## Invocation
+
+If you're changes, modify or add some kind of user invoked script or command, please describe how to use what you've changed / added.
+
 ### Sanity Check Steps
 
 - [ ] Tested by submitter
