@@ -4,37 +4,33 @@ import {
   SolanaAugmentedProvider,
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
-import type { TokenAmount } from "@saberhq/token-utils";
 import {
   createInitMintInstructions,
-  getATAAddress,
   getOrCreateATA,
-  TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import type { Keypair, PublicKey } from "@solana/web3.js";
 import { SystemProgram } from "@solana/web3.js";
 
 import { IDL } from "../target/types/splitcoin_prism";
-import type { SplitcoinPrismData } from ".";
 import { PROGRAM_ID } from "./constants";
-import { generatePrismAddress } from "./pda";
-import type { SplitcoinPrismProgram } from "./types";
+import { generatePrismAssetAddress } from "./pda";
+import type { PrismAssetData, PrismProgram } from "./types";
 
 export class SplitcoinPrismSDK {
   constructor(
     readonly provider: AugmentedProvider,
-    readonly program: SplitcoinPrismProgram
+    readonly program: PrismProgram
   ) {}
 
   static load({ provider }: { provider: Provider }): SplitcoinPrismSDK {
     const aug = new SolanaAugmentedProvider(provider);
     return new SplitcoinPrismSDK(
       aug,
-      newProgram<SplitcoinPrismProgram>(IDL, PROGRAM_ID, aug)
+      newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
     );
   }
 
-  async initialize({
+  async newAsset({
     mintKP,
     decimals,
     authority = this.provider.wallet.publicKey,
@@ -43,29 +39,29 @@ export class SplitcoinPrismSDK {
     decimals: number;
     authority: PublicKey;
   }): Promise<TransactionEnvelope> {
-    const [prismKey, bump] = await generatePrismAddress(mintKP.publicKey);
+    const [assetKey, bump] = await generatePrismAssetAddress(mintKP.publicKey);
 
     const initMintTX = await createInitMintInstructions({
       provider: this.provider,
       mintKP,
       decimals,
-      mintAuthority: prismKey,
-      freezeAuthority: prismKey,
+      mintAuthority: assetKey,
+      freezeAuthority: assetKey,
     });
 
     const ataInstruction = (
       await getOrCreateATA({
         provider: this.provider,
         mint: mintKP.publicKey,
-        owner: prismKey,
+        owner: assetKey,
       })
     ).instruction;
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
-      this.program.instruction.initialize(bump, {
+      this.program.instruction.newAsset(bump, {
         accounts: {
-          prism: prismKey,
+          prismAsset: assetKey,
           adminAuthority: authority,
-          prismMint: mintKP.publicKey,
+          assetMint: mintKP.publicKey,
           systemProgram: SystemProgram.programId,
         },
       }),
@@ -75,79 +71,10 @@ export class SplitcoinPrismSDK {
     return initMintTX.combine(initPrismAndCreateAtaTx);
   }
 
-  async fetchPrismData(key: PublicKey): Promise<SplitcoinPrismData | null> {
-    return (await this.program.account.splitcoinPrism.fetchNullable(
+  async fetchAssetData(key: PublicKey): Promise<PrismAssetData | null> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return (await this.program.account.prismAsset.fetchNullable(
       key
-    )) as SplitcoinPrismData;
-  }
-
-  async mint({
-    amount,
-    mint,
-    to,
-  }: {
-    amount: TokenAmount;
-    mint: PublicKey;
-    to: PublicKey;
-  }): Promise<TransactionEnvelope> {
-    const [prismKey] = await generatePrismAddress(amount.token.mintAccount);
-    return new TransactionEnvelope(this.provider, [
-      this.program.instruction.proxyMintTo(amount.toU64(), {
-        accounts: {
-          prism: prismKey,
-          prismMint: mint,
-          mintDestination: to,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-      }),
-    ]);
-  }
-
-  async transfer({
-    amount,
-    from,
-    to,
-  }: {
-    amount: TokenAmount;
-    from?: PublicKey;
-    to: PublicKey;
-  }): Promise<TransactionEnvelope> {
-    const mint = amount.token.mintAccount;
-    const [prismKey] = await generatePrismAddress(mint);
-    const prismAta = await getATAAddress({ mint, owner: prismKey });
-
-    return new TransactionEnvelope(this.provider, [
-      this.program.instruction.proxyTransfer(amount.toU64(), {
-        accounts: {
-          prism: prismKey,
-          transferSource: from || prismAta,
-          transferDestination: to,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-      }),
-    ]);
-  }
-
-  async burn({
-    amount,
-    mint,
-    source,
-  }: {
-    amount: TokenAmount;
-    mint: PublicKey;
-    source: PublicKey;
-  }): Promise<TransactionEnvelope> {
-    const [prismKey] = await generatePrismAddress(mint);
-
-    return new TransactionEnvelope(this.provider, [
-      this.program.instruction.proxyBurn(amount.toU64(), {
-        accounts: {
-          prism: prismKey,
-          prismMint: mint,
-          prismSource: source,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-      }),
-    ]);
+    )) as PrismAssetData;
   }
 }

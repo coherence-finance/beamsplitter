@@ -2,12 +2,12 @@ import type { AnchorTypes } from "@saberhq/anchor-contrib";
 
 import type { SplitcoinPrism } from "../target/types/splitcoin_prism";
 
-export type SplitcoinPrismTypes = AnchorTypes<
+export type PrismTypes = AnchorTypes<
   SplitcoinPrism,
-  { splitcoinPrism: SplitcoinPrismData }
+  { prismAsset: PrismAssetData }
 >;
 
-type Accounts = SplitcoinPrismTypes["Accounts"];
-export type SplitcoinPrismData = Accounts["splitcoinPrism"];
+type Accounts = PrismTypes["Accounts"];
+export type PrismAssetData = Accounts["prismAsset"];
 
-export type SplitcoinPrismProgram = SplitcoinPrismTypes["Program"];
+export type PrismProgram = PrismTypes["Program"];
