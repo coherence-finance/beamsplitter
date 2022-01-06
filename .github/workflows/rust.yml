@@ -22,7 +22,8 @@ jobs:
       - name: Update Rust to 1.53
         run: rustup toolchain add 1.53
       - name: Install Solana
-        run: sh -c "$(curl -sSfL https://release.solana.com/edge/install)"
+        run: |
+          sh -c "$(curl -sSfL https://release.solana.com/edge/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
           PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
           solana --version
