@@ -20,7 +20,7 @@ jobs:
     - name: Install Yarn dependencies
       run: yarn --verbose
     - name: Install Solana
-      run: 'sh -c "$(curl -sSfL https://release.solana.com/v1.9.3/install)"'
+      run: sh -c "$(curl -sSfL https://release.solana.com/v1.9.3/install)"
     - name: Install Anchor
     - run: npm i -g @project-serum/anchor-cli
     - uses: actions/checkout@v2
