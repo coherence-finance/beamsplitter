@@ -19,12 +19,15 @@ jobs:
         node-version: '12.x'
     - name: Install Yarn dependencies
       run: yarn --verbose
+    - name: Update Rust to 1.53
+      run: rustup toolchain add 1.53
     - name: Install Solana
       run: 'sh -c "$(curl -sSfL https://release.solana.com/v1.9.3/install)"'
     - name: Install Anchor
       run: npm i -g @project-serum/anchor-cli
-    - run: cargo build-bpf --version
+    - run: echo $PATH
     - run: rustup --version
+    - run: cargo build-bpf --version
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
