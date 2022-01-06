@@ -1,16 +1,54 @@
-import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
-import { SplitcoinPrism } from "../target/types/splitcoin_prism";
+import { Provider, setProvider } from "@project-serum/anchor";
+import { makeSaberProvider } from "@saberhq/anchor-contrib";
+import { chaiSolana, expectTX } from "@saberhq/chai-solana";
+import type {
+  Provider as SaberProvider,
+  PublicKey,
+} from "@saberhq/solana-contrib";
+import { Token } from "@saberhq/token-utils";
+import { Keypair } from "@solana/web3.js";
+import chai, { expect } from "chai";
+
+import { generatePrismAssetAddress, SplitcoinPrismSDK } from "../src";
+
+chai.use(chaiSolana);
 
 describe("splitcoin-prism", () => {
-    // Configure the client to use the local cluster.
-    anchor.setProvider(anchor.Provider.local());
+  // Provider setup
+  const anchorProvider = Provider.env();
+  setProvider(anchorProvider);
 
-    const program = anchor.workspace.SplitcoinPrism as Program<SplitcoinPrism>;
+  const provider: SaberProvider = makeSaberProvider(anchorProvider);
+  const sdk: SplitcoinPrismSDK = SplitcoinPrismSDK.load({
+    provider,
+  });
 
-    it("Is initialized!", async () => {
-        // Add your test here.
-        const tx = await program.rpc.initialize({});
-        console.log("Your transaction signature", tx);
+  // Helper variables
+  let authority: PublicKey;
+  let mintKP: Keypair;
+  let assetToken: Token;
+
+  // Unit tests
+  it("Initialize test state", () => {
+    authority = provider.wallet.publicKey;
+    mintKP = Keypair.generate();
+    assetToken = Token.fromMint(mintKP.publicKey, 12);
+  });
+
+  it("Initializes a prism asset", async () => {
+    const tx = await sdk.newAsset({
+      mintKP,
+      decimals: assetToken.decimals,
+      authority,
     });
+    await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
+
+    const [assetKey, bump] = await generatePrismAssetAddress(mintKP.publicKey);
+
+    const assetData = await sdk.fetchAssetData(assetKey);
+
+    expect(assetData?.authority).to.eqAddress(authority);
+    expect(assetData?.bump).to.equal(bump);
+    expect(assetData?.mint).to.eqAddress(mintKP.publicKey);
+  });
 });
