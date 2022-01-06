@@ -22,7 +22,7 @@ jobs:
     - name: Update Rust to 1.53
       run: rustup toolchain add 1.53
     - name: Install Solana
-      run: 'sh -c "$(curl -sSfL https://release.solana.com/stable/install)"'
+      run: sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
     - name: Update $PATH
       run: export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
     - name: Install Anchor
