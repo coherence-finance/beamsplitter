@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/setup/
       - uses: ./.github/actions/setup-anchor/
       - uses: ./.github/actions/setup-ts/
         with:
