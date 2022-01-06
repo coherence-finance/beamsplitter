@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -13,26 +13,26 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - name: Use Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12.x'
-    - name: Install Yarn dependencies
-      run: yarn --verbose
-    - name: Update Rust to 1.53
-      run: rustup toolchain add 1.53
-    - name: Install Solana
-      run: sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
-    - name: Update $PATH
-      run: export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
-    - name: Install Anchor
-      run: npm i -g @project-serum/anchor-cli
-    - run: echo $PATH
-    - run: rustup --version
-    - run: solana --version
-    - run: cargo build-bpf --version
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: yarn test
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12.x"
+      - name: Install Yarn dependencies
+        run: yarn --verbose
+      - name: Update Rust to 1.53
+        run: rustup toolchain add 1.53
+      - name: Install Solana
+        run: sh -c "$(curl -sSfL https://release.solana.com/v${{ 1.9.3 }}/install)"
+      - name: Update $PATH
+        run: export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
+      - name: Install Anchor
+        run: npm i -g @project-serum/anchor-cli
+      - run: echo $PATH
+      - run: rustup --version
+      - run: solana --version
+      - run: cargo build-bpf --version
+      - uses: actions/checkout@v2
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: yarn test
