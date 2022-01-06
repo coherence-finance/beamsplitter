@@ -4,7 +4,7 @@ use anchor_spl::token::Mint;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
-pub struct Initialize<'info> {
+pub struct NewAsset<'info> {
     /// Information about the [PrismAsset].
     #[account(
         init,

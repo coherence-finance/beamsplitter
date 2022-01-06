@@ -11,7 +11,7 @@ pub mod splitcoin_prism {
     use super::*;
 
     /// Provisions a new PrismAsset
-    pub fn new_asset(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
+    pub fn new_asset(ctx: Context<NewAsset>, bump: u8) -> ProgramResult {
         let prism = &mut ctx.accounts.prism_asset;
 
         prism.authority = ctx.accounts.admin_authority.key();
