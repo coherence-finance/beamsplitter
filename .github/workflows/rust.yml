@@ -2,37 +2,50 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
   pull_request:
-    branches: [ master ]
-
+    branches:
+      - master
 env:
-  CARGO_TERM_COLOR: always
+  SOLANA_CLI_VERSION: 1.8.5
+  NODE_VERSION: 17.0.1
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  test-contracts:
+    name: Test Anchor Contracts
+    runs-on: ubuntu-18.04
     steps:
-    - name: Use Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12.x'
-    - name: Install Yarn dependencies
-      run: yarn --verbose
-    - name: Update Rust to 1.53
-      run: rustup toolchain add 1.53
-    - name: Install Solana
-      run: 'sh -c "$(curl -sSfL https://release.solana.com/v1.9.3/install)"'
-    - name: Update $PATH
-      run: export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
-    - name: Install Anchor
-      run: npm i -g @project-serum/anchor-cli
-    - run: echo $PATH
-    - run: rustup --version
-    - run: solana --version
-    - run: cargo build-bpf --version
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: yarn test
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/setup/
+      - uses: ./.github/actions/setup-anchor/
+      - uses: ./.github/actions/setup-ts/
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v2
+        name: Cache Cargo registry + index
+        id: cache-cargo-registry
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: cargo-${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        name: Cache Builds
+        id: cache-cargo-builds
+        with:
+          path: |
+            ./target/
+          key: cargo-${{ runner.os }}-cargo-build-${{ hashFiles('./**/Cargo.lock') }}-target
+      - name: Cache Deps Builds
+        uses: actions/cache@v2
+        id: cache-cargo-deps-builds
+        with:
+          path: |
+            ./deps/metaplex/rust/target
+            ./deps/solana-program-library/target
+          key: cargo-${{ runner.os }}-cargo-build-${{ hashFiles('./deps/**/Cargo.lock') }}-deps
+      - run: ~/.cargo/bin/anchor run build-deps
+      - run: ~/.cargo/bin/anchor test --provider.cluster localnet
