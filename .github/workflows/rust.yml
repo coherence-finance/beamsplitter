@@ -10,17 +10,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
-
     steps:
     - name: Use Node.js
       uses: actions/setup-node@v1
       with:
         node-version: '12.x'
-    - name: Install dependencies
-      run: yarn
+    - name: Install Yarn dependencies
+      run: yarn --verbose
+    - name: Install Solana
+      run: 'sh -c "$(curl -sSfL https://release.solana.com/v1.9.3/install)"'
+    - name: Install Anchor
     - run: npm i -g @project-serum/anchor-cli
     - uses: actions/checkout@v2
     - name: Build
