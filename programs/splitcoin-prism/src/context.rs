@@ -4,6 +4,25 @@ use anchor_spl::token::Mint;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
+pub struct Initialize<'info> {
+    #[account(
+        init,
+        seeds = [
+            b"PrismAsset".as_ref(),
+        ],
+        bump = bump,
+        payer = owner,
+    )]
+    /// The central mint authority for all registered assets
+    pub prism: Account<'info, Prism>,
+    /// The owner of the Prism program
+    pub owner: Signer<'info>,
+    /// The [System] program.
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(bump: u8)]
 pub struct NewAsset<'info> {
     /// Information about the [PrismAsset].
     #[account(

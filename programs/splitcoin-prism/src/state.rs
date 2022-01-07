@@ -11,3 +11,12 @@ pub struct PrismAsset {
     /// [Mint] of the [PrismAsset]
     pub mint: Pubkey,
 }
+
+#[account]
+#[derive(Copy, Debug, Default, PartialEq, Eq)]
+pub struct Prism {
+    /// Owner of Prism program
+    pub owner: Pubkey,
+    /// Bump seed. Stored for find_program_address on-chain performance
+    pub bump: u8,
+}
