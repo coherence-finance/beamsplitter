@@ -8,8 +8,10 @@ import {
   createInitMintInstructions,
   getOrCreateATA,
 } from "@saberhq/token-utils";
-import type { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { SystemProgram } from "@solana/web3.js";
+import { utils } from "@project-serum/anchor";
+import { PrismData } from ".";
 
 import { IDL } from "../target/types/splitcoin_prism";
 import { PROGRAM_ID } from "./constants";
@@ -28,6 +30,33 @@ export class SplitcoinPrismSDK {
       aug,
       newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
     );
+  }
+
+  async initialize({
+    owner = this.provider.wallet.publicKey,
+  }: {
+    accountKP: Keypair;
+    owner: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const [assetKey, bump] = await PublicKey.findProgramAddress([
+      utils.bytes.utf8.encode("Prism"),
+    ], PROGRAM_ID);
+
+    return (
+      new TransactionEnvelope(this.provider,
+        [
+          this.program.instruction.initialize(
+            bump, {
+              accounts: {
+                prism: assetKey,
+                owner: owner,
+                systemProgram: SystemProgram.programId,
+              }
+            }
+          ) 
+        ]
+      )
+    )
   }
 
   async newAsset({
@@ -71,10 +100,18 @@ export class SplitcoinPrismSDK {
     return initMintTX.combine(initPrismAndCreateAtaTx);
   }
 
+  // Fetch the main Prism state account
+  async fetchPrismData(key: PublicKey): Prosmise<PrismData | null> {
+    return (await this.program.account.prism.fetchNullable(
+      key
+    )) as PrismData;
+  }
+
   async fetchAssetData(key: PublicKey): Promise<PrismAssetData | null> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return (await this.program.account.prismAsset.fetchNullable(
       key
     )) as PrismAssetData;
   }
+
 }
