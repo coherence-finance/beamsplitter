@@ -92,12 +92,10 @@ export class SplitcoinPrismSDK {
 
   // Fetch the main Prism state account
   async fetchPrismData(key: PublicKey): Promise<PrismData | null> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return (await this.program.account.prism.fetchNullable(key)) as PrismData;
   }
 
   async fetchAssetData(key: PublicKey): Promise<PrismAssetData | null> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     return (await this.program.account.prismAsset.fetchNullable(
       key
     )) as PrismAssetData;
