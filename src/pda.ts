@@ -3,6 +3,13 @@ import { PublicKey } from "@solana/web3.js";
 
 import { PROGRAM_ID } from "./constants";
 
+export const generatePrismAddress = (): Promise<[PublicKey, number]> => {
+  return PublicKey.findProgramAddress(
+    [utils.bytes.utf8.encode("PrismAsset")],
+    PROGRAM_ID
+  );
+};
+
 export const generatePrismAssetAddress = (
   mint: PublicKey
 ): Promise<[PublicKey, number]> => {
