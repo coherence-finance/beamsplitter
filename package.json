@@ -16,6 +16,7 @@
   },
   "scripts": {
     "build": "tsc -P tsconfig.cjs.json && tsc -P tsconfig.build.json",
+    "lint": "eslint .",
     "prepare": "husky install",
     "typecheck": "tsc",
     "test": "anchor test --skip-build tests/*.ts"
