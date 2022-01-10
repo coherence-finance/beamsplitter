@@ -8,7 +8,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         seeds = [
-            b"PrismAsset".as_ref(),
+            b"Prism".as_ref(),
         ],
         bump = bump,
         payer = owner,
