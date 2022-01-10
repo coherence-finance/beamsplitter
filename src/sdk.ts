@@ -11,7 +11,7 @@ import {
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { SystemProgram } from "@solana/web3.js";
 import { utils } from "@project-serum/anchor";
-import { PrismData } from ".";
+import { generatePrismAddress, PrismData } from ".";
 
 import { IDL } from "../target/types/splitcoin_prism";
 import { PROGRAM_ID } from "./constants";
@@ -33,15 +33,11 @@ export class SplitcoinPrismSDK {
   }
 
   async initialize({
-    owner = this.provider.wallet.publicKey,
+    owner = this.provider.wallet.publicKey
   }: {
-    accountKP: Keypair;
     owner: PublicKey;
   }): Promise<TransactionEnvelope> {
-    const [assetKey, bump] = await PublicKey.findProgramAddress([
-      utils.bytes.utf8.encode("Prism"),
-    ], PROGRAM_ID);
-
+    const [assetKey, bump] = await generatePrismAddress();
     return (
       new TransactionEnvelope(this.provider,
         [
