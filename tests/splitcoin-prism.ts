@@ -9,7 +9,11 @@ import { Token } from "@saberhq/token-utils";
 import { Keypair } from "@solana/web3.js";
 import chai, { expect } from "chai";
 
-import { generatePrismAddress, generatePrismAssetAddress, SplitcoinPrismSDK } from "../src";
+import {
+  generatePrismAddress,
+  generatePrismAssetAddress,
+  SplitcoinPrismSDK,
+} from "../src";
 
 chai.use(chaiSolana);
 
@@ -36,8 +40,9 @@ describe("splitcoin-prism", () => {
   });
 
   it("Initialize prism program state", async () => {
-    const tx = await sdk.initialize({owner: provider.wallet.publicKey})
-    await expectTX(tx, "Initialize prism program state with owner as invoker.").to.be.fulfilled;
+    const tx = await sdk.initialize({ owner: provider.wallet.publicKey });
+    await expectTX(tx, "Initialize prism program state with owner as invoker.")
+      .to.be.fulfilled;
 
     const [assetKey, bump] = await generatePrismAddress();
     const prismData = await sdk.fetchPrismData(assetKey);

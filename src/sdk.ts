@@ -8,12 +8,12 @@ import {
   createInitMintInstructions,
   getOrCreateATA,
 } from "@saberhq/token-utils";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import type { Keypair, PublicKey } from "@solana/web3.js";
 import { SystemProgram } from "@solana/web3.js";
-import { utils } from "@project-serum/anchor";
-import { generatePrismAddress, PrismData } from ".";
 
 import { IDL } from "../target/types/splitcoin_prism";
+import type { PrismData } from ".";
+import { generatePrismAddress } from ".";
 import { PROGRAM_ID } from "./constants";
 import { generatePrismAssetAddress } from "./pda";
 import type { PrismAssetData, PrismProgram } from "./types";
@@ -33,26 +33,20 @@ export class SplitcoinPrismSDK {
   }
 
   async initialize({
-    owner = this.provider.wallet.publicKey
+    owner = this.provider.wallet.publicKey,
   }: {
     owner: PublicKey;
   }): Promise<TransactionEnvelope> {
     const [assetKey, bump] = await generatePrismAddress();
-    return (
-      new TransactionEnvelope(this.provider,
-        [
-          this.program.instruction.initialize(
-            bump, {
-              accounts: {
-                prism: assetKey,
-                owner: owner,
-                systemProgram: SystemProgram.programId,
-              }
-            }
-          ) 
-        ]
-      )
-    )
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.initialize(bump, {
+        accounts: {
+          prism: assetKey,
+          owner: owner,
+          systemProgram: SystemProgram.programId,
+        },
+      }),
+    ]);
   }
 
   async newAsset({
@@ -97,10 +91,9 @@ export class SplitcoinPrismSDK {
   }
 
   // Fetch the main Prism state account
-  async fetchPrismData(key: PublicKey): Prosmise<PrismData | null> {
-    return (await this.program.account.prism.fetchNullable(
-      key
-    )) as PrismData;
+  async fetchPrismData(key: PublicKey): Promise<PrismData | null> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return (await this.program.account.prism.fetchNullable(key)) as PrismData;
   }
 
   async fetchAssetData(key: PublicKey): Promise<PrismAssetData | null> {
@@ -109,5 +102,4 @@ export class SplitcoinPrismSDK {
       key
     )) as PrismAssetData;
   }
-
 }
