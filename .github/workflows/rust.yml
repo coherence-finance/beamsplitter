@@ -40,4 +40,5 @@ jobs:
       - name: Run tests
         run: |
           ls
+          ls -ltr tests
           yarn test
