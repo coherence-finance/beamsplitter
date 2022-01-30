@@ -8,6 +8,7 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod splitcoin_prism {
+
     use super::*;
 
     /// Initializes the Prism program state
@@ -27,6 +28,10 @@ pub mod splitcoin_prism {
         prism.bump = bump;
         prism.mint = ctx.accounts.asset_mint.key();
 
+        Ok(())
+    }
+
+    pub fn convert(ctx: Context<Convert>) -> ProgramResult {
         Ok(())
     }
 }
