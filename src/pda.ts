@@ -5,7 +5,7 @@ import { PROGRAM_ID } from "./constants";
 
 export const generatePrismAddress = (): Promise<[PublicKey, number]> => {
   return PublicKey.findProgramAddress(
-    [utils.bytes.utf8.encode("PrismAsset")],
+    [utils.bytes.utf8.encode("Prism")],
     PROGRAM_ID
   );
 };
