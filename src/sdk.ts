@@ -86,7 +86,6 @@ export class SplitcoinPrismSDK {
       }),
       ...(ataInstruction ? [ataInstruction] : []),
     ]);
-
     return initMintTX.combine(initPrismAndCreateAtaTx);
   }
 

@@ -16,12 +16,12 @@ pub struct PrismAsset {
     /// [Mint] of the [PrismAsset]
     pub mint: Pubkey,
     /// [AssetData] array
-    pub assets: [AssetData; 16384]
+    pub assets: [AssetData; 16]
 }
 
 impl Default for PrismAsset {
     fn default() -> PrismAsset {
-        PrismAsset { authority: Default::default(), bump: Default::default(), mint: Default::default(), assets: [AssetData::default(); 16384] }
+        PrismAsset { authority: Default::default(), bump: Default::default(), mint: Default::default(), assets: [AssetData::default(); 16] }
     }
 }
 

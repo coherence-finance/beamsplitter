@@ -1,13 +1,16 @@
 use pyth_client::PriceConf;
-use borsh::{BorshDeserialize, BorshSerialize};
 
-#[derive(Debug, Clone, Copy, BorshSerialize, BorshDeserialize)]
-pub struct AssetData<T: ReadablePrice = ConstantValueFeed> {
-    pub data_feed: T,
+use anchor_lang::prelude::{AnchorDeserialize, AnchorSerialize};
+
+#[derive(Debug, Copy, Clone, AnchorDeserialize, AnchorSerialize)]
+pub struct AssetData<Feed = ConstantValueFeed> 
+    where Feed: ReadablePrice + anchor_lang::AnchorDeserialize + anchor_lang::AnchorSerialize {
+    pub data_feed: Feed,
     pub weight: i64,
 }
 
-impl<ConstantValueFeed: ReadablePrice + Default> Default for AssetData<ConstantValueFeed> {
+impl<ConstantValueFeed> Default for AssetData<ConstantValueFeed> 
+    where ConstantValueFeed: ReadablePrice + anchor_lang::AnchorDeserialize + anchor_lang::AnchorSerialize + Default {
         fn default() -> Self {
             AssetData {
                 data_feed: ConstantValueFeed::default(),
@@ -20,7 +23,7 @@ pub trait ReadablePrice {
     fn get_price(&self) -> PriceConf; 
 }
 
-#[derive(Default, Clone, Copy, Debug, PartialEq, Eq, BorshDeserialize, BorshSerialize)]
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq, AnchorDeserialize, AnchorSerialize)]
 pub struct ConstantValueFeed {
     pub constant: i64,
     pub expo: i32,
