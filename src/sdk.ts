@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import type { Idl } from "@project-serum/anchor";
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
 import {
@@ -26,9 +29,20 @@ export class SplitcoinPrismSDK {
 
   static load({ provider }: { provider: Provider }): SplitcoinPrismSDK {
     const aug = new SolanaAugmentedProvider(provider);
+    const inserted = {
+      ...IDL,
+      types: [
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        ...IDL.types,
+        {
+          ...IDL.types.find((t) => t.name === "ConstantValueFeed"),
+          name: "Feed",
+        },
+      ],
+    };
     return new SplitcoinPrismSDK(
       aug,
-      newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
+      newProgram<PrismProgram>(inserted as Idl, PROGRAM_ID, aug)
     );
   }
 
