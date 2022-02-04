@@ -14,7 +14,7 @@ pub struct Initialize<'info> {
         bump = bump,
         payer = owner,
     )]
-    /// The central mint authority for all registered assets
+    /// The central mint authority for all registered tokens
     pub prism: Account<'info, Prism>,
     /// The owner of the Prism program
     pub owner: Signer<'info>,
@@ -24,22 +24,22 @@ pub struct Initialize<'info> {
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
-pub struct NewAsset<'info> {
-    /// Information about the [PrismAsset].
+pub struct RegisterToken<'info> {
+    /// Information about the [PrismToken].
     #[account(
         init,
         seeds = [
-            b"PrismAsset".as_ref(),
-            asset_mint.key().to_bytes().as_ref()
+            b"PrismToken".as_ref(),
+            token_mint.key().to_bytes().as_ref()
         ],
         bump = bump,
         payer = admin_authority,
     )]
-    pub prism_asset: Account<'info, PrismAsset>,
-    /// Authority that has admin rights over the [PrismAsset].
+    pub prism_token: Account<'info, PrismToken>,
+    /// Authority that has admin rights over the [PrismToken].
     pub admin_authority: Signer<'info>,
-    /// [Mint] of the [PrismAsset].
-    pub asset_mint: Account<'info, Mint>,
+    /// [Mint] of the [PrismToken].
+    pub token_mint: Account<'info, Mint>,
     /// The [System] program.
     pub system_program: Program<'info, System>,
 }
@@ -57,13 +57,13 @@ pub struct Convert<'info> {
 
     #[account(
         seeds = [
-            b"PrismAsset".as_ref(),
+            b"PrismToken".as_ref(),
             from_mint.key().to_bytes().as_ref()
         ],
-        bump = from_asset.bump
+        bump = from_token.bump
     )]
-    /// The [PrismAsset] [Account] used for calculating the incoming tokens to burn
-    pub from_asset: Account<'info, PrismAsset>,
+    /// The [PrismToken] [Account] used for calculating the incoming tokens to burn
+    pub from_token: Account<'info, PrismToken>,
 
     /// The [Mint] of the burned tokens
     pub from_mint: Account<'info, Mint>,
@@ -75,13 +75,13 @@ pub struct Convert<'info> {
 
     #[account(
         seeds = [
-            b"PrismAsset".as_ref(),
+            b"PrismToken".as_ref(),
             to_mint.key().to_bytes().as_ref()
         ],
-        bump = to_asset.bump
+        bump = to_token.bump
     )]
-    /// The [PrismAsset] [Account] used for calculating the outgoing tokens to mint
-    pub to_asset: Account<'info, PrismAsset>,
+    /// The [PrismToken] [Account] used for calculating the outgoing tokens to mint
+    pub to_token: Account<'info, PrismToken>,
 
     /// The [Mint] of the minted tokens
     pub to_mint: Account<'info, Mint>,

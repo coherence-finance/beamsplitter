@@ -9,7 +9,7 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod splitcoin_prism {
-
+    
     use super::*;
 
     /// Initializes the Prism program state
@@ -21,19 +21,21 @@ pub mod splitcoin_prism {
         Ok(())
     }
 
-    /// Provisions a new PrismAsset
-    pub fn new_asset(ctx: Context<NewAsset>, bump: u8) -> ProgramResult {
-        let prism = &mut ctx.accounts.prism_asset;
+    /// Registers a new PrismToken
+    #[inline(never)]
+    pub fn register_token(ctx: Context<RegisterToken>, bump: u8) -> ProgramResult {
+        let prism = &mut ctx.accounts.prism_token;
 
         prism.authority = ctx.accounts.admin_authority.key();
         prism.bump = bump;
-        prism.mint = ctx.accounts.asset_mint.key();
+        prism.mint = ctx.accounts.token_mint.key();
 
         Ok(())
     }
 
+    #[inline(never)]
     pub fn convert(ctx: Context<Convert>) -> ProgramResult {
-
+        //let prism
         Ok(())
     }
 

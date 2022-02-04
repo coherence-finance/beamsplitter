@@ -5,16 +5,16 @@ import type { SplitcoinPrism } from "../target/types/splitcoin_prism";
 export type PrismTypes = AnchorTypes<
   SplitcoinPrism,
   {
-    prismAsset: PrismAssetData;
+    prismToken: PrismTokenData;
     prism: PrismData;
   },
   {
-    Feed: ConstantValueFeed;
+    dataFeed: ConstantValueFeed;
   }
 >;
 
 type Accounts = PrismTypes["Accounts"];
-export type PrismAssetData = Accounts["prismAsset"];
+export type PrismTokenData = Accounts["prismToken"];
 export type PrismData = Accounts["prism"];
 export type PrismProgram = PrismTypes["Program"];
 

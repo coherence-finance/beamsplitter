@@ -11,7 +11,7 @@ import chai, { expect } from "chai";
 
 import {
   generatePrismAddress,
-  generatePrismAssetAddress,
+  generatePrismTokenAddress,
   SplitcoinPrismSDK,
 } from "../src";
 
@@ -52,16 +52,16 @@ describe("splitcoin-prism", () => {
   });
 
   it("Initializes a prism asset", async () => {
-    const tx = await sdk.newAsset({
+    const tx = await sdk.registerToken({
       mintKP,
       decimals: assetToken.decimals,
       authority,
     });
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
 
-    const [assetKey, bump] = await generatePrismAssetAddress(mintKP.publicKey);
+    const [tokenKey, bump] = await generatePrismTokenAddress(mintKP.publicKey);
 
-    const assetData = await sdk.fetchAssetData(assetKey);
+    const assetData = await sdk.fetchAssetData(tokenKey);
 
     expect(assetData?.authority).to.eqAddress(authority);
     expect(assetData?.bump).to.equal(bump);

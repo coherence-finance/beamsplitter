@@ -11,6 +11,7 @@ pub struct AssetData<Feed = ConstantValueFeed>
 
 impl<ConstantValueFeed> Default for AssetData<ConstantValueFeed> 
     where ConstantValueFeed: ReadablePrice + anchor_lang::AnchorDeserialize + anchor_lang::AnchorSerialize + Default {
+        #[inline(never)]
         fn default() -> Self {
             AssetData {
                 data_feed: ConstantValueFeed::default(),
@@ -30,6 +31,7 @@ pub struct ConstantValueFeed {
 }
 
 impl ReadablePrice for ConstantValueFeed {
+    #[inline(never)]
     fn get_price(&self) -> PriceConf {
         PriceConf {
             price: self.constant,
