@@ -21,7 +21,7 @@ pub mod splitcoin_prism {
         Ok(())
     }
 
-    /// Registers a new PrismToken
+    /// Registers a new Prism Token
     #[inline(never)]
     pub fn register_token(ctx: Context<RegisterToken>, bump: u8) -> ProgramResult {
         let prism = &mut ctx.accounts.prism_token;

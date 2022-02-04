@@ -5,7 +5,7 @@ use crate::asset_data::AssetData;
 // TODO use constant generics here. Not doing it now because
 // having a problem with IDL generation right now look into
 #[constant]
-const NUM_ASSETS: usize = 256;
+//const NUM_ASSETS: usize = 256;
 
 /// Contains the info of the prism token. Immutable.
 #[account]
@@ -18,13 +18,13 @@ pub struct PrismToken {
     /// [Mint] of the [PrismToken]
     pub mint: Pubkey,
     /// [AssetData] array
-    pub assets: Box<[AssetData; NUM_ASSETS]>,
+    pub assets: [AssetData; 256],
 }
 
 impl Default for PrismToken {
     #[inline(never)]
     fn default() -> PrismToken {
-        PrismToken { authority: Default::default(), bump: Default::default(), mint: Default::default(), assets: Box::new([AssetData::default(); NUM_ASSETS]) }
+        PrismToken { authority: Default::default(), bump: Default::default(), mint: Default::default(), assets: [AssetData::default(); 256] }
     }
 }
 

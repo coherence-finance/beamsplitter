@@ -38,17 +38,6 @@ export class SplitcoinPrismSDK {
           ...IDL.types.find((t) => t.name === "ConstantValueFeed"),
           name: "Feed",
         },
-        {
-          type: {
-            array: [
-              {
-                defined: "AssetData",
-              },
-              IDL.constants[0].value,
-            ],
-          },
-          name: `Box<[AssetData;NUM_ASSETS]>`,
-        },
       ],
     };
     return new SplitcoinPrismSDK(
