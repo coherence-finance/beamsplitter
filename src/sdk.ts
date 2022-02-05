@@ -62,6 +62,7 @@ export class SplitcoinPrismSDK {
     mintKP?: Keypair;
     authority: PublicKey;
     assets: AssetData[];
+    tokenHolders?: PublicKey[];
   }): Promise<TransactionEnvelope> {
     const [prismTokenKey, bump] = await generatePrismTokenAddress(
       mintKP.publicKey
@@ -79,7 +80,7 @@ export class SplitcoinPrismSDK {
       await getOrCreateATA({
         provider: this.provider,
         mint: mintKP.publicKey,
-        owner: prismTokenKey,
+        owner: authority,
       })
     ).instruction;
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
