@@ -5,7 +5,6 @@ import type {
   Provider as SaberProvider,
   PublicKey,
 } from "@saberhq/solana-contrib";
-import { Token } from "@saberhq/token-utils";
 import { Keypair } from "@solana/web3.js";
 import chai, { expect } from "chai";
 
@@ -30,13 +29,11 @@ describe("splitcoin-prism", () => {
   // Helper variables
   let authority: PublicKey;
   let mintKP: Keypair;
-  let assetToken: Token;
 
   // Unit tests
   it("Initialize test state", () => {
     authority = provider.wallet.publicKey;
     mintKP = Keypair.generate();
-    assetToken = Token.fromMint(mintKP.publicKey, 12);
   });
 
   it("Initialize prism program state", async () => {

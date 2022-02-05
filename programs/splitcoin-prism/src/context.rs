@@ -1,4 +1,5 @@
 use crate::state::*;
+
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -8,6 +9,7 @@ use anchor_spl::{
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct Initialize<'info> {
+    /// The central mint authority for all registered tokens
     #[account(
         init,
         seeds = [
@@ -16,7 +18,6 @@ pub struct Initialize<'info> {
         bump = bump,
         payer = owner,
     )]
-    /// The central mint authority for all registered tokens
     pub prism: Account<'info, Prism>,
     /// The owner of the Prism program
     pub owner: Signer<'info>,
@@ -70,9 +71,9 @@ pub struct Convert<'info> {
     /// The [Mint] of the burned tokens
     pub from_mint: Account<'info, Mint>,
 
+    /// The paying [TokenAccount]
     #[account(owner = payer.key())]
     #[account(associated_token::mint = from_mint, associated_token::authority = prism)]
-    /// The paying [TokenAccount]
     pub from: Account<'info, TokenAccount>,
 
     #[account(
@@ -88,11 +89,11 @@ pub struct Convert<'info> {
     /// The [Mint] of the minted tokens
     pub to_mint: Account<'info, Mint>,
 
+    /// The receiving [Account]
     #[account(associated_token::mint = to_mint, associated_token::authority = prism)]
-    /// The receiving [TokenAccount]
     pub to: Account<'info, TokenAccount>,
 
-    /// The payer of the tx
+    /// The payer ([Signer]) of the tx
     pub payer: Signer<'info>,
 
     /// The [Token] [Program].
