@@ -9,7 +9,7 @@ export type PrismTypes = AnchorTypes<
     prism: PrismData;
   },
   {
-    dataFeed: ConstantValueFeed;
+    feed: Feed;
   }
 >;
 
@@ -20,4 +20,4 @@ export type PrismProgram = PrismTypes["Program"];
 
 export type Defined = PrismTypes["Defined"];
 export type AssetData = Defined["AssetData"];
-export type ConstantValueFeed = Defined["ConstantValueFeed"];
+export type Feed = Defined["Feed"];

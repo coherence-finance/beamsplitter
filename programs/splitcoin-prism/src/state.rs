@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::asset_data::AssetData;
+use crate::asset_data::{AssetData, Feed};
 
 /// Contains the info of the prism token. Immutable.
 #[account]
@@ -12,18 +12,24 @@ pub struct PrismToken {
     pub bump: u8,
     /// [Mint] of the [PrismToken]
     pub mint: Pubkey,
+    // TODO: replace 8 with shared max size
+    // TODO: find way to have optional serialization
     /// [AssetData] array
-    pub assets: Vec<AssetData>,
+    pub assets: [AssetData; 8],
 }
 
 impl Default for PrismToken {
     #[inline(never)]
     fn default() -> PrismToken {
+        // TODO replace 8 with shared max size
         PrismToken {
             authority: Default::default(),
             bump: Default::default(),
             mint: Default::default(),
-            assets: Vec::new(),
+            assets: [AssetData {
+                data_feed: Feed::Constant { price: 0, expo: 0 },
+                weight: 0,
+            }; 8],
         }
     }
 }

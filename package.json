@@ -19,7 +19,7 @@
     "lint": "eslint .",
     "prepare": "husky install",
     "typecheck": "tsc",
-    "test": "anchor test --skip-build tests/*.ts"
+    "test": "anchor test"
   },
   "dependencies": {},
   "devDependencies": {

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import type { Idl } from "@project-serum/anchor";
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
 import {
@@ -32,20 +31,9 @@ export class SplitcoinPrismSDK {
 
   static load({ provider }: { provider: Provider }): SplitcoinPrismSDK {
     const aug = new SolanaAugmentedProvider(provider);
-    const inserted = {
-      ...IDL,
-      types: [
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        ...IDL.types,
-        {
-          ...IDL.types.find((t) => t.name === "ConstantValueFeed"),
-          name: "Feed",
-        },
-      ],
-    };
     return new SplitcoinPrismSDK(
       aug,
-      newProgram<PrismProgram>(inserted as Idl, PROGRAM_ID, aug)
+      newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
     );
   }
 
@@ -102,9 +90,6 @@ export class SplitcoinPrismSDK {
           tokenMint: mintKP.publicKey,
           systemProgram: SystemProgram.programId,
         },
-        preInstructions: [
-          await this.program.account.prismToken.createInstruction(mintKP, 1000),
-        ],
       }),
       ...(ataInstruction ? [ataInstruction] : []),
     ]);
@@ -116,7 +101,7 @@ export class SplitcoinPrismSDK {
     return (await this.program.account.prism.fetchNullable(key)) as PrismData;
   }
 
-  async fetchAssetData(key: PublicKey): Promise<PrismTokenData | null> {
+  async fetchPrismTokenData(key: PublicKey): Promise<PrismTokenData | null> {
     return (await this.program.account.prismToken.fetchNullable(
       key
     )) as PrismTokenData;
