@@ -38,7 +38,7 @@ pub struct RegisterToken<'info> {
         bump = bump,
         payer = admin_authority,
     )]
-    pub prism_token: Account<'info, PrismToken>,
+    pub prism_token: Box<Account<'info, PrismToken>>,
     /// Authority that has admin rights over the [PrismToken].
     pub admin_authority: Signer<'info>,
     /// [Mint] of the [PrismToken].
@@ -66,7 +66,7 @@ pub struct Convert<'info> {
         bump = from_token.bump
     )]
     /// The [PrismToken] [Account] used for calculating the incoming tokens to burn
-    pub from_token: Account<'info, PrismToken>,
+    pub from_token: Box<Account<'info, PrismToken>>,
 
     /// The [Mint] of the burned tokens
     pub from_mint: Account<'info, Mint>,
@@ -84,7 +84,7 @@ pub struct Convert<'info> {
         bump = to_token.bump
     )]
     /// The [PrismToken] [Account] used for calculating the outgoing tokens to mint
-    pub to_token: Account<'info, PrismToken>,
+    pub to_token: Box<Account<'info, PrismToken>>,
 
     /// The [Mint] of the minted tokens
     pub to_mint: Account<'info, Mint>,

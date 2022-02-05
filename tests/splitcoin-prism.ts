@@ -6,8 +6,10 @@ import type {
   PublicKey,
 } from "@saberhq/solana-contrib";
 import { Keypair } from "@solana/web3.js";
+import { BN } from "bn.js";
 import chai, { expect } from "chai";
 
+import type { AssetData } from "../src";
 import {
   generatePrismAddress,
   generatePrismTokenAddress,
@@ -49,19 +51,34 @@ describe("splitcoin-prism", () => {
   });
 
   it("Initializes a prism asset", async () => {
+    const assetData: AssetData[] = [
+      {
+        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        weight: new BN(4),
+      },
+      {
+        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        weight: new BN(1),
+      },
+      {
+        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        weight: new BN(2),
+      },
+    ];
+
     const tx = await sdk.registerToken({
       mintKP,
-      assets: [],
+      assets: assetData,
       authority,
     });
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
 
     const [tokenKey, bump] = await generatePrismTokenAddress(mintKP.publicKey);
 
-    const assetData = await sdk.fetchAssetData(tokenKey);
+    const tokenData = await sdk.fetchPrismTokenData(tokenKey);
 
-    expect(assetData?.authority).to.eqAddress(authority);
-    expect(assetData?.bump).to.equal(bump);
-    expect(assetData?.mint).to.eqAddress(mintKP.publicKey);
+    expect(tokenData?.authority).to.eqAddress(authority);
+    expect(tokenData?.bump).to.equal(bump);
+    expect(tokenData?.mint).to.eqAddress(mintKP.publicKey);
   });
 });
