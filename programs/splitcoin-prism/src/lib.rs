@@ -1,16 +1,16 @@
+pub mod asset_data;
 mod context;
 mod state;
-pub mod asset_data;
 
-use anchor_lang::prelude::*;
 use crate::asset_data::*;
+use anchor_lang::prelude::*;
 use context::*;
 
 declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod splitcoin_prism {
-    
+
     use asset_data::AssetData;
 
     use super::*;
@@ -26,7 +26,11 @@ pub mod splitcoin_prism {
 
     /// Registers a new Prism Token
     #[inline(never)]
-    pub fn register_token(ctx: Context<RegisterToken>, bump: u8, assets: [AssetData; 2]) -> ProgramResult {
+    pub fn register_token(
+        ctx: Context<RegisterToken>,
+        bump: u8,
+        assets: Vec<AssetData>,
+    ) -> ProgramResult {
         let prism = &mut ctx.accounts.prism_token;
 
         prism.authority = ctx.accounts.admin_authority.key();
@@ -43,5 +47,4 @@ pub mod splitcoin_prism {
         //let prism
         Ok(())
     }
-
 }

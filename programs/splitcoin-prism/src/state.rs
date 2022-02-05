@@ -18,13 +18,18 @@ pub struct PrismToken {
     /// [Mint] of the [PrismToken]
     pub mint: Pubkey,
     /// [AssetData] array
-    pub assets: [AssetData; 2],
+    pub assets: Vec<AssetData>,
 }
 
 impl Default for PrismToken {
     #[inline(never)]
     fn default() -> PrismToken {
-        PrismToken { authority: Default::default(), bump: Default::default(), mint: Default::default(), assets: [AssetData::default(); 2] }
+        PrismToken {
+            authority: Default::default(),
+            bump: Default::default(),
+            mint: Default::default(),
+            assets: Vec::new(),
+        }
     }
 }
 
