@@ -11,15 +11,18 @@ import {
   createInitMintInstructions,
   getOrCreateATA,
 } from "@saberhq/token-utils";
-import type { Keypair, PublicKey } from "@solana/web3.js";
-import { SystemProgram } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
+import { Keypair, SystemProgram } from "@solana/web3.js";
 
 import { IDL } from "../target/types/splitcoin_prism";
-import type { PrismData } from ".";
-import { generatePrismAddress } from ".";
 import { PROGRAM_ID } from "./constants";
-import { generatePrismTokenAddress } from "./pda";
-import type { PrismProgram, PrismTokenData } from "./types";
+import { generatePrismAddress, generatePrismTokenAddress } from "./pda";
+import type {
+  AssetData,
+  PrismData,
+  PrismProgram,
+  PrismTokenData,
+} from "./types";
 
 export class SplitcoinPrismSDK {
   constructor(
@@ -64,13 +67,13 @@ export class SplitcoinPrismSDK {
   }
 
   async registerToken({
-    mintKP,
-    decimals,
+    mintKP = Keypair.generate(),
     authority = this.provider.wallet.publicKey,
+    assets,
   }: {
-    mintKP: Keypair;
-    decimals: number;
+    mintKP?: Keypair;
     authority: PublicKey;
+    assets: AssetData[];
   }): Promise<TransactionEnvelope> {
     const [prismTokenKey, bump] = await generatePrismTokenAddress(
       mintKP.publicKey
@@ -79,7 +82,7 @@ export class SplitcoinPrismSDK {
     const initMintTX = await createInitMintInstructions({
       provider: this.provider,
       mintKP,
-      decimals,
+      decimals: 9,
       mintAuthority: prismTokenKey,
       freezeAuthority: prismTokenKey,
     });
@@ -92,13 +95,16 @@ export class SplitcoinPrismSDK {
       })
     ).instruction;
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
-      this.program.instruction.registerToken(bump, {
+      this.program.instruction.registerToken(bump, assets, {
         accounts: {
           prismToken: prismTokenKey,
           adminAuthority: authority,
           tokenMint: mintKP.publicKey,
           systemProgram: SystemProgram.programId,
         },
+        preInstructions: [
+          await this.program.account.prismToken.createInstruction(mintKP, 1000),
+        ],
       }),
       ...(ataInstruction ? [ataInstruction] : []),
     ]);

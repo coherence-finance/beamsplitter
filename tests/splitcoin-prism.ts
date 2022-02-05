@@ -54,7 +54,7 @@ describe("splitcoin-prism", () => {
   it("Initializes a prism asset", async () => {
     const tx = await sdk.registerToken({
       mintKP,
-      decimals: assetToken.decimals,
+      assets: [],
       authority,
     });
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
