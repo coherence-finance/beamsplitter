@@ -2,11 +2,6 @@ use anchor_lang::prelude::*;
 
 use crate::asset_data::AssetData;
 
-// TODO use constant generics here. Not doing it now because
-// having a problem with IDL generation right now look into
-#[constant]
-//const NUM_ASSETS: usize = 256;
-
 /// Contains the info of the prism token. Immutable.
 #[account]
 #[derive(Debug)]
