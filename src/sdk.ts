@@ -79,7 +79,7 @@ export class SplitcoinPrismSDK {
       await getOrCreateATA({
         provider: this.provider,
         mint: mintKP.publicKey,
-        owner: prismTokenKey,
+        owner: authority,
       })
     ).instruction;
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
