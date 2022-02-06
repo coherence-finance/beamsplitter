@@ -192,7 +192,7 @@ describe("splitcoin-prism", () => {
       prism,
       fromPrism: tokenKeyA,
       toPrism: tokenKeyB,
-      amount: initSupply,
+      amount: new BN(1),
     });
 
     await expectTX(

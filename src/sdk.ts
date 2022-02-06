@@ -9,8 +9,8 @@ import {
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
+  getATAAddress,
   getOrCreateATA,
-  getTokenAccount,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import type { PublicKey, Signer } from "@solana/web3.js";
@@ -48,7 +48,7 @@ export class SplitcoinPrismSDK {
     provider: Provider;
     signer: Signer;
   }): SplitcoinPrismSDK {
-    const aug = (new SolanaAugmentedProvider(provider)).withSigner(signer);
+    const aug = new SolanaAugmentedProvider(provider).withSigner(signer);
     return new SplitcoinPrismSDK(
       aug,
       newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
@@ -155,17 +155,23 @@ export class SplitcoinPrismSDK {
       );
     }
 
-    const fromTokenAccount = await getTokenAccount(this.provider, fromAccount);
-    const toTokenAccount = await getTokenAccount(this.provider, toAccount);
+    const fromTokenAccount = await getATAAddress({
+      mint: fromPrismAccount.mint,
+      owner: fromAccount,
+    });
+    const toTokenAccount = await getATAAddress({
+      mint: toPrismAccount.mint,
+      owner: toAccount,
+    });
 
     const convertTx = new TransactionEnvelope(this.provider, [
       this.program.instruction.convert(amount, {
         accounts: {
           prism,
-          from: fromTokenAccount.owner,
+          from: fromTokenAccount,
           fromToken: fromPrism,
           fromMint: fromPrismAccount.mint,
-          to: toTokenAccount.owner,
+          to: toTokenAccount,
           toToken: toPrism,
           toMint: toPrismAccount.mint,
           payer: this.provider.wallet.publicKey,
