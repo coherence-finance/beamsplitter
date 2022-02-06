@@ -7,11 +7,15 @@ import {
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
   getOrCreateATA,
+  getTokenAccount,
+  TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
-import type { PublicKey } from "@solana/web3.js";
+import type { PublicKey, Signer } from "@solana/web3.js";
 import { Keypair, SystemProgram } from "@solana/web3.js";
+import type BN from "bn.js";
 
 import { IDL } from "../target/types/splitcoin_prism";
 import { PROGRAM_ID } from "./constants";
@@ -37,10 +41,24 @@ export class SplitcoinPrismSDK {
     );
   }
 
+  static loadWithSigner({
+    provider,
+    signer,
+  }: {
+    provider: Provider;
+    signer: Signer;
+  }): SplitcoinPrismSDK {
+    const aug = (new SolanaAugmentedProvider(provider)).withSigner(signer);
+    return new SplitcoinPrismSDK(
+      aug,
+      newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
+    );
+  }
+
   async initialize({
     owner = this.provider.wallet.publicKey,
   }: {
-    owner: PublicKey;
+    owner?: PublicKey;
   }): Promise<TransactionEnvelope> {
     const [prismTokenKey, bump] = await generatePrismAddress();
     return new TransactionEnvelope(this.provider, [
@@ -58,11 +76,13 @@ export class SplitcoinPrismSDK {
     prism,
     mintKP = Keypair.generate(),
     authority = this.provider.wallet.publicKey,
+    mintAuthority, // This can only be specified by Beamsplitter owner
     assets,
   }: {
     prism: PublicKey;
     mintKP?: Keypair;
-    authority: PublicKey;
+    authority?: PublicKey;
+    mintAuthority?: PublicKey;
     assets: AssetData[];
   }): Promise<TransactionEnvelope> {
     const [prismTokenKey, bump] = await generatePrismTokenAddress(
@@ -73,8 +93,7 @@ export class SplitcoinPrismSDK {
       provider: this.provider,
       mintKP,
       decimals: 9,
-      mintAuthority: prismTokenKey,
-      freezeAuthority: prismTokenKey,
+      mintAuthority: mintAuthority ? mintAuthority : prismTokenKey,
     });
 
     const ataInstruction = (
@@ -105,6 +124,57 @@ export class SplitcoinPrismSDK {
       ...(ataInstruction ? [ataInstruction] : []),
     ]);
     return initMintTX.combine(initPrismAndCreateAtaTx);
+  }
+
+  async convert({
+    prism,
+    fromPrism,
+    toPrism,
+    fromAccount = this.provider.wallet.publicKey,
+    toAccount = this.provider.wallet.publicKey,
+    amount,
+  }: {
+    prism: PublicKey;
+    fromPrism: PublicKey;
+    toPrism: PublicKey;
+    fromAccount?: PublicKey;
+    toAccount?: PublicKey;
+    amount: BN;
+  }): Promise<TransactionEnvelope> {
+    const fromPrismAccount = await this.fetchPrismTokenData(fromPrism);
+    if (!fromPrismAccount) {
+      throw new Error(
+        "Couldn't retrive fromPrism account. Check Prism was registered."
+      );
+    }
+
+    const toPrismAccount = await this.fetchPrismTokenData(toPrism);
+    if (!toPrismAccount) {
+      throw new Error(
+        "Couldn't retrive toPrism account. Check Prism was registered."
+      );
+    }
+
+    const fromTokenAccount = await getTokenAccount(this.provider, fromAccount);
+    const toTokenAccount = await getTokenAccount(this.provider, toAccount);
+
+    const convertTx = new TransactionEnvelope(this.provider, [
+      this.program.instruction.convert(amount, {
+        accounts: {
+          prism,
+          from: fromTokenAccount.owner,
+          fromToken: fromPrism,
+          fromMint: fromPrismAccount.mint,
+          to: toTokenAccount.owner,
+          toToken: toPrism,
+          toMint: toPrismAccount.mint,
+          payer: this.provider.wallet.publicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        },
+      }),
+    ]);
+    return convertTx;
   }
 
   // Fetch the main Prism state account

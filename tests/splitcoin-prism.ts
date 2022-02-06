@@ -5,9 +5,16 @@ import type {
   Provider as SaberProvider,
   PublicKey,
 } from "@saberhq/solana-contrib";
-import { Keypair } from "@solana/web3.js";
+import { PendingTransaction } from "@saberhq/solana-contrib";
+import {
+  createMintToInstruction,
+  getATAAddress,
+  getTokenAccount,
+  u64,
+} from "@saberhq/token-utils";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
-import chai, { expect } from "chai";
+import chai, { assert, expect } from "chai";
 
 import type { AssetData } from "../src";
 import {
@@ -23,9 +30,12 @@ describe("splitcoin-prism", () => {
   const anchorProvider = Provider.env();
   setProvider(anchorProvider);
 
+  const testSigner = Keypair.generate();
+
   const provider: SaberProvider = makeSaberProvider(anchorProvider);
-  const sdk: SplitcoinPrismSDK = SplitcoinPrismSDK.load({
+  const sdk: SplitcoinPrismSDK = SplitcoinPrismSDK.loadWithSigner({
     provider,
+    signer: testSigner,
   });
 
   // Helper variables
@@ -34,20 +44,26 @@ describe("splitcoin-prism", () => {
   let prism: PublicKey;
 
   // Unit tests
-  it("Initialize test state", () => {
-    authority = provider.wallet.publicKey;
+  it("Initialize test state", async () => {
+    authority = testSigner.publicKey;
     mintKP = Keypair.generate();
+    await expectTX(
+      new PendingTransaction(
+        provider.connection,
+        await provider.connection.requestAirdrop(authority, LAMPORTS_PER_SOL)
+      )
+    ).to.be.fulfilled;
   });
 
   it("Initialize prism program state", async () => {
-    const tx = await sdk.initialize({ owner: provider.wallet.publicKey });
+    const tx = await sdk.initialize({ owner: authority });
     await expectTX(tx, "Initialize prism program state with owner as invoker.")
       .to.be.fulfilled;
 
     const [pdaKey, bump] = await generatePrismAddress();
     const prismData = await sdk.fetchPrismData(pdaKey);
 
-    expect(prismData?.owner).to.eqAddress(provider.wallet.publicKey);
+    expect(prismData?.owner).to.eqAddress(authority);
     expect(prismData?.bump).to.equal(bump);
 
     prism = pdaKey;
@@ -84,6 +100,9 @@ describe("splitcoin-prism", () => {
     expect(tokenData?.authority).to.eqAddress(authority);
     expect(tokenData?.bump).to.equal(bump);
     expect(tokenData?.mint).to.eqAddress(mintKP.publicKey);
+
+    await expect(getATAAddress({ mint: mintKP.publicKey, owner: authority })).to
+      .be.fulfilled;
   });
 
   it("Convert between prisms", async () => {
@@ -114,7 +133,8 @@ describe("splitcoin-prism", () => {
       prism,
       mintKP: mintA,
       assets: assetDataA,
-      authority,
+      authority: authority,
+      mintAuthority: authority,
     });
     await expectTX(txA, "Initialize asset with assetToken").to.be.fulfilled;
 
@@ -122,16 +142,62 @@ describe("splitcoin-prism", () => {
       prism,
       mintKP: mintB,
       assets: assetDataB,
-      authority,
+      authority: authority,
     });
     await expectTX(txB, "Initialize asset with assetToken").to.be.fulfilled;
 
-    const [tokenKey, bump] = await generatePrismTokenAddress(mintKP.publicKey);
+    const [tokenKeyA, bumpA] = await generatePrismTokenAddress(mintA.publicKey);
 
-    const tokenData = await sdk.fetchPrismTokenData(tokenKey);
+    const tokenDataA = await sdk.fetchPrismTokenData(tokenKeyA);
 
-    expect(tokenData?.authority).to.eqAddress(authority);
-    expect(tokenData?.bump).to.equal(bump);
-    expect(tokenData?.mint).to.eqAddress(mintKP.publicKey);
+    expect(tokenDataA?.authority).to.eqAddress(authority);
+    expect(tokenDataA?.bump).to.equal(bumpA);
+    expect(tokenDataA?.mint).to.eqAddress(mintA.publicKey);
+
+    await expect(getATAAddress({ mint: mintA.publicKey, owner: authority })).to
+      .be.fulfilled;
+
+    const [tokenKeyB, bumpB] = await generatePrismTokenAddress(mintB.publicKey);
+
+    const tokenDataB = await sdk.fetchPrismTokenData(tokenKeyB);
+
+    expect(tokenDataB?.authority).to.eqAddress(authority);
+    expect(tokenDataB?.bump).to.equal(bumpB);
+    expect(tokenDataB?.mint).to.eqAddress(mintB.publicKey);
+
+    await expect(getATAAddress({ mint: mintB.publicKey, owner: authority })).to
+      .be.fulfilled;
+
+    const initSupply = new u64(9);
+
+    const createSupplyTx = createMintToInstruction({
+      provider,
+      mint: mintA.publicKey,
+      mintAuthorityKP: testSigner,
+      to: await getATAAddress({ mint: mintA.publicKey, owner: authority }),
+      amount: initSupply,
+    });
+
+    await expectTX(createSupplyTx, `Mint ${initSupply.toString()} to authority`)
+      .to.be.fulfilled;
+
+    const tokenAAccount = await getTokenAccount(
+      provider,
+      await getATAAddress({ mint: mintA.publicKey, owner: authority })
+    );
+
+    assert(tokenAAccount.amount.eq(new BN(9)));
+
+    const convertTx = await sdk.convert({
+      prism,
+      fromPrism: tokenKeyA,
+      toPrism: tokenKeyB,
+      amount: initSupply,
+    });
+
+    await expectTX(
+      convertTx,
+      `Convert ${initSupply.toString()} of token A to token B`
+    ).to.be.fulfilled;
   });
 });
