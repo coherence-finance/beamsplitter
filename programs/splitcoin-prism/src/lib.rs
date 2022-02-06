@@ -48,7 +48,7 @@ pub mod splitcoin_prism {
 
         // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
         if prism_metadata.owner != authority(&mint.to_account_info())? && signer.key() != prism_metadata.owner {
-            return Err(ProgramError::Custom(BeamsplitterErrors::NotMintAuthority as u32));
+            return Err(BeamsplitterErrors::NotMintAuthority.into());
         }
 
         for i in 0..assets.len() {
