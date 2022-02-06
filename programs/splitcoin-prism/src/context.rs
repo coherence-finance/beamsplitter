@@ -80,7 +80,7 @@ pub struct Convert<'info> {
     pub from_mint: Account<'info, Mint>,
 
     /// The paying [TokenAccount]
-    #[account(owner = payer.key())]
+    // #[account(owner = payer.key())] TODO research if this checks Token Account owner
     #[account(associated_token::mint = from_mint, associated_token::authority = prism)]
     pub from: Account<'info, TokenAccount>,
 
