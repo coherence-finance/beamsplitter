@@ -51,6 +51,8 @@ pub mod splitcoin_prism {
             return Err(BeamsplitterErrors::NotMintAuthority.into());
         }
 
+        // TODO check if supply is zero
+
         for i in 0..assets.len() {
             prism.assets[i] = assets[i];
         }
@@ -65,6 +67,10 @@ pub mod splitcoin_prism {
     pub fn convert(ctx: Context<Convert>, from_amount: u64) -> ProgramResult {
         let from_asset_value = token_value(&ctx.accounts.from_token.assets) as u64;
         let to_asset_value = token_value(&ctx.accounts.to_token.assets) as u64;
+
+        if &ctx.accounts.from_mint.key() == &ctx.accounts.to_mint.key() {
+            return Err(BeamsplitterErrors::NoSameMintAccounts.into())
+        }
 
         // Amount of value being transferred
         let effective_value = from_amount * from_asset_value;
