@@ -31,6 +31,7 @@ describe("splitcoin-prism", () => {
   // Helper variables
   let authority: PublicKey;
   let mintKP: Keypair;
+  let prism: PublicKey;
 
   // Unit tests
   it("Initialize test state", () => {
@@ -43,11 +44,13 @@ describe("splitcoin-prism", () => {
     await expectTX(tx, "Initialize prism program state with owner as invoker.")
       .to.be.fulfilled;
 
-    const [assetKey, bump] = await generatePrismAddress();
-    const prismData = await sdk.fetchPrismData(assetKey);
+    const [pdaKey, bump] = await generatePrismAddress();
+    const prismData = await sdk.fetchPrismData(pdaKey);
 
     expect(prismData?.owner).to.eqAddress(provider.wallet.publicKey);
     expect(prismData?.bump).to.equal(bump);
+
+    prism = pdaKey;
   });
 
   it("Initializes a prism asset", async () => {
@@ -67,11 +70,61 @@ describe("splitcoin-prism", () => {
     ];
 
     const tx = await sdk.registerToken({
+      prism,
       mintKP,
       assets: assetData,
       authority,
     });
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
+
+    const [tokenKey, bump] = await generatePrismTokenAddress(mintKP.publicKey);
+
+    const tokenData = await sdk.fetchPrismTokenData(tokenKey);
+
+    expect(tokenData?.authority).to.eqAddress(authority);
+    expect(tokenData?.bump).to.equal(bump);
+    expect(tokenData?.mint).to.eqAddress(mintKP.publicKey);
+  });
+
+  it("Convert between prisms", async () => {
+    const mintA = Keypair.generate();
+    const mintB = Keypair.generate();
+
+    const priceA = new BN(9);
+    const weightA = new BN(4);
+
+    const assetDataA: AssetData[] = [
+      {
+        dataFeed: { constant: { price: priceA, expo: 9 } },
+        weight: weightA,
+      },
+    ];
+
+    const priceB = new BN(11);
+    const weightB = new BN(2);
+
+    const assetDataB: AssetData[] = [
+      {
+        dataFeed: { constant: { price: priceB, expo: 9 } },
+        weight: weightB,
+      },
+    ];
+
+    const txA = await sdk.registerToken({
+      prism,
+      mintKP: mintA,
+      assets: assetDataA,
+      authority,
+    });
+    await expectTX(txA, "Initialize asset with assetToken").to.be.fulfilled;
+
+    const txB = await sdk.registerToken({
+      prism,
+      mintKP: mintB,
+      assets: assetDataB,
+      authority,
+    });
+    await expectTX(txB, "Initialize asset with assetToken").to.be.fulfilled;
 
     const [tokenKey, bump] = await generatePrismTokenAddress(mintKP.publicKey);
 

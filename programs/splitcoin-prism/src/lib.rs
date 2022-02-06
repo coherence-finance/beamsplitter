@@ -2,10 +2,12 @@ pub mod asset_data;
 pub mod context;
 pub mod state;
 pub mod util;
+pub mod errors;
 
 use anchor_lang::prelude::*;
 use asset_data::*;
 use context::*;
+use errors::BeamsplitterErrors;
 use util::token_value;
 
 declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
@@ -13,7 +15,7 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 #[program]
 pub mod splitcoin_prism {
 
-    use anchor_spl::token::{burn, mint_to, Burn, MintTo};
+    use anchor_spl::token::{burn, mint_to, Burn, MintTo, accessor::authority};
     use asset_data::AssetData;
 
     use super::*;
@@ -33,11 +35,21 @@ pub mod splitcoin_prism {
         bump: u8,
         assets: Vec<AssetData>,
     ) -> ProgramResult {
+
         let prism = &mut ctx.accounts.prism_token;
+        let prism_metadata = & ctx.accounts.prism;
+        let mint = & ctx.accounts.token_mint;
+        let signer = & ctx.accounts.admin_authority;
 
         prism.authority = ctx.accounts.admin_authority.key();
         prism.bump = bump;
         prism.mint = ctx.accounts.token_mint.key();
+        prism.prism = prism_metadata.key();
+
+        // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
+        if prism_metadata.owner != authority(&mint.to_account_info())? && signer.key() != prism_metadata.owner {
+            return Err(ProgramError::Custom(BeamsplitterErrors::NotMintAuthority as u32));
+        }
 
         for i in 0..assets.len() {
             prism.assets[i] = assets[i];

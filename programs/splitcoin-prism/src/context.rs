@@ -41,6 +41,14 @@ pub struct RegisterToken<'info> {
     pub prism_token: Box<Account<'info, PrismToken>>,
     /// Authority that has admin rights over the [PrismToken].
     pub admin_authority: Signer<'info>,
+    /// The central mint authority for all registered tokens, used for checks
+    #[account(
+        seeds = [
+            b"Prism".as_ref(),
+        ],
+        bump = prism.bump,
+    )]
+    pub prism: Account<'info, Prism>,
     /// [Mint] of the [PrismToken].
     pub token_mint: Account<'info, Mint>,
     /// The [System] program.

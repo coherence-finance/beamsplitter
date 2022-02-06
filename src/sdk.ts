@@ -55,10 +55,12 @@ export class SplitcoinPrismSDK {
   }
 
   async registerToken({
+    prism,
     mintKP = Keypair.generate(),
     authority = this.provider.wallet.publicKey,
     assets,
   }: {
+    prism: PublicKey;
     mintKP?: Keypair;
     authority: PublicKey;
     assets: AssetData[];
@@ -82,9 +84,18 @@ export class SplitcoinPrismSDK {
         owner: authority,
       })
     ).instruction;
+
+    /*
+    const mintToInstruction = supplyTokens ? [createMintToInstruction({
+      provider: this.provider,
+      mint: mintKP.publicKey,
+      mintAuthorityKP
+    })] : [];*/
+
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
       this.program.instruction.registerToken(bump, assets, {
         accounts: {
+          prism,
           prismToken: prismTokenKey,
           adminAuthority: authority,
           tokenMint: mintKP.publicKey,

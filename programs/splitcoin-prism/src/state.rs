@@ -6,6 +6,8 @@ use crate::asset_data::{AssetData, Feed};
 #[account]
 #[derive(Debug)]
 pub struct PrismToken {
+    /// The Beamsplitter metadata account associated with this prism token
+    pub prism: Pubkey,
     /// Authority that has admin rights over the [PrismToken].
     pub authority: Pubkey,
     /// Bump seed. Stored for find_program_address on-chain performance
@@ -23,9 +25,10 @@ impl Default for PrismToken {
     fn default() -> PrismToken {
         // TODO replace 8 with shared max size
         PrismToken {
-            authority: Default::default(),
-            bump: Default::default(),
-            mint: Default::default(),
+            prism: Pubkey::default(),
+            authority: Pubkey::default(),
+            bump: u8::default(),
+            mint: Pubkey::default(),
             assets: [AssetData {
                 data_feed: Feed::Constant { price: 0, expo: 0 },
                 weight: 0,
