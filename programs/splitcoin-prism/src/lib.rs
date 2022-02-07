@@ -91,6 +91,9 @@ pub mod splitcoin_prism {
             authority: ctx.accounts.prism.to_account_info(),
         };
 
+        msg!["Prism Addr: {}", ctx.accounts.prism.to_account_info().key().to_string().as_str()];
+        msg!["Mint auth Addr: {}", authority(&ctx.accounts.from_mint.to_account_info())?];
+
         let burn_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), burn_accounts);
         burn(burn_ctx, from_amount)?;
 

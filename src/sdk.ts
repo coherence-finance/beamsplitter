@@ -104,13 +104,6 @@ export class SplitcoinPrismSDK {
       })
     ).instruction;
 
-    /*
-    const mintToInstruction = supplyTokens ? [createMintToInstruction({
-      provider: this.provider,
-      mint: mintKP.publicKey,
-      mintAuthorityKP
-    })] : [];*/
-
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
       this.program.instruction.registerToken(bump, assets, {
         accounts: {

@@ -5,13 +5,18 @@ import type {
   Provider as SaberProvider,
   PublicKey,
 } from "@saberhq/solana-contrib";
-import { PendingTransaction } from "@saberhq/solana-contrib";
+import {
+  PendingTransaction,
+  TransactionEnvelope,
+} from "@saberhq/solana-contrib";
 import {
   createMintToInstruction,
   getATAAddress,
+  getMintInfo,
   getTokenAccount,
   u64,
 } from "@saberhq/token-utils";
+import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
@@ -187,6 +192,33 @@ describe("splitcoin-prism", () => {
     );
 
     assert(tokenAAccount.amount.eq(new BN(9)));
+
+    console.log("mintAuth0 " + authority.toString());
+
+    const setAuthTx = new TransactionEnvelope(
+      provider,
+      [
+        Token.createSetAuthorityInstruction(
+          TOKEN_PROGRAM_ID,
+          mintA.publicKey,
+          prism,
+          "MintTokens",
+          authority,
+          []
+        ),
+      ],
+      [testSigner]
+    );
+
+    await expectTX(setAuthTx, `Set Prism as auth of tokenA`).to.be.fulfilled;
+
+    const mintAuthorityA = (await getMintInfo(provider, mintA.publicKey))
+      .mintAuthority;
+
+    assert(mintAuthorityA?.equals(prism));
+    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+    console.log("mintAuth " + mintAuthorityA?.toString());
+    console.log("prism " + prism.toString());
 
     const convertTx = await sdk.convert({
       prism,
