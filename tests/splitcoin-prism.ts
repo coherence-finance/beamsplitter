@@ -5,18 +5,8 @@ import type {
   Provider as SaberProvider,
   PublicKey,
 } from "@saberhq/solana-contrib";
-import {
-  PendingTransaction,
-  TransactionEnvelope,
-} from "@saberhq/solana-contrib";
-import {
-  createMintToInstruction,
-  getATAAddress,
-  getMintInfo,
-  getTokenAccount,
-  u64,
-} from "@saberhq/token-utils";
-import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { PendingTransaction } from "@saberhq/solana-contrib";
+import { getATAAddress, getTokenAccount, u64 } from "@saberhq/token-utils";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
@@ -95,6 +85,7 @@ describe("splitcoin-prism", () => {
       mintKP,
       assets: assetData,
       authority,
+      authorityKp: testSigner,
     });
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
 
@@ -111,11 +102,18 @@ describe("splitcoin-prism", () => {
   });
 
   it("Convert between prisms", async () => {
+    // Defines
     const mintA = Keypair.generate();
     const mintB = Keypair.generate();
 
     const priceA = new BN(9);
     const weightA = new BN(4);
+
+    const priceB = new BN(11);
+    const weightB = new BN(2);
+
+    const initialSupply = new u64(9);
+    const conversionAmount = new BN(1);
 
     const assetDataA: AssetData[] = [
       {
@@ -124,9 +122,6 @@ describe("splitcoin-prism", () => {
       },
     ];
 
-    const priceB = new BN(11);
-    const weightB = new BN(2);
-
     const assetDataB: AssetData[] = [
       {
         dataFeed: { constant: { price: priceB, expo: 9 } },
@@ -134,12 +129,14 @@ describe("splitcoin-prism", () => {
       },
     ];
 
+    // Transactions
     const txA = await sdk.registerToken({
       prism,
       mintKP: mintA,
       assets: assetDataA,
-      authority: authority,
-      mintAuthority: authority,
+      authority,
+      authorityKp: testSigner,
+      initialSupply,
     });
     await expectTX(txA, "Initialize asset with assetToken").to.be.fulfilled;
 
@@ -147,7 +144,8 @@ describe("splitcoin-prism", () => {
       prism,
       mintKP: mintB,
       assets: assetDataB,
-      authority: authority,
+      authority,
+      authorityKp: testSigner,
     });
     await expectTX(txB, "Initialize asset with assetToken").to.be.fulfilled;
 
@@ -159,8 +157,8 @@ describe("splitcoin-prism", () => {
     expect(tokenDataA?.bump).to.equal(bumpA);
     expect(tokenDataA?.mint).to.eqAddress(mintA.publicKey);
 
-    await expect(getATAAddress({ mint: mintA.publicKey, owner: authority })).to
-      .be.fulfilled;
+    await expect(getATAAddress({ mint: mintA.publicKey, owner: prism })).to.be
+      .fulfilled;
 
     const [tokenKeyB, bumpB] = await generatePrismTokenAddress(mintB.publicKey);
 
@@ -173,63 +171,23 @@ describe("splitcoin-prism", () => {
     await expect(getATAAddress({ mint: mintB.publicKey, owner: authority })).to
       .be.fulfilled;
 
-    const initSupply = new u64(9);
-
-    const createSupplyTx = createMintToInstruction({
+    const newTokenAAccount = await getTokenAccount(
       provider,
-      mint: mintA.publicKey,
-      mintAuthorityKP: testSigner,
-      to: await getATAAddress({ mint: mintA.publicKey, owner: authority }),
-      amount: initSupply,
-    });
-
-    await expectTX(createSupplyTx, `Mint ${initSupply.toString()} to authority`)
-      .to.be.fulfilled;
-
-    const tokenAAccount = await getTokenAccount(
-      provider,
-      await getATAAddress({ mint: mintA.publicKey, owner: authority })
+      await getATAAddress({ mint: mintA.publicKey, owner: prism })
     );
 
-    assert(tokenAAccount.amount.eq(new BN(9)));
-
-    console.log("mintAuth0 " + authority.toString());
-
-    const setAuthTx = new TransactionEnvelope(
-      provider,
-      [
-        Token.createSetAuthorityInstruction(
-          TOKEN_PROGRAM_ID,
-          mintA.publicKey,
-          prism,
-          "MintTokens",
-          authority,
-          []
-        ),
-      ],
-      [testSigner]
-    );
-
-    await expectTX(setAuthTx, `Set Prism as auth of tokenA`).to.be.fulfilled;
-
-    const mintAuthorityA = (await getMintInfo(provider, mintA.publicKey))
-      .mintAuthority;
-
-    assert(mintAuthorityA?.equals(prism));
-    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-    console.log("mintAuth " + mintAuthorityA?.toString());
-    console.log("prism " + prism.toString());
+    assert(newTokenAAccount.amount.eq(initialSupply));
 
     const convertTx = await sdk.convert({
       prism,
       fromPrism: tokenKeyA,
       toPrism: tokenKeyB,
-      amount: new BN(1),
+      amount: conversionAmount,
     });
 
     await expectTX(
       convertTx,
-      `Convert ${initSupply.toString()} of token A to token B`
+      `Convert ${conversionAmount.toString()} of token A to token B`
     ).to.be.fulfilled;
   });
 });

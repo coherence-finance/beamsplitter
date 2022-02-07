@@ -9,10 +9,13 @@ import {
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
+  createMintToInstruction,
   getATAAddress,
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
+import type { u64 } from "@solana/spl-token";
+import { Token } from "@solana/spl-token";
 import type { PublicKey, Signer } from "@solana/web3.js";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import type BN from "bn.js";
@@ -72,17 +75,21 @@ export class SplitcoinPrismSDK {
     ]);
   }
 
+  // TODO: Pass multisig in so we can use it as authority for ATA
   async registerToken({
     prism,
     mintKP = Keypair.generate(),
     authority = this.provider.wallet.publicKey,
-    mintAuthority, // This can only be specified by Beamsplitter owner
+    authorityKp,
+    initialSupply,
     assets,
   }: {
     prism: PublicKey;
     mintKP?: Keypair;
     authority?: PublicKey;
-    mintAuthority?: PublicKey;
+    authorityKp: Keypair;
+    // TODO: Remove later. Here to reduce testing redundancy
+    initialSupply?: u64;
     assets: AssetData[];
   }): Promise<TransactionEnvelope> {
     const [prismTokenKey, bump] = await generatePrismTokenAddress(
@@ -93,16 +100,15 @@ export class SplitcoinPrismSDK {
       provider: this.provider,
       mintKP,
       decimals: 9,
-      mintAuthority: mintAuthority ? mintAuthority : prismTokenKey,
+      mintAuthority: authority,
     });
 
-    const ataInstruction = (
+    const { address: toAta, instruction: ataInstruction } =
       await getOrCreateATA({
         provider: this.provider,
         mint: mintKP.publicKey,
-        owner: authority,
-      })
-    ).instruction;
+        owner: prism,
+      });
 
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
       this.program.instruction.registerToken(bump, assets, {
@@ -116,22 +122,48 @@ export class SplitcoinPrismSDK {
       }),
       ...(ataInstruction ? [ataInstruction] : []),
     ]);
-    return initMintTX.combine(initPrismAndCreateAtaTx);
+
+    const setAuthTx = new TransactionEnvelope(
+      this.provider,
+      [
+        Token.createSetAuthorityInstruction(
+          TOKEN_PROGRAM_ID,
+          mintKP.publicKey,
+          prism,
+          "MintTokens",
+          authority,
+          []
+        ),
+      ],
+      [authorityKp]
+    );
+
+    let tx = initMintTX.combine(initPrismAndCreateAtaTx);
+
+    if (initialSupply && authorityKp) {
+      tx = tx.combine(
+        createMintToInstruction({
+          provider: this.provider,
+          mint: mintKP.publicKey,
+          mintAuthorityKP: authorityKp,
+          to: toAta,
+          amount: initialSupply,
+        })
+      );
+    }
+
+    return tx.combine(setAuthTx);
   }
 
   async convert({
     prism,
     fromPrism,
     toPrism,
-    fromAccount = this.provider.wallet.publicKey,
-    toAccount = this.provider.wallet.publicKey,
     amount,
   }: {
     prism: PublicKey;
     fromPrism: PublicKey;
     toPrism: PublicKey;
-    fromAccount?: PublicKey;
-    toAccount?: PublicKey;
     amount: BN;
   }): Promise<TransactionEnvelope> {
     const fromPrismAccount = await this.fetchPrismTokenData(fromPrism);
@@ -150,11 +182,11 @@ export class SplitcoinPrismSDK {
 
     const fromTokenAccount = await getATAAddress({
       mint: fromPrismAccount.mint,
-      owner: fromAccount,
+      owner: prism,
     });
     const toTokenAccount = await getATAAddress({
       mint: toPrismAccount.mint,
-      owner: toAccount,
+      owner: prism,
     });
 
     const convertTx = new TransactionEnvelope(this.provider, [
@@ -167,7 +199,6 @@ export class SplitcoinPrismSDK {
           to: toTokenAccount,
           toToken: toPrism,
           toMint: toPrismAccount.mint,
-          payer: this.provider.wallet.publicKey,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         },

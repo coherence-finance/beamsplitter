@@ -77,10 +77,11 @@ pub struct Convert<'info> {
     pub from_token: Box<Account<'info, PrismToken>>,
 
     /// The [Mint] of the burned tokens
+    #[account(mut)]
     pub from_mint: Account<'info, Mint>,
 
     /// The paying [TokenAccount]
-    #[account(associated_token::mint = from_mint, associated_token::authority = payer)]
+    #[account(mut, associated_token::mint = from_mint, associated_token::authority = prism)]
     pub from: Account<'info, TokenAccount>,
 
     #[account(
@@ -94,13 +95,12 @@ pub struct Convert<'info> {
     pub to_token: Box<Account<'info, PrismToken>>,
 
     /// The [Mint] of the minted tokens
+    #[account(mut)]
     pub to_mint: Account<'info, Mint>,
 
     /// The receiving [Account]
+    #[account(mut, associated_token::mint = to_mint, associated_token::authority = prism)]
     pub to: Account<'info, TokenAccount>,
-
-    /// The payer ([Signer]) of the tx
-    pub payer: Signer<'info>,
 
     /// The [Token] [Program].
     pub token_program: Program<'info, Token>,
