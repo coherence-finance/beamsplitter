@@ -1,15 +1,15 @@
 {
-  "name": "@split-coin/prism",
-  "version": "0.0.0",
-  "description": "Create ETF tokens",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
+  "name": "@coherence-finance/sdk",
+  "version": "0.0.5",
+  "description": "SDK for Prismsplitter",
+  "main": "dist/cjs/src/index.js",
+  "module": "dist/esm/src/index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Split-Coin/prism.git"
+    "url": "git@github.com:coherence-finance/beamsplitter.git"
   },
-  "author": "Splitcoin Engineering <engineering@splitcoin.money>",
-  "homepage": "https://splitcoin.money",
+  "author": "Coherence <engineering@coherence.finance>",
+  "homepage": "https://coherence.finance",
   "license": "GPL-3.0",
   "publishConfig": {
     "access": "public"
@@ -19,21 +19,22 @@
     "lint": "eslint .",
     "prepare": "husky install",
     "typecheck": "tsc",
-    "test": "anchor test --skip-build tests/*.ts"
+    "test": "anchor test"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@saberhq/anchor-contrib": "^1.12.36",
+    "@saberhq/solana-contrib": "^1.12.36",
+    "@saberhq/token-utils": "^1.12.36",
+    "@saberhq/tsconfig": "^1.12.36",
+    "@solana/web3.js": "^1.33.0"
+  },
   "devDependencies": {
     "@project-serum/anchor": "^0.19.1-beta.1",
     "@rushstack/eslint-patch": "^1.1.0",
-    "@saberhq/anchor-contrib": "^1.12.9",
     "@saberhq/chai-solana": "^1.12.9",
     "@saberhq/eslint-config": "^1.12.9",
     "@saberhq/solana": "^0.7.9",
-    "@saberhq/solana-contrib": "^1.12.9",
-    "@saberhq/token-utils": "^1.12.9",
-    "@saberhq/tsconfig": "^1.12.9",
     "@solana/spl-token": "^0.1.8",
-    "@solana/web3.js": "^1.31.0",
     "@types/bn.js": "^5.1.0",
     "@types/mocha": "^9.0.0",
     "bn.js": "^5.2.0",
@@ -51,16 +52,8 @@
   },
   "peerDependencies": {
     "@project-serum/anchor": "^0.19",
-    "@saberhq/anchor-contrib": "^1.12.9",
-    "@saberhq/solana-contrib": "^1.12.9",
-    "@saberhq/token-utils": "^1.12.9",
-    "@solana/web3.js": "^1.31.0",
     "bn.js": "^5.2.0"
   },
-  "files": [
-    "dist/",
-    "src/"
-  ],
   "lint-staged": {
     "*.js": "eslint --cache --fix",
     "*.{js,css,md}": "prettier --write"
