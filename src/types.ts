@@ -1,4 +1,5 @@
 import type { AnchorTypes } from "@saberhq/anchor-contrib";
+import BN from "bn.js";
 
 import type { SplitcoinPrism } from "../target/types/splitcoin_prism";
 
@@ -19,5 +20,16 @@ export type PrismData = Accounts["prism"];
 export type PrismProgram = PrismTypes["Program"];
 
 export type Defined = PrismTypes["Defined"];
-export type AssetData = Defined["AssetData"];
-export type Feed = Defined["Feed"];
+
+export interface ConstantValueFeed {
+  constant: {
+    price: BN;
+    expo: number;
+  };
+}
+
+export type Feed = ConstantValueFeed;
+export interface AssetData {
+  dataFeed: Feed;
+  weight: BN;
+}
