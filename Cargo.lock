@@ -1115,7 +1115,7 @@ dependencies = [
 [[package]]
 name = "serum_dex"
 version = "0.5.4"
-source = "git+https://github.com/project-serum/serum-dex#4258756cf7fc6ab240c855c08ea54bd813c4e9ac"
+source = "git+https://github.com/coherence-finance/serum-dex#8fd697aba87e1865d01a656767211f5e517f21e4"
 dependencies = [
  "arrayref",
  "bincode",
