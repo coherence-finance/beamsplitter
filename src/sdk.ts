@@ -207,6 +207,42 @@ export class SplitcoinPrismSDK {
     return convertTx;
   }
 
+  getPrice({
+    owner = this.provider.wallet.publicKey,
+    price,
+    market,
+    bids,
+    dexPid,
+  }: {
+    owner?: PublicKey;
+    price: PublicKey;
+    market: PublicKey;
+    bids: PublicKey;
+    dexPid: PublicKey;
+  }): TransactionEnvelope {
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.getPrice(dexPid, {
+        accounts: {
+          price,
+          payer: owner,
+          systemProgram: SystemProgram.programId,
+        },
+        remainingAccounts: [
+          {
+            pubkey: market,
+            isWritable: false,
+            isSigner: false,
+          },
+          {
+            pubkey: bids,
+            isWritable: false,
+            isSigner: false,
+          },
+        ],
+      }),
+    ]);
+  }
+
   // Fetch the main Prism state account
   async fetchPrismData(key: PublicKey): Promise<PrismData | null> {
     return (await this.program.account.prism.fetchNullable(key)) as PrismData;

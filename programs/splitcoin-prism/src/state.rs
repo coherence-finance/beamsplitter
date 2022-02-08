@@ -45,3 +45,9 @@ pub struct Prism {
     /// Bump seed. Stored for find_program_address on-chain performance
     pub bump: u8,
 }
+
+#[account]
+#[derive(Copy, Debug, Default)]
+pub struct PriceConfig {
+    pub price: u64,
+}

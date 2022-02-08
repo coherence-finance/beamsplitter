@@ -17,6 +17,7 @@ pub mod splitcoin_prism {
 
     use anchor_spl::token::{accessor::authority, burn, mint_to, Burn, MintTo};
     use asset_data::AssetData;
+    use serum_dex::state::MarketState;
 
     use super::*;
 
@@ -115,12 +116,17 @@ pub mod splitcoin_prism {
         Ok(())
     }
 
-    pub fn get_price(ctx: Context<()>, dex_pid: Pubkey) -> ProgramResult {
-        
-        let mkt_acct =  &ctx.remaining_accounts[0];
-        let bid_acct =  &ctx.remaining_accounts[1];
-        msg!["Token price {}", get_dex_price(mkt_acct, bid_acct, dex_pid)];
+    pub fn get_price(ctx: Context<GetPrice>, dex_pid: Pubkey) -> ProgramResult {
+        let price_account = &mut ctx.accounts.price;
 
+        let market_account = &ctx.remaining_accounts[0];
+        let bids_account = &ctx.remaining_accounts[1];
+
+        let market = MarketState::load(market_account, &dex_pid, false)?;
+        let bids = market.load_bids_mut(bids_account)?;
+
+        price_account.price = get_slab_price(&bids);
+
+        Ok(())
     }
-    
 }

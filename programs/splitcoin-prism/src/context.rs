@@ -108,3 +108,13 @@ pub struct Convert<'info> {
     /// The [AssociatedToken] [Program]
     pub associated_program: Program<'info, AssociatedToken>,
 }
+
+#[derive(Accounts)]
+pub struct GetPrice<'info> {
+    #[account(init, payer = payer)]
+    pub price: Account<'info, PriceConfig>,
+    /// Authority that has admin rights over the [PrismToken].
+    pub payer: Signer<'info>,
+    /// The [System] program.
+    pub system_program: Program<'info, System>,
+}
