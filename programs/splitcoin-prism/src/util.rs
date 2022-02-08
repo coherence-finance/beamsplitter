@@ -43,7 +43,7 @@ pub fn get_dex_price(
     market_account: &AccountInfo,
     bids_account: &AccountInfo,
     dex_pid: Pubkey,
-) -> &Slab {
+) -> u64 {
     let bids = load_bids(market_account, bids_account, dex_pid);
     get_slab_price(bids)
 }

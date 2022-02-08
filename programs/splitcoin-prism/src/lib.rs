@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 use asset_data::*;
 use context::*;
 use errors::BeamsplitterErrors;
-use util::token_value;
+use util::*;
 
 declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
@@ -114,4 +114,13 @@ pub mod splitcoin_prism {
 
         Ok(())
     }
+
+    pub fn get_price(ctx: Context<()>, dex_pid: Pubkey) -> ProgramResult {
+        
+        let mkt_acct =  &ctx.remaining_accounts[0];
+        let bid_acct =  &ctx.remaining_accounts[1];
+        msg!["Token price {}", get_dex_price(mkt_acct, bid_acct, dex_pid)];
+
+    }
+    
 }
