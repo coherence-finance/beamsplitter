@@ -10,11 +10,11 @@ export const generatePrismAddress = (): Promise<[PublicKey, number]> => {
   );
 };
 
-export const generatePrismAssetAddress = (
+export const generatePrismTokenAddress = (
   mint: PublicKey
 ): Promise<[PublicKey, number]> => {
   return PublicKey.findProgramAddress(
-    [utils.bytes.utf8.encode("PrismAsset"), mint.toBuffer()],
+    [utils.bytes.utf8.encode("PrismToken"), mint.toBuffer()],
     PROGRAM_ID
   );
 };

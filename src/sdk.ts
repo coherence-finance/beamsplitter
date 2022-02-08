@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
 import {
@@ -5,18 +7,28 @@ import {
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
+  createMintToInstruction,
+  getATAAddress,
   getOrCreateATA,
+  TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
-import type { Keypair, PublicKey } from "@solana/web3.js";
-import { SystemProgram } from "@solana/web3.js";
+import type { u64 } from "@solana/spl-token";
+import { Token } from "@solana/spl-token";
+import type { PublicKey, Signer } from "@solana/web3.js";
+import { Keypair, SystemProgram } from "@solana/web3.js";
+import type BN from "bn.js";
 
 import { IDL } from "../target/types/splitcoin_prism";
-import type { PrismData } from ".";
-import { generatePrismAddress } from ".";
 import { PROGRAM_ID } from "./constants";
-import { generatePrismAssetAddress } from "./pda";
-import type { PrismAssetData, PrismProgram } from "./types";
+import { generatePrismAddress, generatePrismTokenAddress } from "./pda";
+import type {
+  AssetData,
+  PrismData,
+  PrismProgram,
+  PrismTokenData,
+} from "./types";
 
 export class SplitcoinPrismSDK {
   constructor(
@@ -32,16 +44,30 @@ export class SplitcoinPrismSDK {
     );
   }
 
+  static loadWithSigner({
+    provider,
+    signer,
+  }: {
+    provider: Provider;
+    signer: Signer;
+  }): SplitcoinPrismSDK {
+    const aug = new SolanaAugmentedProvider(provider).withSigner(signer);
+    return new SplitcoinPrismSDK(
+      aug,
+      newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
+    );
+  }
+
   async initialize({
     owner = this.provider.wallet.publicKey,
   }: {
-    owner: PublicKey;
+    owner?: PublicKey;
   }): Promise<TransactionEnvelope> {
-    const [assetKey, bump] = await generatePrismAddress();
+    const [prismTokenKey, bump] = await generatePrismAddress();
     return new TransactionEnvelope(this.provider, [
       this.program.instruction.initialize(bump, {
         accounts: {
-          prism: assetKey,
+          prism: prismTokenKey,
           owner: owner,
           systemProgram: SystemProgram.programId,
         },
@@ -49,45 +75,136 @@ export class SplitcoinPrismSDK {
     ]);
   }
 
-  async newAsset({
-    mintKP,
-    decimals,
+  // TODO: Pass multisig in so we can use it as authority for ATA
+  async registerToken({
+    prism,
+    mintKP = Keypair.generate(),
     authority = this.provider.wallet.publicKey,
+    authorityKp,
+    initialSupply,
+    assets,
   }: {
-    mintKP: Keypair;
-    decimals: number;
-    authority: PublicKey;
+    prism: PublicKey;
+    mintKP?: Keypair;
+    authority?: PublicKey;
+    authorityKp: Keypair;
+    // TODO: Remove later. Here to reduce testing redundancy
+    initialSupply?: u64;
+    assets: AssetData[];
   }): Promise<TransactionEnvelope> {
-    const [assetKey, bump] = await generatePrismAssetAddress(mintKP.publicKey);
+    const [prismTokenKey, bump] = await generatePrismTokenAddress(
+      mintKP.publicKey
+    );
 
     const initMintTX = await createInitMintInstructions({
       provider: this.provider,
       mintKP,
-      decimals,
-      mintAuthority: assetKey,
-      freezeAuthority: assetKey,
+      decimals: 9,
+      mintAuthority: authority,
     });
 
-    const ataInstruction = (
+    const { address: toAta, instruction: ataInstruction } =
       await getOrCreateATA({
         provider: this.provider,
         mint: mintKP.publicKey,
-        owner: authority,
-      })
-    ).instruction;
+        owner: prism,
+      });
+
     const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
-      this.program.instruction.newAsset(bump, {
+      this.program.instruction.registerToken(bump, assets, {
         accounts: {
-          prismAsset: assetKey,
+          prism,
+          prismToken: prismTokenKey,
           adminAuthority: authority,
-          assetMint: mintKP.publicKey,
+          tokenMint: mintKP.publicKey,
           systemProgram: SystemProgram.programId,
         },
       }),
       ...(ataInstruction ? [ataInstruction] : []),
     ]);
 
-    return initMintTX.combine(initPrismAndCreateAtaTx);
+    const setAuthTx = new TransactionEnvelope(
+      this.provider,
+      [
+        Token.createSetAuthorityInstruction(
+          TOKEN_PROGRAM_ID,
+          mintKP.publicKey,
+          prism,
+          "MintTokens",
+          authority,
+          []
+        ),
+      ],
+      [authorityKp]
+    );
+
+    let tx = initMintTX.combine(initPrismAndCreateAtaTx);
+
+    if (initialSupply && authorityKp) {
+      tx = tx.combine(
+        createMintToInstruction({
+          provider: this.provider,
+          mint: mintKP.publicKey,
+          mintAuthorityKP: authorityKp,
+          to: toAta,
+          amount: initialSupply,
+        })
+      );
+    }
+
+    return tx.combine(setAuthTx);
+  }
+
+  async convert({
+    prism,
+    fromPrism,
+    toPrism,
+    amount,
+  }: {
+    prism: PublicKey;
+    fromPrism: PublicKey;
+    toPrism: PublicKey;
+    amount: BN;
+  }): Promise<TransactionEnvelope> {
+    const fromPrismAccount = await this.fetchPrismTokenData(fromPrism);
+    if (!fromPrismAccount) {
+      throw new Error(
+        "Couldn't retrive fromPrism account. Check Prism was registered."
+      );
+    }
+
+    const toPrismAccount = await this.fetchPrismTokenData(toPrism);
+    if (!toPrismAccount) {
+      throw new Error(
+        "Couldn't retrive toPrism account. Check Prism was registered."
+      );
+    }
+
+    const fromTokenAccount = await getATAAddress({
+      mint: fromPrismAccount.mint,
+      owner: prism,
+    });
+    const toTokenAccount = await getATAAddress({
+      mint: toPrismAccount.mint,
+      owner: prism,
+    });
+
+    const convertTx = new TransactionEnvelope(this.provider, [
+      this.program.instruction.convert(amount, {
+        accounts: {
+          prism,
+          from: fromTokenAccount,
+          fromToken: fromPrism,
+          fromMint: fromPrismAccount.mint,
+          to: toTokenAccount,
+          toToken: toPrism,
+          toMint: toPrismAccount.mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        },
+      }),
+    ]);
+    return convertTx;
   }
 
   // Fetch the main Prism state account
@@ -95,9 +212,9 @@ export class SplitcoinPrismSDK {
     return (await this.program.account.prism.fetchNullable(key)) as PrismData;
   }
 
-  async fetchAssetData(key: PublicKey): Promise<PrismAssetData | null> {
-    return (await this.program.account.prismAsset.fetchNullable(
+  async fetchPrismTokenData(key: PublicKey): Promise<PrismTokenData | null> {
+    return (await this.program.account.prismToken.fetchNullable(
       key
-    )) as PrismAssetData;
+    )) as PrismTokenData;
   }
 }
