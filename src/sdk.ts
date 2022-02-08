@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { Market } from "@project-serum/serum";
+import { PROGRAM_LAYOUT_VERSIONS } from "@project-serum/serum/lib/tokens_and_markets";
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
 import {
@@ -16,8 +18,8 @@ import {
 } from "@saberhq/token-utils";
 import type { u64 } from "@solana/spl-token";
 import { Token } from "@solana/spl-token";
-import type { PublicKey, Signer } from "@solana/web3.js";
-import { Keypair, SystemProgram } from "@solana/web3.js";
+import type { Connection, Signer } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import type BN from "bn.js";
 
 import { IDL } from "../target/types/splitcoin_prism";
@@ -210,37 +212,43 @@ export class SplitcoinPrismSDK {
   getPrice({
     owner = this.provider.wallet.publicKey,
     price,
+    priceSigner,
     market,
     bids,
-    dexPid,
+    dexPid = this.getLatestSerumDEXAddress(),
   }: {
     owner?: PublicKey;
     price: PublicKey;
+    priceSigner: Signer;
     market: PublicKey;
     bids: PublicKey;
-    dexPid: PublicKey;
+    dexPid?: PublicKey;
   }): TransactionEnvelope {
-    return new TransactionEnvelope(this.provider, [
-      this.program.instruction.getPrice(dexPid, {
-        accounts: {
-          price,
-          payer: owner,
-          systemProgram: SystemProgram.programId,
-        },
-        remainingAccounts: [
-          {
-            pubkey: market,
-            isWritable: false,
-            isSigner: false,
+    return new TransactionEnvelope(
+      this.provider,
+      [
+        this.program.instruction.getPrice(dexPid, {
+          accounts: {
+            price,
+            payer: owner,
+            systemProgram: SystemProgram.programId,
           },
-          {
-            pubkey: bids,
-            isWritable: false,
-            isSigner: false,
-          },
-        ],
-      }),
-    ]);
+          remainingAccounts: [
+            {
+              pubkey: market,
+              isWritable: false,
+              isSigner: false,
+            },
+            {
+              pubkey: bids,
+              isWritable: false,
+              isSigner: false,
+            },
+          ],
+        }),
+      ],
+      [priceSigner]
+    );
   }
 
   // Fetch the main Prism state account
@@ -252,5 +260,40 @@ export class SplitcoinPrismSDK {
     return (await this.program.account.prismToken.fetchNullable(
       key
     )) as PrismTokenData;
+  }
+
+  // TODO this should take pair of tokens and return market account and bid
+  // For now user manually has to locate market account
+  async loadMarketAndBidAccounts({
+    connection,
+    marketAccount,
+    dexProgram = this.getLatestSerumDEXAddress(),
+  }: {
+    connection: Connection;
+    marketAccount: PublicKey;
+    dexProgram?: PublicKey;
+  }): Promise<PublicKey> {
+    const market = await Market.load(
+      connection,
+      marketAccount,
+      undefined,
+      dexProgram
+    );
+    return market.bidsAddress;
+  }
+
+  // Retrieve latest DEX address (ie version 3 at time of writing)
+  getLatestSerumDEXAddress(): PublicKey {
+    const latestVersion = Math.max(...Object.values(PROGRAM_LAYOUT_VERSIONS));
+    const lastestAddress = Object.entries<number>(PROGRAM_LAYOUT_VERSIONS).find(
+      (addrEntry) => {
+        if (addrEntry[1] === latestVersion) {
+          return addrEntry;
+        }
+      }
+    );
+    if (!lastestAddress)
+      throw new Error("Failed to retrieve latest version of Serum DEX Address");
+    return new PublicKey(lastestAddress[0]);
   }
 }

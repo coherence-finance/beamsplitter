@@ -1,18 +1,16 @@
 import { Provider, setProvider } from "@project-serum/anchor";
+import MarketAccounts from "@project-serum/serum/lib/markets.json";
 import { makeSaberProvider } from "@saberhq/anchor-contrib";
 import { chaiSolana, expectTX } from "@saberhq/chai-solana";
-import type {
-  Provider as SaberProvider,
-  PublicKey,
-} from "@saberhq/solana-contrib";
-import { PendingTransaction } from "@saberhq/solana-contrib";
+import type { Provider as SaberProvider } from "@saberhq/solana-contrib";
+import { PendingTransaction, PublicKey } from "@saberhq/solana-contrib";
 import {
   getATAAddress,
   getMintInfo,
   getTokenAccount,
   u64,
 } from "@saberhq/token-utils";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
@@ -227,5 +225,51 @@ describe("splitcoin-prism", () => {
     expect(tokenBAccount.amount.toNumber()).to.equal(
       getToAmount(assetDataA, assetDataB, conversionAmount.toNumber())
     );
+  });
+
+  it("Get latest Serum DEX version should be 3", () => {
+    const v3: PublicKey = new PublicKey(
+      "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"
+    );
+    const latestDexAddr = sdk.getLatestSerumDEXAddress();
+    expect(latestDexAddr).to.be.eqAddress(v3);
+  });
+
+  it("Print price of SOL/USDC from Raydium MKT Account", async () => {
+    const market = "BTC/USDC";
+    /*const pairInfo = Array.from<{
+      name: string;
+      address: string;
+      programId: string;
+    }>(MarketAccounts).find((mktAccount) => {
+      if (mktAccount.name === market) {
+        return mktAccount;
+      }
+    });*/
+    const pairInfo = {
+      address: "A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw",
+    };
+
+    const devnet = new Connection("https://api.mainnet-beta.solana.com");
+
+    if (!pairInfo) throw new Error(`Could not locate ${market} in Market Json`);
+    const marketAccount: PublicKey = new PublicKey(pairInfo?.address);
+
+    const bidAccount = await sdk.loadMarketAndBidAccounts({
+      connection: devnet,
+      marketAccount: marketAccount,
+    });
+
+    const priceAcc = Keypair.generate();
+
+    await expectTX(
+      sdk.getPrice({
+        owner: authority,
+        price: priceAcc.publicKey,
+        priceSigner: priceAcc,
+        market: marketAccount,
+        bids: bidAccount,
+      })
+    ).to.be.fulfilled;
   });
 });

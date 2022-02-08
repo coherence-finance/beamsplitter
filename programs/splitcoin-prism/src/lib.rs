@@ -122,7 +122,9 @@ pub mod splitcoin_prism {
         let market_account = &ctx.remaining_accounts[0];
         let bids_account = &ctx.remaining_accounts[1];
 
+        
         let market = MarketState::load(market_account, &dex_pid, false)?;
+        msg!["HERE"];
         let bids = market.load_bids_mut(bids_account)?;
 
         price_account.price = get_slab_price(&bids);
