@@ -16,17 +16,17 @@ import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
-import type { AssetData, PrismTokenData } from "../src";
+import type { AssetSource, PrismEtfData } from "../src";
 import {
-  generatePrismAddress,
-  generatePrismTokenAddress,
-  SplitcoinPrismSDK,
+  CoherenceBeamsplitterSDK,
+  generateBeamsplitterAddress,
+  generatePrismEtfAddress,
 } from "../src";
 import { getToAmount } from "./utils";
 
 chai.use(chaiSolana);
 
-describe("splitcoin-prism", () => {
+describe("coherence-beamsplitter", () => {
   // Provider setup
   const anchorProvider = Provider.env();
   setProvider(anchorProvider);
@@ -34,14 +34,16 @@ describe("splitcoin-prism", () => {
   const testSigner = Keypair.generate();
 
   const provider: SaberProvider = makeSaberProvider(anchorProvider);
-  const sdk: SplitcoinPrismSDK = SplitcoinPrismSDK.loadWithSigner({
-    provider,
-    signer: testSigner,
-  });
+  const sdk: CoherenceBeamsplitterSDK = CoherenceBeamsplitterSDK.loadWithSigner(
+    {
+      provider,
+      signer: testSigner,
+    }
+  );
 
   // Helper variables
   let authority: PublicKey;
-  let prism: PublicKey;
+  let beamsplitter: PublicKey;
 
   // Unit tests
   it("Initialize test state", async () => {
@@ -55,77 +57,77 @@ describe("splitcoin-prism", () => {
     ).to.be.fulfilled;
   });
 
-  it("Initialize prism program state", async () => {
+  it("Initialize beamsplitter program state", async () => {
     // Initialize prism
     const tx = await sdk.initialize({ owner: authority });
 
-    await expectTX(tx, "Initialize prism program state with owner as invoker.")
-      .to.be.fulfilled;
+    await expectTX(
+      tx,
+      "Initialize beamsplitter program state with owner as invoker."
+    ).to.be.fulfilled;
 
-    // Verify prism data
-    const [pdaKey, bump] = await generatePrismAddress();
-    const prismData = await sdk.fetchPrismData(pdaKey);
+    // Verify beamsplitter data
+    const [pdaKey, bump] = await generateBeamsplitterAddress();
+    const beamsplitterData = await sdk.fetchBeamsplitterData(pdaKey);
 
-    expect(prismData?.owner).to.eqAddress(authority);
-    expect(prismData?.bump).to.equal(bump);
+    expect(beamsplitterData?.owner).to.eqAddress(authority);
+    expect(beamsplitterData?.bump).to.equal(bump);
 
-    prism = pdaKey;
+    beamsplitter = pdaKey;
   });
 
-  it("Initializes a prism asset", async () => {
+  it("Initializes a prism etf", async () => {
     // Defines
     const mintKP = Keypair.generate();
     const mint = mintKP.publicKey;
 
     const initialSupply = new u64(100);
 
-    const assets: AssetData[] = [
+    const assets: AssetSource[] = [
       {
-        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        dataSource: { constant: { price: new BN(9), expo: 9 } },
         weight: new BN(4),
       },
       {
-        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        dataSource: { constant: { price: new BN(9), expo: 9 } },
         weight: new BN(1),
       },
       {
-        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        dataSource: { constant: { price: new BN(9), expo: 9 } },
         weight: new BN(2),
       },
     ];
 
     // Register token with 3 assets
     const tx = await sdk.registerToken({
-      prism,
+      beamsplitter,
       mintKP,
-      assets,
       authority,
       authorityKp: testSigner,
       initialSupply,
+      assets,
     });
 
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
 
     // Verify token data
-    const [tokenKey, bump] = await generatePrismTokenAddress(mint);
-    const tokenData = (await sdk.fetchPrismTokenData(
-      tokenKey
-    )) as PrismTokenData;
+    const [tokenKey, bump] = await generatePrismEtfAddress(mint);
+    const tokenData = (await sdk.fetchPrismEtfData(tokenKey)) as PrismEtfData;
 
-    expect(tokenData.prism).to.eqAddress(prism);
+    expect(tokenData.prismEtf).to.eqAddress(beamsplitter);
     expect(tokenData.authority).to.eqAddress(authority);
     expect(tokenData.bump).to.equal(bump);
     expect(tokenData.mint).to.eqAddress(mint);
     // TODO: Add custom deep compare for assets
 
-    // Verify mint authority is properly set to prism
+    // Verify mint authority is properly set to beamsplitter
     const mintAuthorityA = (await getMintInfo(provider, mint))
       .mintAuthority as PublicKey;
 
-    expect(mintAuthorityA).to.eqAddress(prism);
+    expect(mintAuthorityA).to.eqAddress(beamsplitter);
 
     // Verify ATA was created
-    const ataAddress = await getATAAddress({ mint, owner: prism });
+    const ataAddress = await getATAAddress({ mint, owner: beamsplitter });
 
     assert(
       (await provider.getAccountInfo(ataAddress)) !== null,
@@ -141,7 +143,7 @@ describe("splitcoin-prism", () => {
     );
   });
 
-  it("Convert between prisms", async () => {
+  it("Convert between prism etfs", async () => {
     // Defines
     const mintAkp = Keypair.generate();
     const mintBkp = Keypair.generate();
@@ -158,25 +160,25 @@ describe("splitcoin-prism", () => {
     const initialSupply = new u64(9);
     const conversionAmount = new BN(1);
 
-    const assetDataA: AssetData[] = [
+    const assetSourceA: AssetSource[] = [
       {
-        dataFeed: { constant: { price: priceA, expo: 9 } },
+        dataSource: { constant: { price: priceA, expo: 9 } },
         weight: weightA,
       },
     ];
 
-    const assetDataB: AssetData[] = [
+    const assetSourceB: AssetSource[] = [
       {
-        dataFeed: { constant: { price: priceB, expo: 9 } },
+        dataSource: { constant: { price: priceB, expo: 9 } },
         weight: weightB,
       },
     ];
 
     // Register token A
     const txA = await sdk.registerToken({
-      prism,
+      beamsplitter,
       mintKP: mintAkp,
-      assets: assetDataA,
+      assets: assetSourceA,
       authority,
       authorityKp: testSigner,
       initialSupply,
@@ -186,9 +188,9 @@ describe("splitcoin-prism", () => {
 
     // Register token B
     const txB = await sdk.registerToken({
-      prism,
+      beamsplitter,
       mintKP: mintBkp,
-      assets: assetDataB,
+      assets: assetSourceB,
       authority,
       authorityKp: testSigner,
     });
@@ -196,13 +198,13 @@ describe("splitcoin-prism", () => {
     await expectTX(txB, "Register token B").to.be.fulfilled;
 
     // Convert from A to B
-    const [tokenKeyA] = await generatePrismTokenAddress(mintA);
-    const [tokenKeyB] = await generatePrismTokenAddress(mintB);
+    const [tokenKeyA] = await generatePrismEtfAddress(mintA);
+    const [tokenKeyB] = await generatePrismEtfAddress(mintB);
 
     const convertTx = await sdk.convert({
-      prism,
-      fromPrism: tokenKeyA,
-      toPrism: tokenKeyB,
+      beamsplitter,
+      fromBeamsplitter: tokenKeyA,
+      toBeamsplitter: tokenKeyB,
       amount: conversionAmount,
     });
 
@@ -212,7 +214,7 @@ describe("splitcoin-prism", () => {
     ).to.be.fulfilled;
 
     // Verify token A supply
-    const tokenA = await getATAAddress({ mint: mintA, owner: prism });
+    const tokenA = await getATAAddress({ mint: mintA, owner: beamsplitter });
     const tokenAAccount = await getTokenAccount(provider, tokenA);
 
     assert(
@@ -221,11 +223,11 @@ describe("splitcoin-prism", () => {
     );
 
     // Verify token B supply
-    const tokenB = await getATAAddress({ mint: mintB, owner: prism });
+    const tokenB = await getATAAddress({ mint: mintB, owner: beamsplitter });
     const tokenBAccount = await getTokenAccount(provider, tokenB);
 
     expect(tokenBAccount.amount.toNumber()).to.equal(
-      getToAmount(assetDataA, assetDataB, conversionAmount.toNumber())
+      getToAmount(assetSourceA, assetSourceB, conversionAmount.toNumber())
     );
   });
 });

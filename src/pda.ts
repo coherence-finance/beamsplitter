@@ -3,18 +3,18 @@ import { PublicKey } from "@solana/web3.js";
 
 import { PROGRAM_ID } from "./constants";
 
-export const generatePrismAddress = (): Promise<[PublicKey, number]> => {
+export const generateBeamsplitterAddress = (): Promise<[PublicKey, number]> => {
   return PublicKey.findProgramAddress(
-    [utils.bytes.utf8.encode("Prism")],
+    [utils.bytes.utf8.encode("Beamsplitter")],
     PROGRAM_ID
   );
 };
 
-export const generatePrismTokenAddress = (
+export const generatePrismEtfAddress = (
   mint: PublicKey
 ): Promise<[PublicKey, number]> => {
   return PublicKey.findProgramAddress(
-    [utils.bytes.utf8.encode("PrismToken"), mint.toBuffer()],
+    [utils.bytes.utf8.encode("PrismEtf"), mint.toBuffer()],
     PROGRAM_ID
   );
 };

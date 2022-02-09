@@ -1,12 +1,12 @@
 [package]
-name = "splitcoin-prism"
+name = "coherence-beamsplitter"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "splitcoin_prism"
+name = "coherence_beamsplitter"
 
 [features]
 no-entrypoint = []

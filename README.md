@@ -1,5 +1,6 @@
-# Prism 
-Prism is Splitcoin's asset conversion platform built on Solana. This repo is for the on-chain program, if you are looking for Prism's client you should go to [insert client repo here](https://www.youtube.com/watch?v=xuCO7-DLCaA)
+# Beamsplitter
+
+Beamsplitter is Coherence's asset conversion platform built on Solana. This repo is for the on-chain program, if you are looking for Beamsplitter's client you should go to [insert client repo here](https://www.youtube.com/watch?v=xuCO7-DLCaA)
 
 ## Installation
 
@@ -31,13 +32,14 @@ Deploy the program with Anchor's [deploy](https://project-serum.github.io/anchor
 anchor deploy
 ```
 
-Prism is live 🎉.
+Beamsplitter is live 🎉.
 
 ## Testing
 
-Anchor, and therefore Prism, uses [ts-Mocha](https://github.com/piotrwitek/ts-mocha) a Typescript wrapper around [Mocha](https://mochajs.org/).
+Anchor, and therefore Beamsplitter, uses [ts-Mocha](https://github.com/piotrwitek/ts-mocha) a Typescript wrapper around [Mocha](https://mochajs.org/).
 
 Integration tests can be added under the tests directory. You can run tests with the `yarn test` command:
+
 ```bash
 yarn test
 ```

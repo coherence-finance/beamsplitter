@@ -1,12 +1,12 @@
-import type { AssetData } from "../src";
+import type { AssetSource } from "../src";
 
 // TODO: Support use of `expo` in here when it gets implemented in `utils.rs`
-export const getTokenValue = (assets: AssetData[]) => {
+export const getTokenValue = (assets: AssetSource[]) => {
   return assets.reduce(
     (
       acc,
       {
-        dataFeed: {
+        dataSource: {
           constant: { price },
         },
         weight,
@@ -19,8 +19,8 @@ export const getTokenValue = (assets: AssetData[]) => {
 };
 
 export const getToAmount = (
-  fromAssets: AssetData[],
-  toAssets: AssetData[],
+  fromAssets: AssetSource[],
+  toAssets: AssetSource[],
   fromAmount: number
 ) => {
   const fromValue = getTokenValue(fromAssets);
