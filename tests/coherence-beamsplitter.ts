@@ -16,7 +16,7 @@ import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
-import type { AssetData, PrismEtfData } from "../src";
+import type { AssetSource, PrismEtfData } from "../src";
 import {
   CoherenceBeamsplitterSDK,
   generateBeamsplitterAddress,
@@ -83,17 +83,17 @@ describe("coherence-beamsplitter", () => {
 
     const initialSupply = new u64(100);
 
-    const assets: AssetData[] = [
+    const assets: AssetSource[] = [
       {
-        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        dataSource: { constant: { price: new BN(9), expo: 9 } },
         weight: new BN(4),
       },
       {
-        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        dataSource: { constant: { price: new BN(9), expo: 9 } },
         weight: new BN(1),
       },
       {
-        dataFeed: { constant: { price: new BN(9), expo: 9 } },
+        dataSource: { constant: { price: new BN(9), expo: 9 } },
         weight: new BN(2),
       },
     ];
@@ -111,7 +111,7 @@ describe("coherence-beamsplitter", () => {
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
 
     // Verify token data
-    /*const [tokenKey, bump] = await generatePrismEtfAddress(mint);
+    const [tokenKey, bump] = await generatePrismEtfAddress(mint);
     const tokenData = (await sdk.fetchPrismEtfData(tokenKey)) as PrismEtfData;
 
     expect(tokenData.prismEtf).to.eqAddress(beamsplitter);
@@ -140,7 +140,7 @@ describe("coherence-beamsplitter", () => {
     assert(
       tokenAccount.amount.eq(initialSupply),
       "Initial supply not allocated"
-    );*/
+    );
   });
 
   it("Convert between prism etfs", async () => {
@@ -160,16 +160,16 @@ describe("coherence-beamsplitter", () => {
     const initialSupply = new u64(9);
     const conversionAmount = new BN(1);
 
-    const assetDataA: AssetData[] = [
+    const assetSourceA: AssetSource[] = [
       {
-        dataFeed: { constant: { price: priceA, expo: 9 } },
+        dataSource: { constant: { price: priceA, expo: 9 } },
         weight: weightA,
       },
     ];
 
-    const assetDataB: AssetData[] = [
+    const assetSourceB: AssetSource[] = [
       {
-        dataFeed: { constant: { price: priceB, expo: 9 } },
+        dataSource: { constant: { price: priceB, expo: 9 } },
         weight: weightB,
       },
     ];
@@ -178,7 +178,7 @@ describe("coherence-beamsplitter", () => {
     const txA = await sdk.registerToken({
       beamsplitter,
       mintKP: mintAkp,
-      assets: assetDataA,
+      assets: assetSourceA,
       authority,
       authorityKp: testSigner,
       initialSupply,
@@ -190,7 +190,7 @@ describe("coherence-beamsplitter", () => {
     const txB = await sdk.registerToken({
       beamsplitter,
       mintKP: mintBkp,
-      assets: assetDataB,
+      assets: assetSourceB,
       authority,
       authorityKp: testSigner,
     });
@@ -227,7 +227,7 @@ describe("coherence-beamsplitter", () => {
     const tokenBAccount = await getTokenAccount(provider, tokenB);
 
     expect(tokenBAccount.amount.toNumber()).to.equal(
-      getToAmount(assetDataA, assetDataB, conversionAmount.toNumber())
+      getToAmount(assetSourceA, assetSourceB, conversionAmount.toNumber())
     );
   });
 });

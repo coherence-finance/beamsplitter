@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::asset_data::{AssetData, Feed};
+use crate::asset_source::{AssetSource, Source};
 
 /// Contains the info of the prism etf. Immutable.
 #[account]
@@ -16,8 +16,8 @@ pub struct PrismEtf {
     pub mint: Pubkey,
     // TODO: replace 8 with shared max size
     // TODO: find way to have optional serialization
-    /// [AssetData] array
-    pub assets: [AssetData; 8],
+    /// [AssetSource] array
+    pub assets: [AssetSource; 8],
 }
 
 impl Default for PrismEtf {
@@ -29,8 +29,8 @@ impl Default for PrismEtf {
             authority: Pubkey::default(),
             bump: u8::default(),
             mint: Pubkey::default(),
-            assets: [AssetData {
-                data_feed: Feed::Constant { price: 0, expo: 0 },
+            assets: [AssetSource {
+                data_source: Source::Constant { price: 0, expo: 0 },
                 weight: 0,
             }; 8],
         }

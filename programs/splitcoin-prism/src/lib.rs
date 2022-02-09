@@ -1,11 +1,11 @@
-pub mod asset_data;
+pub mod asset_source;
 pub mod context;
 pub mod errors;
 pub mod state;
 pub mod util;
 
 use anchor_lang::prelude::*;
-use asset_data::*;
+use asset_source::*;
 use context::*;
 use errors::BeamsplitterErrors;
 use util::token_value;
@@ -16,7 +16,7 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 pub mod coherence_beamsplitter {
 
     use anchor_spl::token::{accessor::authority, burn, mint_to, Burn, MintTo};
-    use asset_data::AssetData;
+    use asset_source::AssetSource;
 
     use super::*;
 
@@ -35,7 +35,7 @@ pub mod coherence_beamsplitter {
     pub fn register_token(
         ctx: Context<RegisterToken>,
         bump: u8,
-        assets: Vec<AssetData>,
+        assets: Vec<AssetSource>,
     ) -> ProgramResult {
         let prism_etf = &mut ctx.accounts.prism_etf;
         let prism_metadata = &ctx.accounts.beamsplitter;

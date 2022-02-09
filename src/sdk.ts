@@ -24,7 +24,7 @@ import { IDL } from "../target/types/coherence_beamsplitter";
 import { PROGRAM_ID } from "./constants";
 import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
 import type {
-  AssetData,
+  AssetSource,
   BeamsplitterData,
   BeamsplitterProgram,
   PrismEtfData,
@@ -90,7 +90,7 @@ export class CoherenceBeamsplitterSDK {
     authorityKp: Keypair;
     // TODO: Remove later. Here to reduce testing redundancy
     initialSupply?: u64;
-    assets: AssetData[];
+    assets: AssetSource[];
   }): Promise<TransactionEnvelope> {
     const [prismEtfKey, bump] = await generatePrismEtfAddress(mintKP.publicKey);
 

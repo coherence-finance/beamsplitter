@@ -10,7 +10,7 @@ export type BeamsplitterTypes = AnchorTypes<
     beamsplitter: BeamsplitterData;
   },
   {
-    feed: Feed;
+    source: Source;
   }
 >;
 
@@ -21,15 +21,15 @@ export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 
 export type Defined = BeamsplitterTypes["Defined"];
 
-export interface ConstantValueFeed {
+export interface ConstantValueSource {
   constant: {
     price: BN;
     expo: number;
   };
 }
 
-export type Feed = ConstantValueFeed;
-export interface AssetData {
-  dataFeed: Feed;
+export type Source = ConstantValueSource;
+export interface AssetSource {
+  dataSource: Source;
   weight: BN;
 }

@@ -49,7 +49,7 @@ pub struct RegisterToken<'info> {
         bump = beamsplitter.bump,
     )]
     pub beamsplitter: Account<'info, Beamsplitter>,
-    /// [Mint] of the [PrismETF].
+    /// [Mint] of the [PrismEtf].
     pub token_mint: Account<'info, Mint>,
     /// The [System] program.
     pub system_program: Program<'info, System>,
@@ -73,7 +73,7 @@ pub struct Convert<'info> {
         ],
         bump = from_token.bump
     )]
-    /// The [PrismETF] [Account] used for calculating the incoming tokens to burn
+    /// The [PrismEtf] [Account] used for calculating the incoming tokens to burn
     pub from_token: Box<Account<'info, PrismEtf>>,
 
     /// The [Mint] of the burned tokens
@@ -91,7 +91,7 @@ pub struct Convert<'info> {
         ],
         bump = to_token.bump
     )]
-    /// The [PrismETF] [Account] used for calculating the outgoing tokens to mint
+    /// The [PrismEtf] [Account] used for calculating the outgoing tokens to mint
     pub to_token: Box<Account<'info, PrismEtf>>,
 
     /// The [Mint] of the minted tokens
