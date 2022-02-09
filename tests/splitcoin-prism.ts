@@ -1,5 +1,4 @@
 import { Provider, setProvider } from "@project-serum/anchor";
-import MarketAccounts from "@project-serum/serum/lib/markets.json";
 import { makeSaberProvider } from "@saberhq/anchor-contrib";
 import { chaiSolana, expectTX } from "@saberhq/chai-solana";
 import type { Provider as SaberProvider } from "@saberhq/solana-contrib";
@@ -10,7 +9,7 @@ import {
   getTokenAccount,
   u64,
 } from "@saberhq/token-utils";
-import { Connection, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
@@ -20,7 +19,7 @@ import {
   generatePrismTokenAddress,
   SplitcoinPrismSDK,
 } from "../src";
-import { getToAmount } from "./utils";
+import { getToAmount, MAINNET_CONNECTION } from "./utils";
 
 chai.use(chaiSolana);
 
@@ -235,28 +234,46 @@ describe("splitcoin-prism", () => {
     expect(latestDexAddr).to.be.eqAddress(v3);
   });
 
-  it("Print price of SOL/USDC from Raydium MKT Account", async () => {
+  it("Print price of BTC/USDC from Raydium MKT Account", async () => {
     const market = "BTC/USDC";
-    /*const pairInfo = Array.from<{
-      name: string;
-      address: string;
-      programId: string;
-    }>(MarketAccounts).find((mktAccount) => {
-      if (mktAccount.name === market) {
-        return mktAccount;
-      }
-    });*/
+
     const pairInfo = {
       address: "A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw",
     };
-
-    const devnet = new Connection("https://api.mainnet-beta.solana.com");
 
     if (!pairInfo) throw new Error(`Could not locate ${market} in Market Json`);
     const marketAccount: PublicKey = new PublicKey(pairInfo?.address);
 
     const bidAccount = await sdk.loadMarketAndBidAccounts({
-      connection: devnet,
+      connection: MAINNET_CONNECTION,
+      marketAccount: marketAccount,
+    });
+
+    const priceAcc = Keypair.generate();
+
+    await expectTX(
+      sdk.getPrice({
+        owner: authority,
+        price: priceAcc.publicKey,
+        priceSigner: priceAcc,
+        market: marketAccount,
+        bids: bidAccount,
+      })
+    ).to.be.fulfilled;
+  });
+
+  it("Print price of SOL/USDC from Raydium MKT Account", async () => {
+    const market = "SOL/USDC";
+
+    const pairInfo = {
+      address: "9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT",
+    };
+
+    if (!pairInfo) throw new Error(`Could not locate ${market} in Market Json`);
+    const marketAccount: PublicKey = new PublicKey(pairInfo?.address);
+
+    const bidAccount = await sdk.loadMarketAndBidAccounts({
+      connection: MAINNET_CONNECTION,
       marketAccount: marketAccount,
     });
 

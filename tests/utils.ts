@@ -1,4 +1,10 @@
+import { Connection } from "@solana/web3.js";
+
 import type { AssetData } from "../src";
+
+export const MAINNET_CONNECTION = new Connection(
+  "https://api.mainnet-beta.solana.com"
+);
 
 // TODO: Support use of `expo` in here when it gets implemented in `utils.rs`
 export const getTokenValue = (assets: AssetData[]) => {
