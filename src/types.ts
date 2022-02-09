@@ -1,25 +1,25 @@
 import type { AnchorTypes } from "@saberhq/anchor-contrib";
-import BN from "bn.js";
+import type BN from "bn.js";
 
-import type { SplitcoinPrism } from "../target/types/splitcoin_prism";
+import type { CoherenceBeamsplitter } from "../target/types/coherence_beamsplitter";
 
-export type PrismTypes = AnchorTypes<
-  SplitcoinPrism,
+export type BeamsplitterTypes = AnchorTypes<
+  CoherenceBeamsplitter,
   {
-    prismToken: PrismTokenData;
-    prism: PrismData;
+    prismEtf: PrismEtfData;
+    beamsplitter: BeamsplitterData;
   },
   {
     feed: Feed;
   }
 >;
 
-type Accounts = PrismTypes["Accounts"];
-export type PrismTokenData = Accounts["prismToken"];
-export type PrismData = Accounts["prism"];
-export type PrismProgram = PrismTypes["Program"];
+type Accounts = BeamsplitterTypes["Accounts"];
+export type PrismEtfData = Accounts["prismEtf"];
+export type BeamsplitterData = Accounts["beamsplitter"];
+export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 
-export type Defined = PrismTypes["Defined"];
+export type Defined = BeamsplitterTypes["Defined"];
 
 export interface ConstantValueFeed {
   constant: {

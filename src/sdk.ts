@@ -20,27 +20,27 @@ import type { PublicKey, Signer } from "@solana/web3.js";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import type BN from "bn.js";
 
-import { IDL } from "../target/types/splitcoin_prism";
+import { IDL } from "../target/types/coherence_beamsplitter";
 import { PROGRAM_ID } from "./constants";
-import { generatePrismAddress, generatePrismTokenAddress } from "./pda";
+import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
 import type {
   AssetData,
-  PrismData,
-  PrismProgram,
-  PrismTokenData,
+  BeamsplitterData,
+  BeamsplitterProgram,
+  PrismEtfData,
 } from "./types";
 
-export class SplitcoinPrismSDK {
+export class CoherenceBeamsplitterSDK {
   constructor(
     readonly provider: AugmentedProvider,
-    readonly program: PrismProgram
+    readonly program: BeamsplitterProgram
   ) {}
 
-  static load({ provider }: { provider: Provider }): SplitcoinPrismSDK {
+  static load({ provider }: { provider: Provider }): CoherenceBeamsplitterSDK {
     const aug = new SolanaAugmentedProvider(provider);
-    return new SplitcoinPrismSDK(
+    return new CoherenceBeamsplitterSDK(
       aug,
-      newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
+      newProgram<BeamsplitterProgram>(IDL, PROGRAM_ID, aug)
     );
   }
 
@@ -50,11 +50,11 @@ export class SplitcoinPrismSDK {
   }: {
     provider: Provider;
     signer: Signer;
-  }): SplitcoinPrismSDK {
+  }): CoherenceBeamsplitterSDK {
     const aug = new SolanaAugmentedProvider(provider).withSigner(signer);
-    return new SplitcoinPrismSDK(
+    return new CoherenceBeamsplitterSDK(
       aug,
-      newProgram<PrismProgram>(IDL, PROGRAM_ID, aug)
+      newProgram<BeamsplitterProgram>(IDL, PROGRAM_ID, aug)
     );
   }
 
@@ -63,11 +63,11 @@ export class SplitcoinPrismSDK {
   }: {
     owner?: PublicKey;
   }): Promise<TransactionEnvelope> {
-    const [prismTokenKey, bump] = await generatePrismAddress();
+    const [prismEtfKey, bump] = await generateBeamsplitterAddress();
     return new TransactionEnvelope(this.provider, [
       this.program.instruction.initialize(bump, {
         accounts: {
-          prism: prismTokenKey,
+          beamsplitter: prismEtfKey,
           owner: owner,
           systemProgram: SystemProgram.programId,
         },
@@ -77,14 +77,14 @@ export class SplitcoinPrismSDK {
 
   // TODO: Pass multisig in so we can use it as authority for ATA
   async registerToken({
-    prism,
+    beamsplitter,
     mintKP = Keypair.generate(),
     authority = this.provider.wallet.publicKey,
     authorityKp,
     initialSupply,
     assets,
   }: {
-    prism: PublicKey;
+    beamsplitter: PublicKey;
     mintKP?: Keypair;
     authority?: PublicKey;
     authorityKp: Keypair;
@@ -92,9 +92,7 @@ export class SplitcoinPrismSDK {
     initialSupply?: u64;
     assets: AssetData[];
   }): Promise<TransactionEnvelope> {
-    const [prismTokenKey, bump] = await generatePrismTokenAddress(
-      mintKP.publicKey
-    );
+    const [prismEtfKey, bump] = await generatePrismEtfAddress(mintKP.publicKey);
 
     const initMintTX = await createInitMintInstructions({
       provider: this.provider,
@@ -107,21 +105,24 @@ export class SplitcoinPrismSDK {
       await getOrCreateATA({
         provider: this.provider,
         mint: mintKP.publicKey,
-        owner: prism,
+        owner: beamsplitter,
       });
 
-    const initPrismAndCreateAtaTx = new TransactionEnvelope(this.provider, [
-      this.program.instruction.registerToken(bump, assets, {
-        accounts: {
-          prism,
-          prismToken: prismTokenKey,
-          adminAuthority: authority,
-          tokenMint: mintKP.publicKey,
-          systemProgram: SystemProgram.programId,
-        },
-      }),
-      ...(ataInstruction ? [ataInstruction] : []),
-    ]);
+    const initBeamsplitterAndCreateAtaTx = new TransactionEnvelope(
+      this.provider,
+      [
+        this.program.instruction.registerToken(bump, assets, {
+          accounts: {
+            beamsplitter,
+            prismEtf: prismEtfKey,
+            adminAuthority: authority,
+            tokenMint: mintKP.publicKey,
+            systemProgram: SystemProgram.programId,
+          },
+        }),
+        ...(ataInstruction ? [ataInstruction] : []),
+      ]
+    );
 
     const setAuthTx = new TransactionEnvelope(
       this.provider,
@@ -129,7 +130,7 @@ export class SplitcoinPrismSDK {
         Token.createSetAuthorityInstruction(
           TOKEN_PROGRAM_ID,
           mintKP.publicKey,
-          prism,
+          beamsplitter,
           "MintTokens",
           authority,
           []
@@ -138,7 +139,7 @@ export class SplitcoinPrismSDK {
       [authorityKp]
     );
 
-    let tx = initMintTX.combine(initPrismAndCreateAtaTx);
+    let tx = initMintTX.combine(initBeamsplitterAndCreateAtaTx);
 
     if (initialSupply && authorityKp) {
       tx = tx.combine(
@@ -156,49 +157,51 @@ export class SplitcoinPrismSDK {
   }
 
   async convert({
-    prism,
-    fromPrism,
-    toPrism,
+    beamsplitter,
+    fromBeamsplitter,
+    toBeamsplitter,
     amount,
   }: {
-    prism: PublicKey;
-    fromPrism: PublicKey;
-    toPrism: PublicKey;
+    beamsplitter: PublicKey;
+    fromBeamsplitter: PublicKey;
+    toBeamsplitter: PublicKey;
     amount: BN;
   }): Promise<TransactionEnvelope> {
-    const fromPrismAccount = await this.fetchPrismTokenData(fromPrism);
-    if (!fromPrismAccount) {
+    const fromBeamsplitterAccount = await this.fetchPrismEtfData(
+      fromBeamsplitter
+    );
+    if (!fromBeamsplitterAccount) {
       throw new Error(
-        "Couldn't retrive fromPrism account. Check Prism was registered."
+        "Couldn't retrive fromBeamsplitter account. Check Beamsplitter was registered."
       );
     }
 
-    const toPrismAccount = await this.fetchPrismTokenData(toPrism);
-    if (!toPrismAccount) {
+    const toBeamsplitterAccount = await this.fetchPrismEtfData(toBeamsplitter);
+    if (!toBeamsplitterAccount) {
       throw new Error(
-        "Couldn't retrive toPrism account. Check Prism was registered."
+        "Couldn't retrive toBeamsplitter account. Check Beamsplitter was registered."
       );
     }
 
     const fromTokenAccount = await getATAAddress({
-      mint: fromPrismAccount.mint,
-      owner: prism,
+      mint: fromBeamsplitterAccount.mint,
+      owner: beamsplitter,
     });
     const toTokenAccount = await getATAAddress({
-      mint: toPrismAccount.mint,
-      owner: prism,
+      mint: toBeamsplitterAccount.mint,
+      owner: beamsplitter,
     });
 
     const convertTx = new TransactionEnvelope(this.provider, [
       this.program.instruction.convert(amount, {
         accounts: {
-          prism,
+          beamsplitter,
           from: fromTokenAccount,
-          fromToken: fromPrism,
-          fromMint: fromPrismAccount.mint,
+          fromToken: fromBeamsplitter,
+          fromMint: fromBeamsplitterAccount.mint,
           to: toTokenAccount,
-          toToken: toPrism,
-          toMint: toPrismAccount.mint,
+          toToken: toBeamsplitter,
+          toMint: toBeamsplitterAccount.mint,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         },
@@ -207,14 +210,18 @@ export class SplitcoinPrismSDK {
     return convertTx;
   }
 
-  // Fetch the main Prism state account
-  async fetchPrismData(key: PublicKey): Promise<PrismData | null> {
-    return (await this.program.account.prism.fetchNullable(key)) as PrismData;
+  // Fetch the main Beamsplitter state account
+  async fetchBeamsplitterData(
+    key: PublicKey
+  ): Promise<BeamsplitterData | null> {
+    return (await this.program.account.beamsplitter.fetchNullable(
+      key
+    )) as BeamsplitterData;
   }
 
-  async fetchPrismTokenData(key: PublicKey): Promise<PrismTokenData | null> {
-    return (await this.program.account.prismToken.fetchNullable(
+  async fetchPrismEtfData(key: PublicKey): Promise<PrismEtfData | null> {
+    return (await this.program.account.prismEtf.fetchNullable(
       key
-    )) as PrismTokenData;
+    )) as PrismEtfData;
   }
 }

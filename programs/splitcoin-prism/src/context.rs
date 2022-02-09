@@ -13,13 +13,13 @@ pub struct Initialize<'info> {
     #[account(
         init,
         seeds = [
-            b"Prism".as_ref(),
+            b"Beamsplitter".as_ref(),
         ],
         bump = bump,
         payer = owner,
     )]
-    pub prism: Account<'info, Prism>,
-    /// The owner of the Prism program
+    pub beamsplitter: Account<'info, Beamsplitter>,
+    /// The owner of the Beamsplitter program
     pub owner: Signer<'info>,
     /// The [System] program.
     pub system_program: Program<'info, System>,
@@ -28,28 +28,28 @@ pub struct Initialize<'info> {
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct RegisterToken<'info> {
-    /// Information about the [PrismToken].
+    /// Information about the [PrismEtf].
     #[account(
         init,
         seeds = [
-            b"PrismToken".as_ref(),
+            b"PrismEtf".as_ref(),
             token_mint.key().to_bytes().as_ref()
         ],
         bump = bump,
         payer = admin_authority,
     )]
-    pub prism_token: Box<Account<'info, PrismToken>>,
-    /// Authority that has admin rights over the [PrismToken].
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+    /// Authority that has admin rights over the [PrismEtf].
     pub admin_authority: Signer<'info>,
     /// The central mint authority for all registered tokens, used for checks
     #[account(
         seeds = [
-            b"Prism".as_ref(),
+            b"Beamsplitter".as_ref(),
         ],
-        bump = prism.bump,
+        bump = beamsplitter.bump,
     )]
-    pub prism: Account<'info, Prism>,
-    /// [Mint] of the [PrismToken].
+    pub beamsplitter: Account<'info, Beamsplitter>,
+    /// [Mint] of the [PrismETF].
     pub token_mint: Account<'info, Mint>,
     /// The [System] program.
     pub system_program: Program<'info, System>,
@@ -60,46 +60,46 @@ pub struct Convert<'info> {
     /// The [Prism] authority account
     #[account(
         seeds = [
-            b"Prism".as_ref(),
+            b"Beamsplitter".as_ref(),
         ],
-        bump = prism.bump,
+        bump = beamsplitter.bump,
     )]
-    pub prism: Account<'info, Prism>,
+    pub beamsplitter: Account<'info, Beamsplitter>,
 
     #[account(
         seeds = [
-            b"PrismToken".as_ref(),
+            b"PrismEtf".as_ref(),
             from_mint.key().to_bytes().as_ref()
         ],
         bump = from_token.bump
     )]
-    /// The [PrismToken] [Account] used for calculating the incoming tokens to burn
-    pub from_token: Box<Account<'info, PrismToken>>,
+    /// The [PrismETF] [Account] used for calculating the incoming tokens to burn
+    pub from_token: Box<Account<'info, PrismEtf>>,
 
     /// The [Mint] of the burned tokens
     #[account(mut)]
     pub from_mint: Account<'info, Mint>,
 
     /// The paying [TokenAccount]
-    #[account(mut, associated_token::mint = from_mint, associated_token::authority = prism)]
+    #[account(mut, associated_token::mint = from_mint, associated_token::authority = beamsplitter)]
     pub from: Account<'info, TokenAccount>,
 
     #[account(
         seeds = [
-            b"PrismToken".as_ref(),
+            b"PrismEtf".as_ref(),
             to_mint.key().to_bytes().as_ref()
         ],
         bump = to_token.bump
     )]
-    /// The [PrismToken] [Account] used for calculating the outgoing tokens to mint
-    pub to_token: Box<Account<'info, PrismToken>>,
+    /// The [PrismETF] [Account] used for calculating the outgoing tokens to mint
+    pub to_token: Box<Account<'info, PrismEtf>>,
 
     /// The [Mint] of the minted tokens
     #[account(mut)]
     pub to_mint: Account<'info, Mint>,
 
     /// The receiving [Account]
-    #[account(mut, associated_token::mint = to_mint, associated_token::authority = prism)]
+    #[account(mut, associated_token::mint = to_mint, associated_token::authority = beamsplitter)]
     pub to: Account<'info, TokenAccount>,
 
     /// The [Token] [Program].

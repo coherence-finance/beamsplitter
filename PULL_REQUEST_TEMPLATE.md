@@ -1,6 +1,6 @@
 ## JIRA
 
-Ignore this step if you are not an internal Splitcoin team member.
+Ignore this step if you are not an internal Coherence team member.
 [INSERT-JIRA-TICKET-ID-HERE](https://split-coin.atlassian.net/browse/INSERT-JIRA-TICKET-ID-HERE)
 
 ## Problem
