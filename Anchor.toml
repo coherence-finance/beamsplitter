@@ -13,3 +13,5 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
 
 [test]
 startup_wait = 30000
+clone = [{address = "A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw" }, { address = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin" }, { address = "6wLt7CX1zZdFpa6uGJJpZfzWvG6W9rxXjquJDYiFwf9K" }]
+validator = {url = "m"}
