@@ -1,5 +1,4 @@
 import type { AnchorTypes } from "@saberhq/anchor-contrib";
-import type BN from "bn.js";
 
 import type { CoherenceBeamsplitter } from "../target/types/coherence_beamsplitter";
 
@@ -8,9 +7,6 @@ export type BeamsplitterTypes = AnchorTypes<
   {
     prismEtf: PrismEtfData;
     beamsplitter: BeamsplitterData;
-  },
-  {
-    source: Source;
   }
 >;
 
@@ -20,16 +16,4 @@ export type BeamsplitterData = Accounts["beamsplitter"];
 export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 
 export type Defined = BeamsplitterTypes["Defined"];
-
-export interface ConstantValueSource {
-  constant: {
-    price: BN;
-    expo: number;
-  };
-}
-
-export type Source = ConstantValueSource;
-export interface AssetSource {
-  dataSource: Source;
-  weight: BN;
-}
+export type WeightedToken = Defined["WeightedToken"];

@@ -9,10 +9,8 @@ import {
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
   createMintToInstruction,
-  getATAAddress,
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
@@ -20,13 +18,12 @@ import type { u64 } from "@solana/spl-token";
 import { Token } from "@solana/spl-token";
 import type { Connection, Signer } from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import type BN from "bn.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
+import type { WeightedToken } from ".";
 import { PROGRAM_ID } from "./constants";
 import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
 import type {
-  AssetSource,
   BeamsplitterData,
   BeamsplitterProgram,
   PrismEtfData,
@@ -84,7 +81,7 @@ export class CoherenceBeamsplitterSDK {
     authority = this.provider.wallet.publicKey,
     authorityKp,
     initialSupply,
-    assets,
+    weightedTokens,
   }: {
     beamsplitter: PublicKey;
     mintKP?: Keypair;
@@ -92,7 +89,7 @@ export class CoherenceBeamsplitterSDK {
     authorityKp: Keypair;
     // TODO: Remove later. Here to reduce testing redundancy
     initialSupply?: u64;
-    assets: AssetSource[];
+    weightedTokens: WeightedToken[];
   }): Promise<TransactionEnvelope> {
     const [prismEtfKey, bump] = await generatePrismEtfAddress(mintKP.publicKey);
 
@@ -113,7 +110,7 @@ export class CoherenceBeamsplitterSDK {
     const initBeamsplitterAndCreateAtaTx = new TransactionEnvelope(
       this.provider,
       [
-        this.program.instruction.registerToken(bump, assets, {
+        this.program.instruction.registerToken(bump, weightedTokens, {
           accounts: {
             beamsplitter,
             prismEtf: prismEtfKey,
@@ -156,60 +153,6 @@ export class CoherenceBeamsplitterSDK {
     }
 
     return tx.combine(setAuthTx);
-  }
-
-  async convert({
-    beamsplitter,
-    fromBeamsplitter,
-    toBeamsplitter,
-    amount,
-  }: {
-    beamsplitter: PublicKey;
-    fromBeamsplitter: PublicKey;
-    toBeamsplitter: PublicKey;
-    amount: BN;
-  }): Promise<TransactionEnvelope> {
-    const fromBeamsplitterAccount = await this.fetchPrismEtfData(
-      fromBeamsplitter
-    );
-    if (!fromBeamsplitterAccount) {
-      throw new Error(
-        "Couldn't retrive fromBeamsplitter account. Check Beamsplitter was registered."
-      );
-    }
-
-    const toBeamsplitterAccount = await this.fetchPrismEtfData(toBeamsplitter);
-    if (!toBeamsplitterAccount) {
-      throw new Error(
-        "Couldn't retrive toBeamsplitter account. Check Beamsplitter was registered."
-      );
-    }
-
-    const fromTokenAccount = await getATAAddress({
-      mint: fromBeamsplitterAccount.mint,
-      owner: beamsplitter,
-    });
-    const toTokenAccount = await getATAAddress({
-      mint: toBeamsplitterAccount.mint,
-      owner: beamsplitter,
-    });
-
-    const convertTx = new TransactionEnvelope(this.provider, [
-      this.program.instruction.convert(amount, {
-        accounts: {
-          beamsplitter,
-          from: fromTokenAccount,
-          fromToken: fromBeamsplitter,
-          fromMint: fromBeamsplitterAccount.mint,
-          to: toTokenAccount,
-          toToken: toBeamsplitter,
-          toMint: toBeamsplitterAccount.mint,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        },
-      }),
-    ]);
-    return convertTx;
   }
 
   getPrice({

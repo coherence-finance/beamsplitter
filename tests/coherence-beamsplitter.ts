@@ -13,13 +13,13 @@ import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
-import type { AssetSource, PrismEtfData } from "../src";
+import type { PrismEtfData, WeightedToken } from "../src";
 import {
   CoherenceBeamsplitterSDK,
   generateBeamsplitterAddress,
   generatePrismEtfAddress,
 } from "../src";
-import { getToAmount, MAINNET_CONNECTION } from "./utils";
+import { MAINNET_CONNECTION } from "./utils";
 
 chai.use(chaiSolana);
 
@@ -80,17 +80,17 @@ describe("coherence-beamsplitter", () => {
 
     const initialSupply = new u64(100);
 
-    const assets: AssetSource[] = [
+    const weightedTokens: WeightedToken[] = [
       {
-        dataSource: { constant: { price: new BN(9), expo: 9 } },
+        mint: new PublicKey(0),
         weight: new BN(4),
       },
       {
-        dataSource: { constant: { price: new BN(9), expo: 9 } },
+        mint: new PublicKey(0),
         weight: new BN(1),
       },
       {
-        dataSource: { constant: { price: new BN(9), expo: 9 } },
+        mint: new PublicKey(0),
         weight: new BN(2),
       },
     ];
@@ -102,7 +102,7 @@ describe("coherence-beamsplitter", () => {
       authority,
       authorityKp: testSigner,
       initialSupply,
-      assets,
+      weightedTokens,
     });
 
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
@@ -138,102 +138,6 @@ describe("coherence-beamsplitter", () => {
       tokenAccount.amount.eq(initialSupply),
       "Initial supply not allocated"
     );
-  });
-
-  it("Convert between prism etfs", async () => {
-    // Defines
-    const mintAkp = Keypair.generate();
-    const mintBkp = Keypair.generate();
-
-    const mintA = mintAkp.publicKey;
-    const mintB = mintBkp.publicKey;
-
-    const priceA = new BN(9);
-    const weightA = new BN(4);
-
-    const priceB = new BN(11);
-    const weightB = new BN(2);
-
-    const initialSupply = new u64(9);
-    const conversionAmount = new BN(1);
-
-    const assetSourceA: AssetSource[] = [
-      {
-        dataSource: { constant: { price: priceA, expo: 9 } },
-        weight: weightA,
-      },
-    ];
-
-    const assetSourceB: AssetSource[] = [
-      {
-        dataSource: { constant: { price: priceB, expo: 9 } },
-        weight: weightB,
-      },
-    ];
-
-    // Register token A
-    const txA = await sdk.registerToken({
-      beamsplitter,
-      mintKP: mintAkp,
-      assets: assetSourceA,
-      authority,
-      authorityKp: testSigner,
-      initialSupply,
-    });
-
-    await expectTX(txA, "Register token A").to.be.fulfilled;
-
-    // Register token B
-    const txB = await sdk.registerToken({
-      beamsplitter,
-      mintKP: mintBkp,
-      assets: assetSourceB,
-      authority,
-      authorityKp: testSigner,
-    });
-
-    await expectTX(txB, "Register token B").to.be.fulfilled;
-
-    // Convert from A to B
-    const [tokenKeyA] = await generatePrismEtfAddress(mintA);
-    const [tokenKeyB] = await generatePrismEtfAddress(mintB);
-
-    const convertTx = await sdk.convert({
-      beamsplitter,
-      fromBeamsplitter: tokenKeyA,
-      toBeamsplitter: tokenKeyB,
-      amount: conversionAmount,
-    });
-
-    await expectTX(
-      convertTx,
-      `Convert ${conversionAmount.toString()} of token A to token B`
-    ).to.be.fulfilled;
-
-    // Verify token A supply
-    const tokenA = await getATAAddress({ mint: mintA, owner: beamsplitter });
-    const tokenAAccount = await getTokenAccount(provider, tokenA);
-
-    assert(
-      tokenAAccount.amount.eq(initialSupply.sub(conversionAmount)),
-      "Incorrect token A supply"
-    );
-
-    // Verify token B supply
-    const tokenB = await getATAAddress({ mint: mintB, owner: beamsplitter });
-    const tokenBAccount = await getTokenAccount(provider, tokenB);
-
-    expect(tokenBAccount.amount.toNumber()).to.equal(
-      getToAmount(assetSourceA, assetSourceB, conversionAmount.toNumber())
-    );
-  });
-
-  it("Get latest Serum DEX version should be 3", () => {
-    const v3: PublicKey = new PublicKey(
-      "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"
-    );
-    const latestDexAddr = sdk.getLatestSerumDEXAddress();
-    expect(latestDexAddr).to.be.eqAddress(v3);
   });
 
   it("Print price of BTC/USDC from Raydium MKT Account", async () => {

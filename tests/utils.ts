@@ -1,36 +1,26 @@
 import { Connection } from "@solana/web3.js";
-import type { AssetSource } from "../src";
 
 export const MAINNET_CONNECTION = new Connection(
   "https://api.mainnet-beta.solana.com"
 );
 
 // TODO: Support use of `expo` in here when it gets implemented in `utils.rs`
-export const getTokenValue = (assets: AssetSource[]) => {
-  return assets.reduce(
-    (
-      acc,
-      {
-        dataSource: {
-          constant: { price },
-        },
-        weight,
-      }
-    ) => {
-      return acc + price.mul(weight).toNumber();
-    },
-    0
-  );
-};
+/*export const getWeightedTokensValue = (weightedTokens: WeightedToken[]) => {
+  return weightedTokens.reduce((acc, { mint, weight }) => {
 
-export const getToAmount = (
-  fromAssets: AssetSource[],
-  toAssets: AssetSource[],
+    return acc + price.mul(weight).toNumber();
+  }, 0);
+};*/
+
+/*export const getToAmount = (
+  fromWeightedTokens: WeightedToken[],
+  toWeightedTokens: WeightedToken[],
   fromAmount: number
 ) => {
-  const fromValue = getTokenValue(fromAssets);
-  const toValue = getTokenValue(toAssets);
+  const fromValue = getPrismEtfValue(fromWeightedTokens);
+  const toValue = getPrismEtfValue(toWeightedTokens);
 
   const effectiveValue = fromAmount * fromValue;
   return Math.floor(effectiveValue / toValue);
 };
+*/
