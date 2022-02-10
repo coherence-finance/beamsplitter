@@ -1,14 +1,15 @@
-pub mod constants;
+//pub mod anchor_swap;
 pub mod context;
 pub mod errors;
 pub mod state;
 pub mod util;
 
 use anchor_lang::prelude::*;
+//use anchor_swap::*;
 use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
-use util::*;
+use util::get_slab_price;
 
 declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
@@ -17,7 +18,6 @@ pub mod coherence_beamsplitter {
 
     use anchor_spl::token::accessor::authority;
     use serum_dex::state::MarketState;
-    use solana_program::pubkey::Pubkey;
 
     use super::*;
 
@@ -60,6 +60,36 @@ pub mod coherence_beamsplitter {
         }
 
         // TODO Add token address to a registry account
+
+        Ok(())
+    }
+
+    pub fn intialize_deposit(ctx: Context<InitializeDeposit>, bump: u8) -> ProgramResult {
+        let deposit = &mut ctx.accounts.deposit;
+        deposit.bump = bump;
+        deposit.depositor = ctx.accounts.payer.key();
+        Ok(())
+    }
+
+    pub fn buy(ctx: Context<Buy>, amount: u32) -> ProgramResult {
+        let deposit_token_account = &ctx.accounts.deposit_token;
+
+        if deposit_token_account.amount <= 0 {
+            return Err(BeamsplitterErrors::EmptyDeposit.into());
+        }
+
+        let weighted_tokens = &ctx.accounts.prism_etf.weighted_tokens;
+
+        // Sum all weights together using fold (reduce, essentially)
+        let weights_sum = weighted_tokens.iter().fold(0, |sum, weighted_token| {
+            return weighted_token.weight + sum;
+        });
+
+        for weighted_token in ctx.accounts.prism_etf.weighted_tokens {
+            let weight = weighted_token.weight;
+            let portion_amount =
+                (f64::from(weight) / f64::from(weights_sum) * f64::from(amount)) as u32;
+        }
 
         Ok(())
     }

@@ -1,15 +1,16 @@
-use anchor_lang::prelude::ProgramError;
-use serum_dex::critbit::Slab;
 use std::cmp;
 
+use anchor_lang::prelude::ProgramError;
+use serum_dex::critbit::Slab;
+
 // TODO replace 8 with shared max size
-/// Helper function that returns Prism token's value
-/*pub fn token_value(asset_sources: &[WeightedToken]) -> Result<i64, ProgramError> {
+/// Helper function that returns Prism etf's value
+/*pub fn token_value(asset_source: &[AssetSource; 8]) -> i64 {
     let mut sum: i64 = 0;
-    asset_sources.iter().for_each(|asset| {
+    asset_source.iter().for_each(|asset| {
         sum += asset.data_source.get_price().price * asset.weight;
     });
-    Ok(sum)
+    sum
 }*/
 
 pub fn get_slab_price(bids: &Slab) -> Result<u64, ProgramError> {

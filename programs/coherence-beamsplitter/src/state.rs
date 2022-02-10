@@ -14,14 +14,21 @@ pub struct PrismEtf {
     pub mint: Pubkey,
     // TODO: replace 8 with shared max size
     // TODO: find way to have optional serialization
-    /// [AssetSource] array
+    /// [WeightedToken] array
     pub weighted_tokens: [WeightedToken; 8],
 }
 
-#[derive(AnchorDeserialize, AnchorSerialize, Default, Debug, Clone, Copy)]
+#[derive(Debug, Default, Copy, AnchorDeserialize, AnchorSerialize, Clone)]
 pub struct WeightedToken {
     pub mint: Pubkey,
-    pub weight: u64,
+    pub weight: u32,
+}
+
+#[account]
+#[derive(Debug, Default, Copy)]
+pub struct Deposit {
+    pub depositor: Pubkey,
+    pub bump: u8,
 }
 
 impl Default for PrismEtf {
