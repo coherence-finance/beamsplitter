@@ -3,20 +3,27 @@ use pyth_client::PriceConf;
 use anchor_lang::prelude::{AnchorDeserialize, AnchorSerialize, Pubkey};
 
 #[derive(Debug, Clone, Copy, Default, AnchorDeserialize, AnchorSerialize)]
-pub struct AssetData {
-    pub data_feed: Feed,
+pub struct AssetSource {
+    pub data_source: Source,
     pub weight: i64,
 }
 
 #[derive(Debug, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
-pub enum Feed {
-    Constant { price: i64, expo: i32 },
-    DexFeed { last_price: i64, expo: i32, market_account: Pubkey },
+pub enum Source {
+    Constant {
+        price: i64,
+        expo: i32,
+    },
+    Dex {
+        last_price: i64,
+        expo: i32,
+        market_account: Pubkey,
+    },
 }
 
-impl Default for Feed {
+impl Default for Source {
     fn default() -> Self {
-        Feed::Constant { price: 0, expo: 0 }
+        Source::Constant { price: 0, expo: 0 }
     }
 }
 
@@ -24,10 +31,10 @@ pub trait ReadablePrice {
     fn get_price(&self) -> PriceConf;
 }
 
-impl ReadablePrice for Feed {
+impl ReadablePrice for Source {
     #[inline(never)]
     fn get_price(&self) -> PriceConf {
-        use Feed::*;
+        use Source::*;
 
         match *self {
             Constant { price, expo } => PriceConf {
@@ -35,11 +42,15 @@ impl ReadablePrice for Feed {
                 conf: 0,
                 expo,
             },
-            DexFeed { last_price, expo, market_account } => PriceConf {
+            Dex {
+                last_price,
+                expo,
+                market_account,
+            } => PriceConf {
                 price: last_price,
                 conf: 0,
                 expo,
-            }
+            },
         }
     }
 }

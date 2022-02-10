@@ -1,14 +1,14 @@
 use std::cmp;
 
-use crate::asset_data::{AssetData, ReadablePrice};
+use crate::asset_source::*;
 use serum_dex::critbit::Slab;
 
 // TODO replace 8 with shared max size
 /// Helper function that returns Prism token's value
-pub fn token_value(asset_data: &[AssetData; 8]) -> i64 {
+pub fn token_value(asset_sources: &[AssetSource]) -> i64 {
     let mut sum: i64 = 0;
-    asset_data.iter().for_each(|asset| {
-        sum += asset.data_feed.get_price().price * asset.weight;
+    asset_sources.iter().for_each(|asset| {
+        sum += asset.data_source.get_price().price * asset.weight;
     });
     sum
 }
