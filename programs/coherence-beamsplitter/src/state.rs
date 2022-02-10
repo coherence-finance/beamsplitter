@@ -1,7 +1,5 @@
 use anchor_lang::prelude::*;
 
-use crate::asset_source::{AssetSource, Source};
-
 /// Contains the info of the prism etf. Immutable.
 #[account]
 #[derive(Debug)]
@@ -17,7 +15,13 @@ pub struct PrismEtf {
     // TODO: replace 8 with shared max size
     // TODO: find way to have optional serialization
     /// [AssetSource] array
-    pub assets: [AssetSource; 8],
+    pub weighted_tokens: [WeightedToken; 8],
+}
+
+#[derive(AnchorDeserialize, AnchorSerialize, Default, Debug, Clone, Copy)]
+pub struct WeightedToken {
+    pub mint: Pubkey,
+    pub weight: u64,
 }
 
 impl Default for PrismEtf {
@@ -29,8 +33,8 @@ impl Default for PrismEtf {
             authority: Pubkey::default(),
             bump: u8::default(),
             mint: Pubkey::default(),
-            assets: [AssetSource {
-                data_source: Source::Constant { price: 0, expo: 0 },
+            weighted_tokens: [WeightedToken {
+                mint: Pubkey::default(),
                 weight: 0,
             }; 8],
         }
@@ -44,4 +48,10 @@ pub struct Beamsplitter {
     pub owner: Pubkey,
     /// Bump seed. Stored for find_program_address on-chain performance
     pub bump: u8,
+}
+
+#[account]
+#[derive(Copy, Debug, Default)]
+pub struct PriceConfig {
+    pub price: u64,
 }

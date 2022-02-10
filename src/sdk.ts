@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { Market } from "@project-serum/serum";
+import { PROGRAM_LAYOUT_VERSIONS } from "@project-serum/serum/lib/tokens_and_markets";
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
 import {
@@ -7,24 +9,21 @@ import {
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
   createMintToInstruction,
-  getATAAddress,
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import type { u64 } from "@solana/spl-token";
 import { Token } from "@solana/spl-token";
-import type { PublicKey, Signer } from "@solana/web3.js";
-import { Keypair, SystemProgram } from "@solana/web3.js";
-import type BN from "bn.js";
+import type { Connection, Signer } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
+import type { WeightedToken } from ".";
 import { PROGRAM_ID } from "./constants";
 import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
 import type {
-  AssetSource,
   BeamsplitterData,
   BeamsplitterProgram,
   PrismEtfData,
@@ -82,7 +81,7 @@ export class CoherenceBeamsplitterSDK {
     authority = this.provider.wallet.publicKey,
     authorityKp,
     initialSupply,
-    assets,
+    weightedTokens,
   }: {
     beamsplitter: PublicKey;
     mintKP?: Keypair;
@@ -90,7 +89,7 @@ export class CoherenceBeamsplitterSDK {
     authorityKp: Keypair;
     // TODO: Remove later. Here to reduce testing redundancy
     initialSupply?: u64;
-    assets: AssetSource[];
+    weightedTokens: WeightedToken[];
   }): Promise<TransactionEnvelope> {
     const [prismEtfKey, bump] = await generatePrismEtfAddress(mintKP.publicKey);
 
@@ -111,7 +110,7 @@ export class CoherenceBeamsplitterSDK {
     const initBeamsplitterAndCreateAtaTx = new TransactionEnvelope(
       this.provider,
       [
-        this.program.instruction.registerToken(bump, assets, {
+        this.program.instruction.registerToken(bump, weightedTokens, {
           accounts: {
             beamsplitter,
             prismEtf: prismEtfKey,
@@ -156,58 +155,46 @@ export class CoherenceBeamsplitterSDK {
     return tx.combine(setAuthTx);
   }
 
-  async convert({
-    beamsplitter,
-    fromBeamsplitter,
-    toBeamsplitter,
-    amount,
+  getPrice({
+    owner = this.provider.wallet.publicKey,
+    price,
+    priceSigner,
+    market,
+    bids,
+    dexPid = this.getLatestSerumDEXAddress(),
   }: {
-    beamsplitter: PublicKey;
-    fromBeamsplitter: PublicKey;
-    toBeamsplitter: PublicKey;
-    amount: BN;
-  }): Promise<TransactionEnvelope> {
-    const fromBeamsplitterAccount = await this.fetchPrismEtfData(
-      fromBeamsplitter
+    owner?: PublicKey;
+    price: PublicKey;
+    priceSigner: Signer;
+    market: PublicKey;
+    bids: PublicKey;
+    dexPid?: PublicKey;
+  }): TransactionEnvelope {
+    return new TransactionEnvelope(
+      this.provider,
+      [
+        this.program.instruction.getPrice(dexPid, {
+          accounts: {
+            price,
+            payer: owner,
+            systemProgram: SystemProgram.programId,
+          },
+          remainingAccounts: [
+            {
+              pubkey: market,
+              isWritable: false,
+              isSigner: false,
+            },
+            {
+              pubkey: bids,
+              isWritable: false,
+              isSigner: false,
+            },
+          ],
+        }),
+      ],
+      [priceSigner]
     );
-    if (!fromBeamsplitterAccount) {
-      throw new Error(
-        "Couldn't retrive fromBeamsplitter account. Check Beamsplitter was registered."
-      );
-    }
-
-    const toBeamsplitterAccount = await this.fetchPrismEtfData(toBeamsplitter);
-    if (!toBeamsplitterAccount) {
-      throw new Error(
-        "Couldn't retrive toBeamsplitter account. Check Beamsplitter was registered."
-      );
-    }
-
-    const fromTokenAccount = await getATAAddress({
-      mint: fromBeamsplitterAccount.mint,
-      owner: beamsplitter,
-    });
-    const toTokenAccount = await getATAAddress({
-      mint: toBeamsplitterAccount.mint,
-      owner: beamsplitter,
-    });
-
-    const convertTx = new TransactionEnvelope(this.provider, [
-      this.program.instruction.convert(amount, {
-        accounts: {
-          beamsplitter,
-          from: fromTokenAccount,
-          fromToken: fromBeamsplitter,
-          fromMint: fromBeamsplitterAccount.mint,
-          to: toTokenAccount,
-          toToken: toBeamsplitter,
-          toMint: toBeamsplitterAccount.mint,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        },
-      }),
-    ]);
-    return convertTx;
   }
 
   // Fetch the main Beamsplitter state account
@@ -223,5 +210,40 @@ export class CoherenceBeamsplitterSDK {
     return (await this.program.account.prismEtf.fetchNullable(
       key
     )) as PrismEtfData;
+  }
+
+  // TODO this should take pair of tokens and return market account and bid
+  // For now user manually has to locate market account
+  async loadMarketAndBidAccounts({
+    connection,
+    marketAccount,
+    dexProgram = this.getLatestSerumDEXAddress(),
+  }: {
+    connection: Connection;
+    marketAccount: PublicKey;
+    dexProgram?: PublicKey;
+  }): Promise<PublicKey> {
+    const market = await Market.load(
+      connection,
+      marketAccount,
+      undefined,
+      dexProgram
+    );
+    return market.bidsAddress;
+  }
+
+  // Retrieve latest DEX address (ie version 3 at time of writing)
+  getLatestSerumDEXAddress(): PublicKey {
+    const latestVersion = Math.max(...Object.values(PROGRAM_LAYOUT_VERSIONS));
+    const lastestAddress = Object.entries<number>(PROGRAM_LAYOUT_VERSIONS).find(
+      (addrEntry) => {
+        if (addrEntry[1] === latestVersion) {
+          return addrEntry;
+        }
+      }
+    );
+    if (!lastestAddress)
+      throw new Error("Failed to retrieve latest version of Serum DEX Address");
+    return new PublicKey(lastestAddress[0]);
   }
 }

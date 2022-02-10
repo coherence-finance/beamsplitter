@@ -1,11 +1,8 @@
 import { Provider, setProvider } from "@project-serum/anchor";
 import { makeSaberProvider } from "@saberhq/anchor-contrib";
 import { chaiSolana, expectTX } from "@saberhq/chai-solana";
-import type {
-  Provider as SaberProvider,
-  PublicKey,
-} from "@saberhq/solana-contrib";
-import { PendingTransaction } from "@saberhq/solana-contrib";
+import type { Provider as SaberProvider } from "@saberhq/solana-contrib";
+import { PendingTransaction, PublicKey } from "@saberhq/solana-contrib";
 import {
   getATAAddress,
   getMintInfo,
@@ -16,13 +13,13 @@ import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
-import type { AssetSource, PrismEtfData } from "../src";
+import type { PrismEtfData, WeightedToken } from "../src";
 import {
   CoherenceBeamsplitterSDK,
   generateBeamsplitterAddress,
   generatePrismEtfAddress,
 } from "../src";
-import { getToAmount } from "./utils";
+import { MAINNET_CONNECTION } from "./utils";
 
 chai.use(chaiSolana);
 
@@ -83,17 +80,17 @@ describe("coherence-beamsplitter", () => {
 
     const initialSupply = new u64(100);
 
-    const assets: AssetSource[] = [
+    const weightedTokens: WeightedToken[] = [
       {
-        dataSource: { constant: { price: new BN(9), expo: 9 } },
+        mint: new PublicKey(0),
         weight: new BN(4),
       },
       {
-        dataSource: { constant: { price: new BN(9), expo: 9 } },
+        mint: new PublicKey(0),
         weight: new BN(1),
       },
       {
-        dataSource: { constant: { price: new BN(9), expo: 9 } },
+        mint: new PublicKey(0),
         weight: new BN(2),
       },
     ];
@@ -105,7 +102,7 @@ describe("coherence-beamsplitter", () => {
       authority,
       authorityKp: testSigner,
       initialSupply,
-      assets,
+      weightedTokens,
     });
 
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
@@ -143,91 +140,59 @@ describe("coherence-beamsplitter", () => {
     );
   });
 
-  it("Convert between prism etfs", async () => {
-    // Defines
-    const mintAkp = Keypair.generate();
-    const mintBkp = Keypair.generate();
+  it("Print price of BTC/USDC from Raydium MKT Account", async () => {
+    const market = "BTC/USDC";
 
-    const mintA = mintAkp.publicKey;
-    const mintB = mintBkp.publicKey;
+    const pairInfo = {
+      address: "A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw",
+    };
 
-    const priceA = new BN(9);
-    const weightA = new BN(4);
+    if (!pairInfo) throw new Error(`Could not locate ${market} in Market Json`);
+    const marketAccount: PublicKey = new PublicKey(pairInfo?.address);
 
-    const priceB = new BN(11);
-    const weightB = new BN(2);
-
-    const initialSupply = new u64(9);
-    const conversionAmount = new BN(1);
-
-    const assetSourceA: AssetSource[] = [
-      {
-        dataSource: { constant: { price: priceA, expo: 9 } },
-        weight: weightA,
-      },
-    ];
-
-    const assetSourceB: AssetSource[] = [
-      {
-        dataSource: { constant: { price: priceB, expo: 9 } },
-        weight: weightB,
-      },
-    ];
-
-    // Register token A
-    const txA = await sdk.registerToken({
-      beamsplitter,
-      mintKP: mintAkp,
-      assets: assetSourceA,
-      authority,
-      authorityKp: testSigner,
-      initialSupply,
+    const bidAccount = await sdk.loadMarketAndBidAccounts({
+      connection: MAINNET_CONNECTION,
+      marketAccount: marketAccount,
     });
 
-    await expectTX(txA, "Register token A").to.be.fulfilled;
-
-    // Register token B
-    const txB = await sdk.registerToken({
-      beamsplitter,
-      mintKP: mintBkp,
-      assets: assetSourceB,
-      authority,
-      authorityKp: testSigner,
-    });
-
-    await expectTX(txB, "Register token B").to.be.fulfilled;
-
-    // Convert from A to B
-    const [tokenKeyA] = await generatePrismEtfAddress(mintA);
-    const [tokenKeyB] = await generatePrismEtfAddress(mintB);
-
-    const convertTx = await sdk.convert({
-      beamsplitter,
-      fromBeamsplitter: tokenKeyA,
-      toBeamsplitter: tokenKeyB,
-      amount: conversionAmount,
-    });
+    const priceAcc = Keypair.generate();
 
     await expectTX(
-      convertTx,
-      `Convert ${conversionAmount.toString()} of token A to token B`
+      sdk.getPrice({
+        owner: authority,
+        price: priceAcc.publicKey,
+        priceSigner: priceAcc,
+        market: marketAccount,
+        bids: bidAccount,
+      })
     ).to.be.fulfilled;
+  });
 
-    // Verify token A supply
-    const tokenA = await getATAAddress({ mint: mintA, owner: beamsplitter });
-    const tokenAAccount = await getTokenAccount(provider, tokenA);
+  it("Print price of SOL/USDC from Raydium MKT Account", async () => {
+    const market = "SOL/USDC";
 
-    assert(
-      tokenAAccount.amount.eq(initialSupply.sub(conversionAmount)),
-      "Incorrect token A supply"
-    );
+    const pairInfo = {
+      address: "9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT",
+    };
 
-    // Verify token B supply
-    const tokenB = await getATAAddress({ mint: mintB, owner: beamsplitter });
-    const tokenBAccount = await getTokenAccount(provider, tokenB);
+    if (!pairInfo) throw new Error(`Could not locate ${market} in Market Json`);
+    const marketAccount: PublicKey = new PublicKey(pairInfo?.address);
 
-    expect(tokenBAccount.amount.toNumber()).to.equal(
-      getToAmount(assetSourceA, assetSourceB, conversionAmount.toNumber())
-    );
+    const bidAccount = await sdk.loadMarketAndBidAccounts({
+      connection: MAINNET_CONNECTION,
+      marketAccount: marketAccount,
+    });
+
+    const priceAcc = Keypair.generate();
+
+    await expectTX(
+      sdk.getPrice({
+        owner: authority,
+        price: priceAcc.publicKey,
+        priceSigner: priceAcc,
+        market: marketAccount,
+        bids: bidAccount,
+      })
+    ).to.be.fulfilled;
   });
 });
