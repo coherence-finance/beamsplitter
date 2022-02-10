@@ -1,10 +1,7 @@
 use crate::state::*;
 
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount},
-};
+use anchor_spl::token::Mint;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
@@ -54,61 +51,6 @@ pub struct RegisterToken<'info> {
     /// The [System] program.
     pub system_program: Program<'info, System>,
 }
-
-#[derive(Accounts)]
-pub struct Convert<'info> {
-    /// The [Prism] authority account
-    #[account(
-        seeds = [
-            b"Beamsplitter".as_ref(),
-        ],
-        bump = beamsplitter.bump,
-    )]
-    pub beamsplitter: Account<'info, Beamsplitter>,
-
-    #[account(
-        seeds = [
-            b"PrismEtf".as_ref(),
-            from_mint.key().to_bytes().as_ref()
-        ],
-        bump = from_token.bump
-    )]
-    /// The [PrismEtf] [Account] used for calculating the incoming tokens to burn
-    pub from_token: Box<Account<'info, PrismEtf>>,
-
-    /// The [Mint] of the burned tokens
-    #[account(mut)]
-    pub from_mint: Account<'info, Mint>,
-
-    /// The paying [TokenAccount]
-    #[account(mut, associated_token::mint = from_mint, associated_token::authority = beamsplitter)]
-    pub from: Account<'info, TokenAccount>,
-
-    #[account(
-        seeds = [
-            b"PrismEtf".as_ref(),
-            to_mint.key().to_bytes().as_ref()
-        ],
-        bump = to_token.bump
-    )]
-    /// The [PrismEtf] [Account] used for calculating the outgoing tokens to mint
-    pub to_token: Box<Account<'info, PrismEtf>>,
-
-    /// The [Mint] of the minted tokens
-    #[account(mut)]
-    pub to_mint: Account<'info, Mint>,
-
-    /// The receiving [Account]
-    #[account(mut, associated_token::mint = to_mint, associated_token::authority = beamsplitter)]
-    pub to: Account<'info, TokenAccount>,
-
-    /// The [Token] [Program].
-    pub token_program: Program<'info, Token>,
-
-    /// The [AssociatedToken] [Program]
-    pub associated_program: Program<'info, AssociatedToken>,
-}
-
 #[derive(Accounts)]
 pub struct GetPrice<'info> {
     #[account(init, payer = payer)]
