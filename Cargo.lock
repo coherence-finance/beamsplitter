@@ -421,6 +421,7 @@ dependencies = [
  "borsh",
  "pyth-client",
  "serum_dex",
+ "solana-program",
  "spl-token",
 ]
 

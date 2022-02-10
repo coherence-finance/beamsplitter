@@ -15,7 +15,7 @@ pub enum Source {
         expo: i32,
     },
     Dex {
-        last_price: i64,
+        last_price: u64,
         expo: i32,
         market_account: Pubkey,
     },
@@ -45,9 +45,9 @@ impl ReadablePrice for Source {
             Dex {
                 last_price,
                 expo,
-                market_account,
+                market_account: _,
             } => PriceConf {
-                price: last_price,
+                price: last_price as i64,
                 conf: 0,
                 expo,
             },

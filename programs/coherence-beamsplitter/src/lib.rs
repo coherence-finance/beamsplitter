@@ -1,4 +1,5 @@
 pub mod asset_source;
+pub mod constants;
 pub mod context;
 pub mod errors;
 pub mod state;
@@ -18,6 +19,7 @@ pub mod coherence_beamsplitter {
     use anchor_spl::token::{accessor::authority, burn, mint_to, Burn, MintTo};
     use asset_source::AssetSource;
     use serum_dex::state::MarketState;
+    use solana_program::pubkey::Pubkey;
 
     use super::*;
 
@@ -70,12 +72,32 @@ pub mod coherence_beamsplitter {
     #[inline(never)]
     pub fn convert(ctx: Context<Convert>, from_amount: u64) -> ProgramResult {
         let beamsplitter = &mut ctx.accounts.beamsplitter;
-        let from_asset_value = token_value(&ctx.accounts.from_token.assets) as u64;
-        let to_asset_value = token_value(&ctx.accounts.to_token.assets) as u64;
+        let from_asset_value = token_value(&ctx.accounts.from_token.assets)? as u64;
+        let to_asset_value = token_value(&ctx.accounts.to_token.assets)? as u64;
 
         if &ctx.accounts.from_mint.key() == &ctx.accounts.to_mint.key() {
             return Err(BeamsplitterErrors::NoSameMintAccounts.into());
         }
+
+        /*let match Pubkey::from_str(SERUM_DEX_V3) => {
+
+            _ => { retur }
+        }*/
+
+        /*for asset in &ctx.accounts.from_token.assets {
+            let asset_data = (&asset) as &AssetData;
+            match asset_data {
+                &DexFeed => {}
+            }
+        }
+
+        //
+        for asset in &ctx.accounts.to_token.assets {
+            let asset_data = (&asset) as &AssetData;
+            match asset_data {
+                &DexFeed => {}
+            }
+        } */
 
         // Amount of value being transferred
         let effective_value = from_amount * from_asset_value;
@@ -126,7 +148,7 @@ pub mod coherence_beamsplitter {
         let market = MarketState::load(market_account, &dex_pid, false)?;
         let bids = market.load_bids_mut(bids_account)?;
 
-        price_account.price = get_slab_price(&bids);
+        price_account.price = get_slab_price(&bids)?;
 
         Ok(())
     }
