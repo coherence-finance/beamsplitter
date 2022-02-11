@@ -78,7 +78,7 @@ pub mod coherence_beamsplitter {
             return weighted_token.weight + sum;
         }));
 
-        for weighted_token in ctx.accounts.prism_etf.weighted_tokens {
+        for (idx, weighted_token) in ctx.accounts.prism_etf.weighted_tokens.iter().enumerate() {
             let weight = Decimal::from(weighted_token.weight);
             let portion_amount = amount * (weight / weights_sum);
 
@@ -99,7 +99,6 @@ pub mod coherence_beamsplitter {
             transfer(transfer_ctx, transfer_amount)?;
 
             // Make buy call
-            ctx.remaining_accounts.iter().map(|account| {});
 
             // Mint
             let mint_accounts = MintTo {
