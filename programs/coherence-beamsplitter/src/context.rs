@@ -111,3 +111,38 @@ pub struct GetPrice<'info> {
     /// The [System] program.
     pub system_program: Program<'info, System>,
 }
+
+#[derive(Accounts)]
+pub struct Sell<'info> {
+    /// Authority that has admin rights over the [PrismEtf].
+    pub seller: Signer<'info>,
+
+    // Account that holds seller's tokens
+    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = seller)]
+    pub seller_token: Account<'info, TokenAccount>,
+
+    /// The central mint authority for all registered tokens, used for checks
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+    )]
+    pub beamsplitter: Account<'info, Beamsplitter>,
+
+    /// [Mint] of the [PrismEtf].
+    pub token_mint: Account<'info, Mint>,
+
+    // PrismEtf Account
+    #[account(owner = crate::ID)]
+    pub prism_etf: Account<'info, PrismEtf>,
+
+    /// Needed to interact with the associated token program
+    pub associated_token_program: Program<'info, AssociatedToken>,
+
+    /// Needed to interact with the token program
+    pub token_program: Program<'info, Token>,
+
+    /// Needed to interact with the system program
+    pub system_program: Program<'info, System>,
+}

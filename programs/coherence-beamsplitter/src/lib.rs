@@ -16,10 +16,12 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 #[program]
 pub mod coherence_beamsplitter {
 
-    use anchor_spl::token::accessor::authority;
+    use anchor_spl::token::{accessor::authority, transfer, Transfer, Burn, burn};
     use serum_dex::state::MarketState;
 
     use super::*;
+
+    const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
 
     /// Initializes the Beamsplitter program state
     pub fn initialize(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
@@ -105,6 +107,57 @@ pub mod coherence_beamsplitter {
         let bids = market.load_bids_mut(bids_account)?;
 
         price_account.price = get_slab_price(&bids)?;
+
+        Ok(())
+    }
+
+    // TODO: Instruction for user selling their etf tokens
+    pub fn sell(ctx: Context<Sell>) -> ProgramResult {
+        let beamsplitter = &mut ctx.accounts.beamsplitter;
+        let seller = &mut ctx.accounts.seller;
+        let seller_token = &mut ctx.accounts.seller_token;
+        let placeholder_amount = 10;
+
+        // user hits sell instruction to sell their prism etf tokens
+        // we sell the specified value of the underlying assets of the prism etf tokens into USDC (Bitcoin, Eth, Solana, etc)
+        //// cpi call to new_order to sell
+
+        // Assign seed values
+        let seeds = &[PDA_SEED, &[beamsplitter.bump]];
+        let signer_seeds = &[&seeds[..]];
+
+        // We transfer the value in USDC of the underlying assets to the user's account
+        // Accounts used by transfer cpi instruction
+        let transfer_accounts = Transfer {
+            from: seller_token.to_account_info(),
+            to: seller.to_account_info(),
+            authority: beamsplitter.to_account_info(),
+        };
+
+        let transfer_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_accounts,
+            signer_seeds,
+        );
+
+        transfer(transfer_ctx, placeholder_amount)?;
+
+        // We burn the prism etf tokens the user is selling
+        //// Cpi anchor spl program to burn prism etf tokens
+        // Accounts used by burn cpi instruction
+        let burn_accounts = Burn {
+            mint: ctx.accounts.token_mint.to_account_info(),
+            to: ctx.accounts.prism_etf.to_account_info(),
+            authority: beamsplitter.to_account_info(),
+        };
+
+        let burn_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            burn_accounts,
+            signer_seeds,
+        );
+
+        burn(burn_ctx, placeholder_amount)?;
 
         Ok(())
     }

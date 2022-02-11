@@ -1549,7 +1549,7 @@ source = "git+https://github.com/project-serum/anchor/?tag=v0.19.0#3afd1a22e4683
 dependencies = [
  "anchor-lang 0.19.0 (git+https://github.com/project-serum/anchor/?tag=v0.19.0)",
  "anchor-spl 0.19.0 (git+https://github.com/project-serum/anchor/?tag=v0.19.0)",
- "serum_dex 0.4.0 (git+https://github.com/project-serum/serum-dex?rev=1be91f2)",
+ "solana-program",
 ]
 
 [[package]]
