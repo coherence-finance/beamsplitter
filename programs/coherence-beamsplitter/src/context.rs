@@ -57,43 +57,31 @@ pub struct RegisterToken<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
-pub struct InitializeDeposit<'info> {
-    #[account(
-        init,
-        seeds = [
-            b"Deposit".as_ref(),
-            payer.key().to_bytes().as_ref(),
-        ],
-        bump,
-        payer = payer,
-    )]
-    pub deposit: Account<'info, Deposit>,
-
-    pub payer: Signer<'info>,
-
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
 pub struct Buy<'info> {
-    #[account(
-        seeds = [
-            b"Deposit".as_ref(),
-            depositor.key().to_bytes().as_ref(),
-        ],
-        bump,
-        has_one = depositor,
-    )]
-    pub deposit: Account<'info, Deposit>,
+    pub usdc_token_authority: SystemAccount<'info>,
 
-    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = deposit)]
-    pub deposit_token: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub prism_etf_mint: Account<'info, Mint>,
 
+    /// The Prism ETF [Account] that describes the assets being purchased
     #[account(owner = crate::ID)]
     pub prism_etf: Account<'info, PrismEtf>,
 
-    pub depositor: Signer<'info>,
+    /// The [Signer] of the tx and owner of the [Deposit] [Account]
+    pub buyer: Signer<'info>,
+
+    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = buyer)]
+    pub buyer_token: Account<'info, TokenAccount>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+        owner = crate::ID,
+    )]
+    pub beamsplitter: Account<'info, Beamsplitter>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
