@@ -20,6 +20,7 @@ pyth-client = { version = "0.3.0", features = ["no-entrypoint"] }
 anchor-lang = "0.19.0"
 anchor-spl = { version = "0.19.0", features = ["dex"] }
 solana-program = "1.9.5"
+bigdecimal = "0.3.0"
 rust_decimal = "1.21"
 rust_decimal_macros = "1.21"
 borsh = { version = "0.9.2", features = ["const-generics"] }

@@ -70,8 +70,13 @@ pub struct Buy<'info> {
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
     pub buyer: Signer<'info>,
 
-    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = buyer)]
+    /// The account paying usdc for Basket tokens
+    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = usdc_token_authority)]
     pub buyer_token: Account<'info, TokenAccount>,
+
+    /// The [TokenAccount] that recieves the Basket Tokens
+    #[account(mut, associated_token::mint = prism_etf_mint, associated_token::authority = beamsplitter)]
+    pub reciever_token: Account<'info, TokenAccount>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(
@@ -82,6 +87,9 @@ pub struct Buy<'info> {
         owner = crate::ID,
     )]
     pub beamsplitter: Account<'info, Beamsplitter>,
+
+    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = usdc_token_authority)]
+    pub beamsplitter_token: Account<'info, TokenAccount>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 

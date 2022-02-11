@@ -6,6 +6,7 @@ pub mod util;
 
 use anchor_lang::prelude::*;
 use anchor_spl::dex;
+use bigdecimal::*;
 use context::*;
 use errors::BeamsplitterErrors;
 use rust_decimal::*;
@@ -68,78 +69,86 @@ pub mod coherence_beamsplitter {
 
     pub fn buy(ctx: Context<Buy>) -> ProgramResult {
         // Get's amount approved to buy
-        let amount = Decimal::from(ctx.accounts.buyer_token.delegated_amount);
+        let amount = BigDecimal::from(ctx.accounts.buyer_token.delegated_amount);
 
         let buyer_token = &ctx.accounts.buyer_token;
         let weighted_tokens = &ctx.accounts.prism_etf.weighted_tokens;
         let beamsplitter = &ctx.accounts.beamsplitter;
 
         // Sum all weights * max bid prices together
-        let mut weighted_sum = Decimal::zero();
+        let mut weighted_sum = BigDecimal::zero();
 
         for (idx, weighted_token) in weighted_tokens.iter().enumerate() {
             let market_account = &ctx.remaining_accounts[idx * 3];
             let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
-            let market = MarketState::load(market_account, &dex::id(), false)?;
-            let bids = market.load_bids_mut(bids_account)?;
-            let max_bid = Decimal::from(get_slab_price(&bids)?);
+            let market = &MarketState::load(market_account, &dex::id(), false)?;
+            let bids = &market.load_bids_mut(bids_account)?;
+            let max_bid = BigDecimal::from(get_slab_price(bids)?);
 
-            weighted_sum += Decimal::from(weighted_token.weight) * max_bid;
+            weighted_sum += BigDecimal::from(weighted_token.weight) * max_bid;
         }
 
-        for (idx, weighted_token) in ctx.accounts.prism_etf.weighted_tokens.iter().enumerate() {
-            // Get Max Ask Price
-            let market_account = &ctx.remaining_accounts[idx * 3];
-            let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
-            let asks_account = &ctx.remaining_accounts[idx * 3 + 2];
-            let market = MarketState::load(market_account, &dex::id(), false)?;
+        for (idx, &weighted_token) in ctx.accounts.prism_etf.weighted_tokens.iter().enumerate() {
+            let portion_amount;
 
-            let bids = market.load_bids_mut(bids_account)?;
-            let max_bid = Decimal::from(get_slab_price(&bids)?);
+            {
+                // Get Max Ask Price
+                let market_account = &ctx.remaining_accounts[idx * 3];
+                let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
+                let asks_account = &ctx.remaining_accounts[idx * 3 + 2];
+                let market = &MarketState::load(market_account, &dex::id(), false)?;
 
-            let asks = market.load_asks_mut(asks_account)?;
-            let min_ask = Decimal::from(get_slab_price(&asks)?);
+                let bids = &market.load_bids_mut(bids_account)?;
+                let max_bid = &BigDecimal::from(get_slab_price(&bids)?);
 
-            let slippage = min_ask - max_bid;
+                let asks = &market.load_asks_mut(asks_account)?;
+                let min_ask = &BigDecimal::from(get_slab_price(&asks)?);
 
-            let weight = Decimal::from(weighted_token.weight);
-            let portion_amount = amount * (weight / weighted_sum);
+                let _slippage = &(min_ask - max_bid);
 
-            // Transfer from buyer to Beamsplitter
-            let transfer_accounts = Transfer {
-                to: beamsplitter.to_account_info(),
-                from: buyer_token.to_account_info(),
-                authority: ctx.accounts.usdc_token_authority.to_account_info(),
-            };
+                let weight = &BigDecimal::from(weighted_token.weight);
+                portion_amount = &amount * (weight / &weighted_sum);
+            }
 
-            let transfer_ctx = CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                transfer_accounts,
-            );
+            {
+                // Transfer from buyer to Beamsplitter
+                let transfer_accounts = Transfer {
+                    to: ctx.accounts.beamsplitter_token.to_account_info(),
+                    from: buyer_token.to_account_info(),
+                    authority: ctx.accounts.usdc_token_authority.to_account_info(),
+                };
 
-            let transfer_amount = portion_amount
-                .to_u64()
-                .ok_or(ProgramError::InvalidArgument)?;
+                let transfer_ctx = CpiContext::new(
+                    ctx.accounts.token_program.to_account_info(),
+                    transfer_accounts,
+                );
 
-            transfer(transfer_ctx, transfer_amount)?;
+                let transfer_amount = &portion_amount
+                    .to_u64()
+                    .ok_or(ProgramError::InvalidArgument)?;
+
+                transfer(transfer_ctx, *transfer_amount)?;
+            }
 
             // Make buy call
 
             // Transfer out difference between max_ask and max_bid
 
-            // Mint
-            let mint_accounts = MintTo {
-                mint: ctx.accounts.prism_etf_mint.to_account_info(),
-                to: ctx.accounts.buyer_token.to_account_info(),
-                authority: beamsplitter.to_account_info(),
-            };
+            {
+                // Mint
+                let mint_accounts = MintTo {
+                    mint: ctx.accounts.prism_etf_mint.to_account_info(),
+                    to: ctx.accounts.reciever_token.to_account_info(),
+                    authority: beamsplitter.to_account_info(),
+                };
 
-            let mint_to_ctx =
-                CpiContext::new(ctx.accounts.token_program.to_account_info(), mint_accounts);
+                let mint_to_ctx =
+                    CpiContext::new(ctx.accounts.token_program.to_account_info(), mint_accounts);
 
-            let mint_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+                let mint_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
 
-            mint_to(mint_to_ctx, mint_amount)?;
+                mint_to(mint_to_ctx, mint_amount)?;
+            }
         }
 
         Ok(())
