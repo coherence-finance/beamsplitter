@@ -24,13 +24,6 @@ pub struct WeightedToken {
     pub weight: u32,
 }
 
-#[account]
-#[derive(Debug, Default, Copy)]
-pub struct Deposit {
-    pub depositor: Pubkey,
-    pub bump: u8,
-}
-
 impl Default for PrismEtf {
     #[inline(never)]
     fn default() -> PrismEtf {

@@ -5,9 +5,10 @@ pub mod state;
 pub mod util;
 
 use anchor_lang::prelude::*;
-//use anchor_swap::*;
+use anchor_spl::dex;
 use context::*;
 use errors::BeamsplitterErrors;
+use rust_decimal::*;
 use state::*;
 use util::get_slab_price;
 
@@ -16,7 +17,8 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 #[program]
 pub mod coherence_beamsplitter {
 
-    use anchor_spl::token::accessor::authority;
+    use anchor_spl::token::{accessor::authority, mint_to, transfer, MintTo, Transfer};
+    use rust_decimal::prelude::ToPrimitive;
     use serum_dex::state::MarketState;
 
     use super::*;
@@ -37,24 +39,23 @@ pub mod coherence_beamsplitter {
         weighted_tokens: Vec<WeightedToken>,
     ) -> ProgramResult {
         let prism_etf = &mut ctx.accounts.prism_etf;
-        let prism_metadata = &ctx.accounts.beamsplitter;
+        let beamsplitter = &ctx.accounts.beamsplitter;
         let mint = &ctx.accounts.token_mint;
         let signer = &ctx.accounts.admin_authority;
 
         prism_etf.authority = ctx.accounts.admin_authority.key();
         prism_etf.bump = bump;
         prism_etf.mint = ctx.accounts.token_mint.key();
-        prism_etf.prism_etf = prism_metadata.key();
+        prism_etf.prism_etf = beamsplitter.key();
 
         // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
-        if prism_metadata.owner != authority(&mint.to_account_info())?
-            && signer.key() != prism_metadata.owner
+        if beamsplitter.owner != authority(&mint.to_account_info())?
+            && signer.key() != beamsplitter.owner
         {
             return Err(BeamsplitterErrors::NotMintAuthority.into());
         }
 
-        // TODO check if supply is zero
-
+        // TODO ensure all of weighted token pairs have USDC as base token
         for i in 0..weighted_tokens.len() {
             prism_etf.weighted_tokens[i] = weighted_tokens[i];
         }
@@ -64,31 +65,55 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn intialize_deposit(ctx: Context<InitializeDeposit>, bump: u8) -> ProgramResult {
-        let deposit = &mut ctx.accounts.deposit;
-        deposit.bump = bump;
-        deposit.depositor = ctx.accounts.payer.key();
-        Ok(())
-    }
+    pub fn buy(ctx: Context<Buy>) -> ProgramResult {
+        // Get's amount approved to buy
+        let amount = Decimal::from(ctx.accounts.buyer_token.delegated_amount);
 
-    pub fn buy(ctx: Context<Buy>, amount: u32) -> ProgramResult {
-        let deposit_token_account = &ctx.accounts.deposit_token;
-
-        if deposit_token_account.amount <= 0 {
-            return Err(BeamsplitterErrors::EmptyDeposit.into());
-        }
-
+        let buyer_token = &ctx.accounts.buyer_token;
         let weighted_tokens = &ctx.accounts.prism_etf.weighted_tokens;
+        let beamsplitter = &ctx.accounts.beamsplitter;
 
         // Sum all weights together using fold (reduce, essentially)
-        let weights_sum = weighted_tokens.iter().fold(0, |sum, weighted_token| {
+        let weights_sum = Decimal::from(weighted_tokens.iter().fold(0, |sum, weighted_token| {
             return weighted_token.weight + sum;
-        });
+        }));
 
         for weighted_token in ctx.accounts.prism_etf.weighted_tokens {
-            let weight = weighted_token.weight;
-            let portion_amount =
-                (f64::from(weight) / f64::from(weights_sum) * f64::from(amount)) as u32;
+            let weight = Decimal::from(weighted_token.weight);
+            let portion_amount = amount * (weight / weights_sum);
+
+            // Transfer from buyer to Beamspliter
+            let transfer_accounts = Transfer {
+                to: beamsplitter.to_account_info(),
+                from: buyer_token.to_account_info(),
+                authority: ctx.accounts.usdc_token_authority.to_account_info(),
+            };
+
+            let transfer_ctx = CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                transfer_accounts,
+            );
+
+            let transfer_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+
+            transfer(transfer_ctx, transfer_amount)?;
+
+            // Make buy call
+            ctx.remaining_accounts.iter().map(|account| {});
+
+            // Mint
+            let mint_accounts = MintTo {
+                mint: ctx.accounts.prism_etf_mint.to_account_info(),
+                to: ctx.accounts.buyer_token.to_account_info(),
+                authority: beamsplitter.to_account_info(),
+            };
+
+            let mint_to_ctx =
+                CpiContext::new(ctx.accounts.token_program.to_account_info(), mint_accounts);
+
+            let mint_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+
+            mint_to(mint_to_ctx, mint_amount)?;
         }
 
         Ok(())
