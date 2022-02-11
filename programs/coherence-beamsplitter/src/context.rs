@@ -6,7 +6,6 @@ use anchor_spl::{
     mint,
     token::{Mint, Token, TokenAccount},
 };
-use pyth_client::AccKey;
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
@@ -61,6 +60,7 @@ pub struct RegisterToken<'info> {
 pub struct Buy<'info> {
     pub usdc_token_authority: SystemAccount<'info>,
 
+    #[account(mut)]
     pub prism_etf_mint: Account<'info, Mint>,
 
     /// The Prism ETF [Account] that describes the assets being purchased

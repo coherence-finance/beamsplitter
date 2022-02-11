@@ -18,7 +18,7 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 pub mod coherence_beamsplitter {
 
     use anchor_spl::token::{accessor::authority, mint_to, transfer, MintTo, Transfer};
-    use rust_decimal::prelude::ToPrimitive;
+    use rust_decimal::prelude::{ToPrimitive, Zero};
     use serum_dex::state::MarketState;
 
     use super::*;
@@ -73,16 +73,38 @@ pub mod coherence_beamsplitter {
         let weighted_tokens = &ctx.accounts.prism_etf.weighted_tokens;
         let beamsplitter = &ctx.accounts.beamsplitter;
 
-        // Sum all weights together using fold (reduce, essentially)
-        let weights_sum = Decimal::from(weighted_tokens.iter().fold(0, |sum, weighted_token| {
-            return weighted_token.weight + sum;
-        }));
+        // Sum all weights * max bid prices together
+        let mut weighted_sum = Decimal::zero();
+
+        for (idx, weighted_token) in weighted_tokens.iter().enumerate() {
+            let market_account = &ctx.remaining_accounts[idx * 3];
+            let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
+            let market = MarketState::load(market_account, &dex::id(), false)?;
+            let bids = market.load_bids_mut(bids_account)?;
+            let max_bid = Decimal::from(get_slab_price(&bids)?);
+
+            weighted_sum += Decimal::from(weighted_token.weight) * max_bid;
+        }
 
         for (idx, weighted_token) in ctx.accounts.prism_etf.weighted_tokens.iter().enumerate() {
-            let weight = Decimal::from(weighted_token.weight);
-            let portion_amount = amount * (weight / weights_sum);
+            // Get Max Ask Price
+            let market_account = &ctx.remaining_accounts[idx * 3];
+            let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
+            let asks_account = &ctx.remaining_accounts[idx * 3 + 2];
+            let market = MarketState::load(market_account, &dex::id(), false)?;
 
-            // Transfer from buyer to Beamspliter
+            let bids = market.load_bids_mut(bids_account)?;
+            let max_bid = Decimal::from(get_slab_price(&bids)?);
+
+            let asks = market.load_asks_mut(asks_account)?;
+            let min_ask = Decimal::from(get_slab_price(&asks)?);
+
+            let slippage = min_ask - max_bid;
+
+            let weight = Decimal::from(weighted_token.weight);
+            let portion_amount = amount * (weight / weighted_sum);
+
+            // Transfer from buyer to Beamsplitter
             let transfer_accounts = Transfer {
                 to: beamsplitter.to_account_info(),
                 from: buyer_token.to_account_info(),
@@ -94,11 +116,15 @@ pub mod coherence_beamsplitter {
                 transfer_accounts,
             );
 
-            let transfer_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+            let transfer_amount = portion_amount
+                .to_u64()
+                .ok_or(ProgramError::InvalidArgument)?;
 
             transfer(transfer_ctx, transfer_amount)?;
 
             // Make buy call
+
+            // Transfer out difference between max_ask and max_bid
 
             // Mint
             let mint_accounts = MintTo {
