@@ -23,6 +23,12 @@ clone = [
   # Solana Bid Account
   { address = "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ" },
   # Raydium DEX Program ID
-  { address = "6wLt7CX1zZdFpa6uGJJpZfzWvG6W9rxXjquJDYiFwf9K" }
+  { address = "6wLt7CX1zZdFpa6uGJJpZfzWvG6W9rxXjquJDYiFwf9K" },
+  # USDC MintToken
+  { address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
+  # USDC Mint Authority
+  { address = "2wmVCSfPxGPjrnMMn7rchp4uaeoTqN39mXFC2zhPdri9" },
+  # USDC Freeze Authority
+  { address = "3sNBr7kMccME5D55xNgsmYpZnzPgP2g12CixAajXypn6" },
 ]
 validator = {url = "m"}

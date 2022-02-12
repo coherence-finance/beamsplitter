@@ -26,7 +26,8 @@
     "@saberhq/solana-contrib": "^1.12.36",
     "@saberhq/token-utils": "^1.12.36",
     "@saberhq/tsconfig": "^1.12.36",
-    "@solana/web3.js": "^1.33.0"
+    "@solana/web3.js": "^1.33.0",
+    "spl-token-faucet": "https://github.com/coherence-finance/spl-token-faucet"
   },
   "devDependencies": {
     "@project-serum/anchor": "^0.19.1-beta.1",

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Market } from "@project-serum/serum";
+import { approve } from "@project-serum/serum/lib/token-instructions";
 import { PROGRAM_LAYOUT_VERSIONS } from "@project-serum/serum/lib/tokens_and_markets";
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
@@ -11,16 +12,20 @@ import {
 import {
   createInitMintInstructions,
   createMintToInstruction,
+  getATAAddress,
+  getMintInfo,
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import type { u64 } from "@solana/spl-token";
-import { Token } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import type { Connection, Signer } from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import type BN from "bn.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
 import type { WeightedToken } from ".";
+import { getUSDCMint } from ".";
 import { PROGRAM_ID } from "./constants";
 import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
 import type {
@@ -153,6 +158,80 @@ export class CoherenceBeamsplitterSDK {
     }
 
     return tx.combine(setAuthTx);
+  }
+
+  async buy({
+    beamsplitter,
+    toToken,
+    prismEtf,
+    paymentMint = getUSDCMint(),
+    amount,
+  }: {
+    beamsplitter: PublicKey;
+    toToken?: PublicKey;
+    prismEtf: PublicKey;
+    paymentMint?: PublicKey;
+    amount: BN;
+  }): Promise<TransactionEnvelope> {
+    const prismEtfAccount = await this.fetchPrismEtfData(prismEtf);
+    let prismEtfMint;
+    if (!(prismEtfMint = prismEtfAccount?.mint))
+      throw new Error("Failed to fetch PrismEtf mint");
+
+    // user's recieving account for basket tokens
+    if (!toToken) {
+      toToken = await getATAAddress({
+        mint: prismEtfMint,
+        owner: this.provider.wallet.publicKey,
+      });
+    }
+
+    // user's token account used for payment
+    const fromToken = await getATAAddress({
+      mint: paymentMint,
+      owner: this.provider.wallet.publicKey,
+    });
+
+    // where user sends payment
+    const depositToken = await getATAAddress({
+      mint: paymentMint,
+      owner: beamsplitter,
+    });
+
+    // Approve transfer of [amount] tokens out of user token account
+    const approveInst = approve({
+      owner: this.provider.wallet.publicKey,
+      delegate: beamsplitter,
+      source: fromToken,
+      amount,
+    });
+
+    const approveTx = new TransactionEnvelope(this.provider, [approveInst]);
+
+    const usdcAuthority = (await getMintInfo(this.provider, getUSDCMint()))
+      .mintAuthority;
+    if (!usdcAuthority)
+      throw new Error("Failed to retrieve USDC mint authority");
+
+    const buyTx = new TransactionEnvelope(this.provider, [
+      this.program.instruction.buy("" as never, {
+        accounts: {
+          usdcTokenAuthority: usdcAuthority,
+          prismEtfMint: prismEtfMint,
+          prismEtf: prismEtf,
+          buyer: this.provider.wallet.publicKey,
+          buyerToken: fromToken,
+          recieverToken: toToken,
+          beamsplitter,
+          beamsplitterToken: depositToken,
+          systemProgram: SystemProgram.programId,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+      }),
+    ]);
+
+    return approveTx.combine(buyTx);
   }
 
   getPrice({
