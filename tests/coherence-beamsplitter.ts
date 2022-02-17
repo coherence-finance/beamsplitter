@@ -10,7 +10,6 @@ import {
   u64,
 } from "@saberhq/token-utils";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
 import type { PrismEtfData, WeightedToken } from "../src";
@@ -49,7 +48,10 @@ describe("coherence-beamsplitter", () => {
     await expectTX(
       new PendingTransaction(
         provider.connection,
-        await provider.connection.requestAirdrop(authority, LAMPORTS_PER_SOL)
+        await provider.connection.requestAirdrop(
+          authority,
+          LAMPORTS_PER_SOL * 100
+        )
       )
     ).to.be.fulfilled;
   });
@@ -83,23 +85,26 @@ describe("coherence-beamsplitter", () => {
     const weightedTokens: WeightedToken[] = [
       {
         mint: new PublicKey(0),
-        weight: new BN(4),
+        weight: 4,
       },
       {
         mint: new PublicKey(0),
-        weight: new BN(1),
+        weight: 1,
       },
       {
         mint: new PublicKey(0),
-        weight: new BN(2),
+        weight: 2,
       },
     ];
+
+    const prismEtfKP = Keypair.generate();
 
     // Register token with 3 assets
     const tx = await sdk.registerToken({
       beamsplitter,
       mintKP,
       authority,
+      prismEtfKP,
       authorityKp: testSigner,
       initialSupply,
       weightedTokens,
@@ -108,12 +113,13 @@ describe("coherence-beamsplitter", () => {
     await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
 
     // Verify token data
-    const [tokenKey, bump] = await generatePrismEtfAddress(mint);
+   //const [tokenKey, bump] = await generatePrismEtfAddress(mint);
+    const tokenKey = prismEtfKP.publicKey;
     const tokenData = (await sdk.fetchPrismEtfData(tokenKey)) as PrismEtfData;
 
     expect(tokenData.prismEtf).to.eqAddress(beamsplitter);
     expect(tokenData.authority).to.eqAddress(authority);
-    expect(tokenData.bump).to.equal(bump);
+    //expect(tokenData.bump).to.equal(bump);
     expect(tokenData.mint).to.eqAddress(mint);
     // TODO: Add custom deep compare for assets
 
@@ -195,4 +201,42 @@ describe("coherence-beamsplitter", () => {
       })
     ).to.be.fulfilled;
   });
+
+  /* it("Buy an etf", async () => {
+    const usdcWallet = await getATAAddress({
+      mint: getUSDCMint(),
+      owner: authority,
+    });
+
+    const tempProv = new Provider(
+      provider.connection,
+      provider.wallet,
+      provider.opts
+    );
+
+    // Mint USDC to our addr
+    await expectTX(
+      new PendingTransaction(
+        tempProv.connection,
+        await airdropSplTokens({
+          provider: tempProv,
+          amount: new BN(1),
+          to: usdcWallet,
+          mintPda: getUSDCMint(),
+          mintPdaBump: (
+            await PublicKey.findProgramAddress(
+              [getUSDCMint().toBuffer()],
+              TOKEN_PROGRAM_ID
+            )
+          )[1],
+        })
+      )
+    ).to.be.fulfilled;
+
+    await sdk.buy({
+      beamsplitter,
+      prismEtf: new PublicKey(""),
+      amount: new BN(1),
+    });
+  });*/
 });

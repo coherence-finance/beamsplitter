@@ -27,7 +27,7 @@ import { IDL } from "../target/types/coherence_beamsplitter";
 import type { WeightedToken } from ".";
 import { getUSDCMint } from ".";
 import { PROGRAM_ID } from "./constants";
-import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
+import { generateBeamsplitterAddress } from "./pda";
 import type {
   BeamsplitterData,
   BeamsplitterProgram,
@@ -82,21 +82,32 @@ export class CoherenceBeamsplitterSDK {
   // TODO: Pass multisig in so we can use it as authority for ATA
   async registerToken({
     beamsplitter,
+    weightedTokens,
     mintKP = Keypair.generate(),
     authority = this.provider.wallet.publicKey,
     authorityKp,
+    prismEtfKP,
     initialSupply,
-    weightedTokens,
   }: {
     beamsplitter: PublicKey;
+    weightedTokens: WeightedToken[];
     mintKP?: Keypair;
     authority?: PublicKey;
+    prismEtfKP: Keypair;
     authorityKp: Keypair;
     // TODO: Remove later. Here to reduce testing redundancy
     initialSupply?: u64;
-    weightedTokens: WeightedToken[];
   }): Promise<TransactionEnvelope> {
-    const [prismEtfKey, bump] = await generatePrismEtfAddress(mintKP.publicKey);
+    //const [prismEtfKey, bump] = await generatePrismEtfAddress(mintKP.publicKey);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    /*const createLargeAcct = new TransactionEnvelope(this.provider, [
+      this.program.instruction.createLargeAcct({
+        accounts: {
+          prismEtf: prismEtfKey,
+        },
+      }),
+    ]);*/
 
     const initMintTX = await createInitMintInstructions({
       provider: this.provider,
@@ -112,20 +123,27 @@ export class CoherenceBeamsplitterSDK {
         owner: beamsplitter,
       });
 
+    //const prismEtfKP = Keypair.generate();
+    const bump = 9;
     const initBeamsplitterAndCreateAtaTx = new TransactionEnvelope(
       this.provider,
       [
+        await this.program.account.prismEtf.createInstruction(
+          prismEtfKP,
+          589928 + 8 // use size_of on PrismEtf to get this value (8 is reserved for disscriminator)
+        ),
         this.program.instruction.registerToken(bump, weightedTokens, {
           accounts: {
             beamsplitter,
-            prismEtf: prismEtfKey,
+            prismEtf: prismEtfKP.publicKey,
             adminAuthority: authority,
             tokenMint: mintKP.publicKey,
             systemProgram: SystemProgram.programId,
           },
         }),
         ...(ataInstruction ? [ataInstruction] : []),
-      ]
+      ],
+      [prismEtfKP]
     );
 
     const setAuthTx = new TransactionEnvelope(
@@ -143,6 +161,7 @@ export class CoherenceBeamsplitterSDK {
       [authorityKp]
     );
 
+    //et tx = createLargeAcct.combine(initMintTX);
     let tx = initMintTX.combine(initBeamsplitterAndCreateAtaTx);
 
     if (initialSupply && authorityKp) {

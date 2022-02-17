@@ -6,7 +6,6 @@ pub mod util;
 
 use anchor_lang::prelude::*;
 use anchor_spl::dex;
-use bigdecimal::*;
 use context::*;
 use errors::BeamsplitterErrors;
 use rust_decimal::*;
@@ -17,6 +16,8 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod coherence_beamsplitter {
+    use std::mem::size_of;
+
     use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
     use rust_decimal::prelude::{ToPrimitive, Zero};
     use serum_dex::state::MarketState;
@@ -34,13 +35,30 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
+    /*pub fn init_weighted_tokens(
+        ctx: Context<WeightedTokensInit>,
+        bump: u8,
+        tokens: Vec<WeightedToken>,
+    ) -> ProgramResult {
+        if tokens.len() >= 1024 {
+            return Err(ProgramError::InvalidArgument);
+        }
+        let arr_account = &mut ctx.accounts.weighted_tokens.load_init()?;
+        arr_account.index = tokens.len() as u32;
+        for (idx, &weighted_token) in tokens.iter().enumerate() {
+            arr_account.weighted_tokens[idx] = weighted_token;
+        }
+        Ok(())
+    }*/
+
     /// Registers a new Prism ETF
     pub fn register_token(
         ctx: Context<RegisterToken>,
         bump: u8,
         weighted_tokens: Vec<WeightedToken>,
     ) -> ProgramResult {
-        let prism_etf = &mut ctx.accounts.prism_etf;
+        msg![&size_of::<PrismEtf>().to_string()[..]];
+        let prism_etf = &mut ctx.accounts.prism_etf.load_init()?;
         let beamsplitter = &ctx.accounts.beamsplitter;
         let mint = &ctx.accounts.token_mint;
         let signer = &ctx.accounts.admin_authority;
@@ -56,36 +74,35 @@ pub mod coherence_beamsplitter {
         {
             return Err(BeamsplitterErrors::NotMintAuthority.into());
         }
-
         // TODO ensure all of weighted token pairs have USDC as base token
         for i in 0..weighted_tokens.len() {
             prism_etf.weighted_tokens[i] = weighted_tokens[i];
         }
-
         // TODO Add token address to a registry account
 
         Ok(())
     }
 
+    /*  #[inline(never)]
     pub fn buy(ctx: Context<Buy>) -> ProgramResult {
         // Get's amount approved to buy
-        let amount = BigDecimal::from(ctx.accounts.buyer_token.delegated_amount);
+        let amount = Decimal::from(ctx.accounts.buyer_token.delegated_amount);
 
         let buyer_token = &ctx.accounts.buyer_token;
         let weighted_tokens = &ctx.accounts.prism_etf.weighted_tokens;
         let beamsplitter = &ctx.accounts.beamsplitter;
 
         // Sum all weights * max bid prices together
-        let mut weighted_sum = BigDecimal::zero();
+        let mut weighted_sum = Decimal::zero();
 
         for (idx, weighted_token) in weighted_tokens.iter().enumerate() {
             let market_account = &ctx.remaining_accounts[idx * 3];
             let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
             let market = &MarketState::load(market_account, &dex::id(), false)?;
             let bids = &market.load_bids_mut(bids_account)?;
-            let max_bid = BigDecimal::from(get_slab_price(bids)?);
+            let max_bid = Decimal::from(get_slab_price(bids)?);
 
-            weighted_sum += BigDecimal::from(weighted_token.weight) * max_bid;
+            weighted_sum += Decimal::from(weighted_token.weight) * max_bid;
         }
 
         for (idx, &weighted_token) in ctx.accounts.prism_etf.weighted_tokens.iter().enumerate() {
@@ -99,14 +116,14 @@ pub mod coherence_beamsplitter {
                 let market = &MarketState::load(market_account, &dex::id(), false)?;
 
                 let bids = &market.load_bids_mut(bids_account)?;
-                let max_bid = &BigDecimal::from(get_slab_price(&bids)?);
+                let max_bid = &Decimal::from(get_slab_price(&bids)?);
 
                 let asks = &market.load_asks_mut(asks_account)?;
-                let min_ask = &BigDecimal::from(get_slab_price(&asks)?);
+                let min_ask = &Decimal::from(get_slab_price(&asks)?);
 
                 let _slippage = &(min_ask - max_bid);
 
-                let weight = &BigDecimal::from(weighted_token.weight);
+                let weight = &Decimal::from(weighted_token.weight);
                 portion_amount = &amount * (weight / &weighted_sum);
             }
 
@@ -152,7 +169,7 @@ pub mod coherence_beamsplitter {
         }
 
         Ok(())
-    }
+    }*/
 
     // TODO: Factor in decimals into price
     pub fn get_price(ctx: Context<GetPrice>, dex_pid: Pubkey) -> ProgramResult {
@@ -168,7 +185,7 @@ pub mod coherence_beamsplitter {
 
         Ok(())
     }
-
+    /*
     // TODO: Instruction for user selling their etf tokens
     pub fn sell(ctx: Context<Sell>) -> ProgramResult {
         let beamsplitter = &mut ctx.accounts.beamsplitter;
@@ -218,5 +235,5 @@ pub mod coherence_beamsplitter {
         burn(burn_ctx, placeholder_amount)?;
 
         Ok(())
-    }
+    }*/
 }

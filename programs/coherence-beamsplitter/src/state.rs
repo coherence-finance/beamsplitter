@@ -1,44 +1,33 @@
 use anchor_lang::prelude::*;
 
 /// Contains the info of the prism etf. Immutable.
-#[account]
+#[account(zero_copy)]
 #[derive(Debug)]
 pub struct PrismEtf {
+    // TODO: replace 8 with shared max size
+    // TODO: find way to have optional serialization
+    /// [WeightedToken] array
+    pub weighted_tokens: [WeightedToken; 16384],
+
     /// The Beamsplitter metadata account associated with this prism etf
     pub prism_etf: Pubkey,
     /// Authority that has admin rights over the [PrismEtf].
     pub authority: Pubkey,
-    /// Bump seed. Stored for find_program_address on-chain performance
-    pub bump: u8,
+
     /// [Mint] of the [PrismEtf]
     pub mint: Pubkey,
-    // TODO: replace 8 with shared max size
-    // TODO: find way to have optional serialization
-    /// [WeightedToken] array
-    pub weighted_tokens: [WeightedToken; 8],
+    /// Bump seed. Stored for find_program_address on-chain performance
+
+    /// The index of weighted_tokens array
+    pub index: u32,
+    pub bump: u8,
 }
 
-#[derive(Debug, Default, Copy, AnchorDeserialize, AnchorSerialize, Clone)]
+#[zero_copy]
+#[derive(Debug, Default, AnchorDeserialize, AnchorSerialize)]
 pub struct WeightedToken {
     pub mint: Pubkey,
     pub weight: u32,
-}
-
-impl Default for PrismEtf {
-    #[inline(never)]
-    fn default() -> PrismEtf {
-        // TODO replace 8 with shared max size
-        PrismEtf {
-            prism_etf: Pubkey::default(),
-            authority: Pubkey::default(),
-            bump: u8::default(),
-            mint: Pubkey::default(),
-            weighted_tokens: [WeightedToken {
-                mint: Pubkey::default(),
-                weight: 0,
-            }; 8],
-        }
-    }
 }
 
 #[account]

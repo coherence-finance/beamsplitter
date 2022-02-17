@@ -30,17 +30,9 @@ pub struct Initialize<'info> {
 #[instruction(bump: u8)]
 pub struct RegisterToken<'info> {
     /// Information about the [PrismEtf].
-    #[account(
-        init,
-        seeds = [
-            b"PrismEtf".as_ref(),
-            token_mint.key().to_bytes().as_ref()
-        ],
-        bump,
-        payer = admin_authority,
-    )]
-    pub prism_etf: Box<Account<'info, PrismEtf>>,
-    /// Authority that has admin rights over the [PrismEtf].
+    #[account(zero)]
+    pub prism_etf: AccountLoader<'info, PrismEtf>,
+
     pub admin_authority: Signer<'info>,
     /// The central mint authority for all registered tokens, used for checks
     #[account(
@@ -65,7 +57,7 @@ pub struct Buy<'info> {
 
     /// The Prism ETF [Account] that describes the assets being purchased
     #[account(owner = crate::ID)]
-    pub prism_etf: Account<'info, PrismEtf>,
+    pub prism_etf: AccountLoader<'info, PrismEtf>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
     pub buyer: Signer<'info>,
@@ -131,7 +123,7 @@ pub struct Sell<'info> {
 
     // PrismEtf Account
     #[account(owner = crate::ID)]
-    pub prism_etf: Account<'info, PrismEtf>,
+    pub prism_etf: AccountLoader<'info, PrismEtf>,
 
     /// Needed to interact with the associated token program
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -142,3 +134,23 @@ pub struct Sell<'info> {
     /// Needed to interact with the system program
     pub system_program: Program<'info, System>,
 }
+
+/*
+#[derive(Accounts)]
+#[instruction(bump: u8)]
+pub struct WeightedTokensInit<'info> {
+    #[account(
+        init,
+        seeds = [
+            b"WeightedTokens".as_ref(),
+            payer.key().to_bytes().as_ref(),
+        ],
+        bump,
+        payer = payer,
+    )]
+    pub weighted_tokens: AccountLoader<'info, WeightedTokenArray>,
+    pub payer: Signer<'info>,
+
+    /// Needed to interact with the system program
+    pub system_program: Program<'info, System>,
+}*/

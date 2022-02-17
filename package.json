@@ -15,6 +15,7 @@
     "access": "public"
   },
   "scripts": {
+    "move-dep": "cp -r ./node_modules/spl-token-faucet/programs/spl-token-faucet ./programs/",
     "build": "tsc -P tsconfig.cjs.json && tsc -P tsconfig.build.json",
     "lint": "eslint .",
     "prepare": "husky install",

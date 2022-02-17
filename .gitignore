@@ -132,3 +132,6 @@ dist
 artifacts/
 src/idls/
 data/distributor-info.json
+
+# VSCode
+.vscode
