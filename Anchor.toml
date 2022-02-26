@@ -14,25 +14,3 @@ program = "./deps/serum-dex/dex/target/deploy/serum_dex.so"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-
-[test]
-startup_wait = 30000
-clone = [
-  # BTC Market Account
-  { address = "A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw" }, 
-  # BTC Bid Address Account
-  { address = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin" },
-  # Solana Market Account
-  { address = "9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT" },
-  # Solana Bid Account
-  { address = "14ivtgssEBoBjuZJtSAPKYgpUK7DmnSwuPMqJoVTSgKJ" },
-  # Raydium DEX Program ID
-  { address = "6wLt7CX1zZdFpa6uGJJpZfzWvG6W9rxXjquJDYiFwf9K" },
-  # USDC MintToken
-  { address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
-  # USDC Mint Authority
-  { address = "2wmVCSfPxGPjrnMMn7rchp4uaeoTqN39mXFC2zhPdri9" },
-  # USDC Freeze Authority
-  { address = "3sNBr7kMccME5D55xNgsmYpZnzPgP2g12CixAajXypn6" },
-]
-validator = {url = "m"}

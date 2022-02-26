@@ -10,4 +10,8 @@ pub enum BeamsplitterErrors {
     NoSameMintAccounts,
     #[msg("Deposit was 0 when attempting to buy")]
     EmptyDeposit,
+    #[msg("The tokens being swapped must have different mints")]
+    SwapTokensCannotMatch,
+    #[msg("Slippage tolerance exceeded")]
+    SlippageExceeded,
 }
