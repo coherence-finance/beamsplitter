@@ -23,6 +23,7 @@
     "test": "anchor test"
   },
   "dependencies": {
+    "@project-serum/common": "^0.0.1-beta.3",
     "@saberhq/anchor-contrib": "^1.12.36",
     "@saberhq/solana-contrib": "^1.12.36",
     "@saberhq/token-utils": "^1.12.36",

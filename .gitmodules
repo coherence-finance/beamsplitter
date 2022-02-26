@@ -1,0 +1,3 @@
+[submodule "serum-dex"]
+	path = deps/serum-dex
+	url = https://github.com/coherence-finance/serum-dex
