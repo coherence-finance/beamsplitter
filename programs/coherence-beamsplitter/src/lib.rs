@@ -21,7 +21,10 @@ pub mod coherence_beamsplitter {
     use std::mem::size_of;
 
     use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
-    use rust_decimal::prelude::{ToPrimitive, Zero};
+    use rust_decimal::{
+        prelude::{ToPrimitive, Zero},
+        Decimal,
+    };
     use serum_dex::state::MarketState;
 
     use super::*;
@@ -85,13 +88,14 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    /*  #[inline(never)]
     pub fn buy(ctx: Context<Buy>) -> ProgramResult {
+        let prism_etf = &ctx.accounts.prism_etf.load()?;
+
         // Get's amount approved to buy
         let amount = Decimal::from(ctx.accounts.buyer_token.delegated_amount);
 
         let buyer_token = &ctx.accounts.buyer_token;
-        let weighted_tokens = &ctx.accounts.prism_etf.weighted_tokens;
+        let weighted_tokens = &prism_etf.weighted_tokens;
         let beamsplitter = &ctx.accounts.beamsplitter;
 
         // Sum all weights * max bid prices together
@@ -107,7 +111,7 @@ pub mod coherence_beamsplitter {
             weighted_sum += Decimal::from(weighted_token.weight) * max_bid;
         }
 
-        for (idx, &weighted_token) in ctx.accounts.prism_etf.weighted_tokens.iter().enumerate() {
+        for (idx, &weighted_token) in weighted_tokens.iter().enumerate() {
             let portion_amount;
 
             {
@@ -171,7 +175,7 @@ pub mod coherence_beamsplitter {
         }
 
         Ok(())
-    }*/
+    }
 
     // TODO: Factor in decimals into price
     pub fn get_price(ctx: Context<GetPrice>, dex_pid: Pubkey) -> ProgramResult {
