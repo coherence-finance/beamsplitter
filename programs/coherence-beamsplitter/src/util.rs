@@ -36,7 +36,7 @@ pub fn get_slab_price(bids: &Slab) -> Result<u64, ProgramError> {
 
 pub fn extract_market_accounts<'info>(
     accounts: &[AccountInfo<'info>],
-) -> Result<Vec<Box<MarketAccounts<'info>>>, ProgramError> {
+) -> Result<Vec<MarketAccounts<'info>>, ProgramError> {
     // Slice passed must chunk without leftover
     if accounts.len() % 11 != 0 {
         return Err(ProgramError::InvalidArgument.into());
@@ -44,7 +44,7 @@ pub fn extract_market_accounts<'info>(
     let mut mkt_accounts_vec = Vec::new();
     let mkt_chunks = accounts.chunks(MKT_ACCT_FIELD_NUM);
     for accounts_batch in mkt_chunks {
-        let mkt_acct = Box::new(MarketAccounts {
+        let mkt_acct = MarketAccounts {
             market: accounts_batch[0].clone(),
             open_orders: accounts_batch[1].clone(),
             request_queue: accounts_batch[2].clone(),
@@ -56,7 +56,7 @@ pub fn extract_market_accounts<'info>(
             pc_vault: accounts_batch[8].clone(),
             vault_signer: accounts_batch[9].clone(),
             coin_wallet: accounts_batch[10].clone(),
-        });
+        };
         mkt_accounts_vec.push(mkt_acct);
     }
 

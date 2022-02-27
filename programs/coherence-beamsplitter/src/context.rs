@@ -1,4 +1,4 @@
-use crate::{dex::Dex, state::*, MarketAccounts as Mkt};
+use crate::{dex::Dex, state::*};
 
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -64,11 +64,11 @@ pub struct Buy<'info> {
 
     /// The account paying usdc for Basket tokens
     #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = usdc_token_authority)]
-    pub buyer_token: Account<'info, TokenAccount>,
+    pub buyer_token: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that recieves the Basket Tokens
     #[account(mut, associated_token::mint = prism_etf_mint, associated_token::authority = beamsplitter)]
-    pub reciever_token: Account<'info, TokenAccount>,
+    pub reciever_token: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(
@@ -78,17 +78,10 @@ pub struct Buy<'info> {
         bump = beamsplitter.bump,
         owner = crate::ID,
     )]
-    pub beamsplitter: Account<'info, Beamsplitter>,
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
     #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = usdc_token_authority)]
-    pub beamsplitter_token: Account<'info, TokenAccount>,
-
-    #[account(mut)]
-    pub open_orders: AccountInfo<'info>,
-    #[account(mut)]
-    pub request_queue: AccountInfo<'info>,
-    #[account(mut)]
-    pub event_queue: AccountInfo<'info>,
+    pub beamsplitter_token: Box<Account<'info, TokenAccount>>,
 
     pub rent: Sysvar<'info, Rent>,
 
