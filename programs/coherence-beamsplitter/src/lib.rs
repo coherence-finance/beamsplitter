@@ -29,8 +29,6 @@ pub mod coherence_beamsplitter {
 
     use super::*;
 
-    const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
-
     /// Initializes the Beamsplitter program state
     pub fn initialize(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
         let beamsplitter = &mut ctx.accounts.beamsplitter;
@@ -94,6 +92,8 @@ pub mod coherence_beamsplitter {
         // Get's amount approved to buy
         let amount = Decimal::from(ctx.accounts.buyer_token.delegated_amount);
 
+        let mkt_accts = util::extract_market_accounts(ctx.remaining_accounts)?;
+
         let buyer_token = &ctx.accounts.buyer_token;
         let weighted_tokens = &prism_etf.weighted_tokens;
         let beamsplitter = &ctx.accounts.beamsplitter;
@@ -102,8 +102,8 @@ pub mod coherence_beamsplitter {
         let mut weighted_sum = Decimal::zero();
 
         for (idx, weighted_token) in weighted_tokens.iter().enumerate() {
-            let market_account = &ctx.remaining_accounts[idx * 3];
-            let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
+            let market_account = &mkt_accts[idx].market;
+            let bids_account = &mkt_accts[idx].bids;
             let market = &MarketState::load(market_account, &dex::id(), false)?;
             let bids = &market.load_bids_mut(bids_account)?;
             let max_bid = Decimal::from(get_slab_price(bids)?);
@@ -113,16 +113,19 @@ pub mod coherence_beamsplitter {
 
         for (idx, &weighted_token) in weighted_tokens.iter().enumerate() {
             let portion_amount;
+            let max_bid;
 
             {
                 // Get Max Ask Price
-                let market_account = &ctx.remaining_accounts[idx * 3];
-                let bids_account = &ctx.remaining_accounts[idx * 3 + 1];
-                let asks_account = &ctx.remaining_accounts[idx * 3 + 2];
+                let market_account = &mkt_accts[idx].market;
+                let bids_account = &mkt_accts[idx].bids;
+                let asks_account = &mkt_accts[idx].asks;
                 let market = &MarketState::load(market_account, &dex::id(), false)?;
 
                 let bids = &market.load_bids_mut(bids_account)?;
-                let max_bid = &Decimal::from(get_slab_price(&bids)?);
+
+                // TODO max bid is computed in weighted sum for loop, we should allocate a Box and store these to reduce recomputing
+                max_bid = Decimal::from(get_slab_price(&bids)?);
 
                 let asks = &market.load_asks_mut(asks_account)?;
                 let min_ask = &Decimal::from(get_slab_price(&asks)?);
@@ -153,7 +156,35 @@ pub mod coherence_beamsplitter {
                 transfer(transfer_ctx, *transfer_amount)?;
             }
 
+            {
+                // Transfer from buyer to Beamsplitter
+                let transfer_accounts = Transfer {
+                    to: ctx.accounts.beamsplitter_token.to_account_info(),
+                    from: buyer_token.to_account_info(),
+                    authority: ctx.accounts.usdc_token_authority.to_account_info(),
+                };
+
+                let transfer_ctx = CpiContext::new(
+                    ctx.accounts.token_program.to_account_info(),
+                    transfer_accounts,
+                );
+
+                let transfer_amount = &portion_amount
+                    .to_u64()
+                    .ok_or(ProgramError::InvalidArgument)?;
+
+                transfer(transfer_ctx, *transfer_amount)?;
+            }
+
             // Make buy call
+            let swap = Swap {
+                market: mkt_accts[idx],
+                authority: ctx.accounts.beamsplitter.to_account_info(),
+                pc_wallet: ctx.accounts.beamsplitter_token.to_account_info(),
+                dex_program: ctx.accounts.dex_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info(),
+            };
 
             // Transfer out difference between max_ask and max_bid
 
@@ -191,6 +222,7 @@ pub mod coherence_beamsplitter {
 
         Ok(())
     }
+
     /*
     // TODO: Instruction for user selling their etf tokens
     pub fn sell(ctx: Context<Sell>) -> ProgramResult {

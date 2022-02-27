@@ -1,4 +1,4 @@
-use crate::state::*;
+use crate::{dex::Dex, state::*, MarketAccounts as Mkt};
 
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -82,6 +82,17 @@ pub struct Buy<'info> {
 
     #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = usdc_token_authority)]
     pub beamsplitter_token: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub open_orders: AccountInfo<'info>,
+    #[account(mut)]
+    pub request_queue: AccountInfo<'info>,
+    #[account(mut)]
+    pub event_queue: AccountInfo<'info>,
+
+    pub rent: Sysvar<'info, Rent>,
+
+    pub dex_program: Program<'info, Dex>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
