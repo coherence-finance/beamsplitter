@@ -1,7 +1,6 @@
 use std::cmp;
 
-use anchor_lang::prelude::{Account, AccountInfo, ProgramError};
-use anchor_spl::dex::serum_dex::state::Market;
+use anchor_lang::prelude::{AccountInfo, ProgramError};
 use serum_dex::critbit::Slab;
 
 use crate::swap::MarketAccounts;
