@@ -1,6 +1,6 @@
 use std::cmp;
 
-use anchor_lang::prelude::{AccountInfo, ProgramError};
+use anchor_lang::prelude::{Account, AccountInfo, ProgramError};
 use anchor_spl::dex::serum_dex::state::Market;
 use serum_dex::critbit::Slab;
 
@@ -34,9 +34,9 @@ pub fn get_slab_price(bids: &Slab) -> Result<u64, ProgramError> {
     return Ok(highest_bid);
 }
 
-pub fn extract_market_accounts<'a, 'b>(
-    accounts: &[AccountInfo<'b>],
-) -> Result<Vec<MarketAccounts<'a>>, ProgramError> {
+pub fn extract_market_accounts<'info>(
+    accounts: &[AccountInfo<'info>],
+) -> Result<Vec<MarketAccounts<'info>>, ProgramError> {
     // Slice passed must chunk without leftover
     if accounts.len() % 11 != 0 {
         return Err(ProgramError::InvalidArgument.into());
@@ -44,8 +44,11 @@ pub fn extract_market_accounts<'a, 'b>(
     let mut mkt_accounts_vec = Vec::new();
     let mkt_chunks = accounts.chunks(MKT_ACCT_FIELD_NUM);
     for accounts_batch in mkt_chunks {
-        let mkt_acct = MarketAccounts::<'a> {
-            market: accounts_batch[0],
+        let mkt_acct = MarketAccounts::<'info> {
+            market: match accounts_batch.get(0) {
+                Some(a) => a,
+                None => None,
+            },
             open_orders: accounts_batch[1],
             request_queue: accounts_batch[2],
             event_queue: accounts_batch[3],

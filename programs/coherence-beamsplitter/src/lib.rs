@@ -86,7 +86,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn buy(ctx: Context<Buy>) -> ProgramResult {
+    pub fn buy<'info>(ctx: Context<'_, '_, '_, 'info, Buy<'info>>) -> ProgramResult {
         let prism_etf = &ctx.accounts.prism_etf.load()?;
 
         // Get's amount approved to buy
@@ -176,15 +176,15 @@ pub mod coherence_beamsplitter {
                 transfer(transfer_ctx, *transfer_amount)?;
             }
 
-            // Make buy call
-            let swap = Swap {
-                market: mkt_accts[idx],
-                authority: ctx.accounts.beamsplitter.to_account_info(),
-                pc_wallet: ctx.accounts.beamsplitter_token.to_account_info(),
-                dex_program: ctx.accounts.dex_program.to_account_info(),
-                token_program: ctx.accounts.token_program.to_account_info(),
-                rent: ctx.accounts.rent.to_account_info(),
-            };
+            // // Make buy call
+            // let swap = Swap {
+            //     market: mkt_accts[idx],
+            //     authority: ctx.accounts.beamsplitter.to_account_info(),
+            //     pc_wallet: ctx.accounts.beamsplitter_token.to_account_info(),
+            //     dex_program: ctx.accounts.dex_program.to_account_info(),
+            //     token_program: ctx.accounts.token_program.to_account_info(),
+            //     rent: ctx.accounts.rent.to_account_info(),
+            // };
 
             // Transfer out difference between max_ask and max_bid
 
