@@ -1,188 +1,242 @@
-const assert = require("assert");
-const anchor = require("@project-serum/anchor");
-const BN = anchor.BN;
-const OpenOrders = require("@project-serum/serum").OpenOrders;
-const TOKEN_PROGRAM_ID = require("@solana/spl-token").TOKEN_PROGRAM_ID;
-const serumCmn = require("@project-serum/common");
-const utils = require("./setup-market");
+import { Provider, setProvider } from "@project-serum/anchor";
+import { makeSaberProvider } from "@saberhq/anchor-contrib";
+import { chaiSolana, expectTX } from "@saberhq/chai-solana";
+import type { Provider as SaberProvider } from "@saberhq/solana-contrib";
+import { PendingTransaction, PublicKey } from "@saberhq/solana-contrib";
+import {
+  getATAAddress,
+  getMintInfo,
+  getTokenAccount,
+  u64,
+} from "@saberhq/token-utils";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import chai, { assert, expect } from "chai";
 
-// Taker fee rate (bps).
-const TAKER_FEE = 0.0022;
+import type { PrismEtfData, WeightedToken } from "../src";
+import {
+  CoherenceBeamsplitterSDK,
+  generateBeamsplitterAddress,
+  generatePrismEtfAddress,
+} from "../src";
+import { MAINNET_CONNECTION } from "./utils";
 
-describe("swap", () => {
-  // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.Provider.env());
+chai.use(chaiSolana);
 
-  // Swap program client.
-  const program = anchor.workspace.CoherenceBeamsplitter;
+describe("coherence-beamsplitter", () => {
+  // Provider setup
+  const anchorProvider = Provider.env();
+  setProvider(anchorProvider);
 
-  // Accounts used to setup the orderbook.
-  let ORDERBOOK_ENV,
-    // Accounts used for A -> USDC swap transactions.
-    SWAP_A_USDC_ACCOUNTS,
-    // Accounts used for  USDC -> A swap transactions.
-    SWAP_USDC_A_ACCOUNTS,
-    // Serum DEX vault PDA for market A/USDC.
-    marketAVaultSigner,
-    // Serum DEX vault PDA for market B/USDC.
-    marketBVaultSigner;
+  const testSigner = Keypair.generate();
 
-  // Open orders accounts on the two markets for the provider.
-  const openOrdersA = anchor.web3.Keypair.generate();
-  const openOrdersB = anchor.web3.Keypair.generate();
+  const provider: SaberProvider = makeSaberProvider(anchorProvider);
+  const sdk: CoherenceBeamsplitterSDK = CoherenceBeamsplitterSDK.loadWithSigner(
+    {
+      provider,
+      signer: testSigner,
+    }
+  );
 
-  it("BOILERPLATE: Sets up two markets with resting orders", async () => {
-    ORDERBOOK_ENV = await utils.setupTwoMarkets({
-      provider: program.provider,
+  // Helper variables
+  let authority: PublicKey;
+  let beamsplitter: PublicKey;
+
+  // Unit tests
+  it("Initialize test state", async () => {
+    authority = testSigner.publicKey;
+
+    await expectTX(
+      new PendingTransaction(
+        provider.connection,
+        await provider.connection.requestAirdrop(
+          authority,
+          LAMPORTS_PER_SOL * 100
+        )
+      )
+    ).to.be.fulfilled;
+  });
+
+  it("Initialize beamsplitter program state", async () => {
+    // Initialize prism
+    const tx = await sdk.initialize({ owner: authority });
+
+    await expectTX(
+      tx,
+      "Initialize beamsplitter program state with owner as invoker."
+    ).to.be.fulfilled;
+
+    // Verify beamsplitter data
+    const [pdaKey, bump] = await generateBeamsplitterAddress();
+    const beamsplitterData = await sdk.fetchBeamsplitterData(pdaKey);
+
+    expect(beamsplitterData?.owner).to.eqAddress(authority);
+    expect(beamsplitterData?.bump).to.equal(bump);
+
+    beamsplitter = pdaKey;
+  });
+
+  it("Initializes a prism etf", async () => {
+    // Defines
+    const mintKP = Keypair.generate();
+    const mint = mintKP.publicKey;
+
+    const initialSupply = new u64(100);
+
+    const weightedTokens: WeightedToken[] = [
+      {
+        mint: new PublicKey(0),
+        weight: 4,
+      },
+      {
+        mint: new PublicKey(0),
+        weight: 1,
+      },
+      {
+        mint: new PublicKey(0),
+        weight: 2,
+      },
+    ];
+
+    const prismEtfKP = Keypair.generate();
+
+    // Register token with 3 assets
+    const tx = await sdk.registerToken({
+      beamsplitter,
+      mintKP,
+      authority,
+      prismEtfKP,
+      authorityKp: testSigner,
+      initialSupply,
+      weightedTokens,
     });
+
+    await expectTX(tx, "Initialize asset with assetToken").to.be.fulfilled;
+
+    // Verify token data
+    //const [tokenKey, bump] = await generatePrismEtfAddress(mint);
+    const tokenKey = prismEtfKP.publicKey;
+    const tokenData = (await sdk.fetchPrismEtfData(tokenKey)) as PrismEtfData;
+
+    expect(tokenData.prismEtf).to.eqAddress(beamsplitter);
+    expect(tokenData.authority).to.eqAddress(authority);
+    //expect(tokenData.bump).to.equal(bump);
+    expect(tokenData.mint).to.eqAddress(mint);
+    // TODO: Add custom deep compare for assets
+
+    // Verify mint authority is properly set to beamsplitter
+    const mintAuthorityA = (await getMintInfo(provider, mint))
+      .mintAuthority as PublicKey;
+
+    expect(mintAuthorityA).to.eqAddress(beamsplitter);
+
+    // Verify ATA was created
+    const ataAddress = await getATAAddress({ mint, owner: beamsplitter });
+
+    assert(
+      (await provider.getAccountInfo(ataAddress)) !== null,
+      "Ata address does not exist"
+    );
+
+    // Verify initial supply
+    const tokenAccount = await getTokenAccount(provider, ataAddress);
+
+    assert(
+      tokenAccount.amount.eq(initialSupply),
+      "Initial supply not allocated"
+    );
   });
 
-  it("BOILERPLATE: Sets up reusable accounts", async () => {
-    const marketA = ORDERBOOK_ENV.marketA;
-    const marketB = ORDERBOOK_ENV.marketB;
+  it("Print price of BTC/USDC from Raydium MKT Account", async () => {
+    const market = "BTC/USDC";
 
-    const [vaultSignerA] = await utils.getVaultOwnerAndNonce(
-      marketA._decoded.ownAddress
-    );
-    const [vaultSignerB] = await utils.getVaultOwnerAndNonce(
-      marketB._decoded.ownAddress
-    );
-    marketAVaultSigner = vaultSignerA;
-    marketBVaultSigner = vaultSignerB;
-
-    SWAP_USDC_A_ACCOUNTS = {
-      market: {
-        market: marketA._decoded.ownAddress,
-        requestQueue: marketA._decoded.requestQueue,
-        eventQueue: marketA._decoded.eventQueue,
-        bids: marketA._decoded.bids,
-        asks: marketA._decoded.asks,
-        coinVault: marketA._decoded.baseVault,
-        pcVault: marketA._decoded.quoteVault,
-        vaultSigner: marketAVaultSigner,
-        // User params.
-        openOrders: openOrdersA.publicKey,
-        orderPayerTokenAccount: ORDERBOOK_ENV.godUsdc,
-        coinWallet: ORDERBOOK_ENV.godA,
-      },
-      pcWallet: ORDERBOOK_ENV.godUsdc,
-      authority: program.provider.wallet.publicKey,
-      dexProgram: utils.DEX_PID,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    const pairInfo = {
+      address: "A8YFbxQYFVqKZaoYJLLUVcQiWP7G2MeEgW5wsAQgMvFw",
     };
-    SWAP_A_USDC_ACCOUNTS = {
-      ...SWAP_USDC_A_ACCOUNTS,
-      market: {
-        ...SWAP_USDC_A_ACCOUNTS.market,
-        orderPayerTokenAccount: ORDERBOOK_ENV.godA,
-      },
+
+    if (!pairInfo) throw new Error(`Could not locate ${market} in Market Json`);
+    const marketAccount: PublicKey = new PublicKey(pairInfo?.address);
+
+    const bidAccount = await sdk.loadMarketAndBidAccounts({
+      connection: MAINNET_CONNECTION,
+      marketAccount: marketAccount,
+    });
+
+    const priceAcc = Keypair.generate();
+
+    await expectTX(
+      sdk.getPrice({
+        owner: authority,
+        price: priceAcc.publicKey,
+        priceSigner: priceAcc,
+        market: marketAccount,
+        bids: bidAccount,
+      })
+    ).to.be.fulfilled;
+  });
+
+  it("Print price of SOL/USDC from Raydium MKT Account", async () => {
+    const market = "SOL/USDC";
+
+    const pairInfo = {
+      address: "9wFFyRfZBsuAha4YcuxcXLKwMxJR43S7fPfQLusDBzvT",
     };
+
+    if (!pairInfo) throw new Error(`Could not locate ${market} in Market Json`);
+    const marketAccount: PublicKey = new PublicKey(pairInfo?.address);
+
+    const bidAccount = await sdk.loadMarketAndBidAccounts({
+      connection: MAINNET_CONNECTION,
+      marketAccount: marketAccount,
+    });
+
+    const priceAcc = Keypair.generate();
+
+    await expectTX(
+      sdk.getPrice({
+        owner: authority,
+        price: priceAcc.publicKey,
+        priceSigner: priceAcc,
+        market: marketAccount,
+        bids: bidAccount,
+      })
+    ).to.be.fulfilled;
   });
 
-  it("Swaps from USDC to Token A", async () => {
-    const marketA = ORDERBOOK_ENV.marketA;
+  /* it("Buy an etf", async () => {
+    const usdcWallet = await getATAAddress({
+      mint: getUSDCMint(),
+      owner: authority,
+    });
 
-    // Swap exactly enough USDC to get 1.2 A tokens (best offer price is 6.041 USDC).
-    const expectedResultantAmount = 7.2;
-    const bestOfferPrice = 6.041;
-    const amountToSpend = expectedResultantAmount * bestOfferPrice;
-    const swapAmount = new BN((amountToSpend / (1 - TAKER_FEE)) * 10 ** 6);
-
-    const [tokenAChange, usdcChange] = await withBalanceChange(
-      program.provider,
-      [ORDERBOOK_ENV.godA, ORDERBOOK_ENV.godUsdc],
-      async () => {
-        await program.rpc.swap(Side.Bid, swapAmount, new BN(1.0), {
-          accounts: SWAP_USDC_A_ACCOUNTS,
-          instructions: [
-            // First order to this market so one must create the open orders account.
-            await OpenOrders.makeCreateAccountTransaction(
-              program.provider.connection,
-              marketA._decoded.ownAddress,
-              program.provider.wallet.publicKey,
-              openOrdersA.publicKey,
-              utils.DEX_PID
-            ),
-            // Might as well create the second open orders account while we're here.
-            // In prod, this should actually be done within the same tx as an
-            // order to market B.
-            await OpenOrders.makeCreateAccountTransaction(
-              program.provider.connection,
-              ORDERBOOK_ENV.marketB._decoded.ownAddress,
-              program.provider.wallet.publicKey,
-              openOrdersB.publicKey,
-              utils.DEX_PID
-            ),
-          ],
-          signers: [openOrdersA, openOrdersB],
-        });
-      }
+    const tempProv = new Provider(
+      provider.connection,
+      provider.wallet,
+      provider.opts
     );
 
-    assert.ok(tokenAChange === expectedResultantAmount);
-    assert.ok(usdcChange > -swapAmount.toNumber() / 10 ** 6);
-  });
+    // Mint USDC to our addr
+    await expectTX(
+      new PendingTransaction(
+        tempProv.connection,
+        await airdropSplTokens({
+          provider: tempProv,
+          amount: new BN(1),
+          to: usdcWallet,
+          mintPda: getUSDCMint(),
+          mintPdaBump: (
+            await PublicKey.findProgramAddress(
+              [getUSDCMint().toBuffer()],
+              TOKEN_PROGRAM_ID
+            )
+          )[1],
+        })
+      )
+    ).to.be.fulfilled;
 
-  it("Swaps from Token A to USDC", async () => {
-    const marketA = ORDERBOOK_ENV.marketA;
-
-    // Swap out A tokens for USDC.
-    const swapAmount = 8.1;
-    const bestBidPrice = 6.004;
-    const amountToFill = swapAmount * bestBidPrice;
-    const resultantAmount = new BN(amountToFill * TAKER_FEE * 10 ** 6);
-
-    const [tokenAChange, usdcChange] = await withBalanceChange(
-      program.provider,
-      [ORDERBOOK_ENV.godA, ORDERBOOK_ENV.godUsdc],
-      async () => {
-        await program.rpc.swap(
-          Side.Ask,
-          new BN(swapAmount * 10 ** 6),
-          new BN(swapAmount),
-          {
-            accounts: SWAP_A_USDC_ACCOUNTS,
-          }
-        );
-      }
-    );
-
-    assert.ok(tokenAChange === -swapAmount);
-    assert.ok(usdcChange > resultantAmount.toNumber() / 10 ** 6);
-  });
+    await sdk.buy({
+      beamsplitter,
+      prismEtf: new PublicKey(""),
+      amount: new BN(1),
+    });
+  });*/
 });
-
-// Side rust enum used for the program's RPC API.
-const Side = {
-  Bid: { bid: {} },
-  Ask: { ask: {} },
-};
-
-// Executes a closure. Returning the change in balances from before and after
-// its execution.
-async function withBalanceChange(provider, addrs, fn) {
-  const beforeBalances = [];
-  for (let k = 0; k < addrs.length; k += 1) {
-    beforeBalances.push(
-      (await serumCmn.getTokenAccount(provider, addrs[k])).amount
-    );
-  }
-
-  await fn();
-
-  const afterBalances = [];
-  for (let k = 0; k < addrs.length; k += 1) {
-    afterBalances.push(
-      (await serumCmn.getTokenAccount(provider, addrs[k])).amount
-    );
-  }
-
-  const deltas = [];
-  for (let k = 0; k < addrs.length; k += 1) {
-    deltas.push(
-      (afterBalances[k].toNumber() - beforeBalances[k].toNumber()) / 10 ** 6
-    );
-  }
-  return deltas;
-}
