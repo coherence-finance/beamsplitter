@@ -168,8 +168,26 @@ describe("swap", () => {
           prismEtfKP,
           589928 + 8 // use size_of on PrismEtf to get this value (8 is reserved for disscriminator)
         ),
+        // First order to this market so one must create the open orders account.
+        await OpenOrders.makeCreateAccountTransaction(
+          program.provider.connection,
+          ORDERBOOK_ENV.marketA._decoded.ownAddress,
+          program.provider.wallet.publicKey,
+          openOrdersA.publicKey,
+          utils.DEX_PID
+        ),
+        // Might as well create the second open orders account while we're here.
+        // In prod, this should actually be done within the same tx as an
+        // order to market B.
+        await OpenOrders.makeCreateAccountTransaction(
+          program.provider.connection,
+          ORDERBOOK_ENV.marketB._decoded.ownAddress,
+          program.provider.wallet.publicKey,
+          openOrdersB.publicKey,
+          utils.DEX_PID
+        ),
       ],
-      signers: [prismEtfKP],
+      signers: [openOrdersA, openOrdersB, prismEtfKP],
     });
 
     await provider.send(
@@ -260,57 +278,57 @@ describe("swap", () => {
     SWAP_USDC_A_ACCOUNTS = [
       {
         pubkey: marketA._decoded.ownAddress,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: openOrdersA.publicKey,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: marketA._decoded.requestQueue,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: marketA._decoded.eventQueue,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: marketA._decoded.bids,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: marketA._decoded.asks,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: ORDERBOOK_ENV.godUsdc,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: marketA._decoded.baseVault,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: marketA._decoded.quoteVault,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
       {
         pubkey: marketAVaultSigner,
         isWritable: true,
-        isSigner: true,
+        isSigner: false,
       },
       {
         pubkey: ORDERBOOK_ENV.godA,
-        isWritable: false,
+        isWritable: true,
         isSigner: false,
       },
     ];
@@ -323,7 +341,7 @@ describe("swap", () => {
     };
   });
 
-  it("Swaps from USDC to Token A", async () => {
+  it("Buy ETF Token", async () => {
     const [beamsplitter] = await generateBeamsplitterAddress();
 
     const marketA = ORDERBOOK_ENV.marketA;
@@ -410,28 +428,6 @@ describe("swap", () => {
             tokenProgram: TOKEN_PROGRAM_ID,
           },
           remainingAccounts: SWAP_USDC_A_ACCOUNTS,
-          signers: [],
-          instructions: [
-            // First order to this market so one must create the open orders account.
-            await OpenOrders.makeCreateAccountTransaction(
-              program.provider.connection,
-              marketA._decoded.ownAddress,
-              program.provider.wallet.publicKey,
-              openOrdersA.publicKey,
-              utils.DEX_PID
-            ),
-            // Might as well create the second open orders account while we're here.
-            // In prod, this should actually be done within the same tx as an
-            // order to market B.
-            await OpenOrders.makeCreateAccountTransaction(
-              program.provider.connection,
-              ORDERBOOK_ENV.marketB._decoded.ownAddress,
-              program.provider.wallet.publicKey,
-              openOrdersB.publicKey,
-              utils.DEX_PID
-            ),
-          ],
-          signers: [openOrdersA, openOrdersB],
         });
       }
     );

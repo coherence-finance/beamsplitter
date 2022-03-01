@@ -50,6 +50,7 @@ pub struct RegisterToken<'info> {
 
 #[derive(Accounts)]
 pub struct Buy<'info> {
+    #[account(mut)]
     pub usdc_mint: Account<'info, Mint>,
     pub usdc_token_authority: AccountInfo<'info>,
 
