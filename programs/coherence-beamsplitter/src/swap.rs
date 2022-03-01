@@ -179,7 +179,7 @@ fn coin_lots(market: &MarketState, size: u64) -> u64 {
 
 // Market accounts are the accounts used to place orders against the dex minus
 // common accounts, i.e., program ids, sysvars, and the `pc_wallet`.
-#[derive(Accounts, Clone)]
+#[derive(Accounts, Clone, Debug)]
 pub struct MarketAccounts<'info> {
     #[account(mut)]
     pub market: AccountInfo<'info>,

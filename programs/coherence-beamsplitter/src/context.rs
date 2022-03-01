@@ -50,7 +50,8 @@ pub struct RegisterToken<'info> {
 
 #[derive(Accounts)]
 pub struct Buy<'info> {
-    pub usdc_token_authority: SystemAccount<'info>,
+    pub usdc_mint: Account<'info, Mint>,
+    pub usdc_token_authority: AccountInfo<'info>,
 
     #[account(mut)]
     pub prism_etf_mint: Account<'info, Mint>,
@@ -63,7 +64,7 @@ pub struct Buy<'info> {
     pub buyer: Signer<'info>,
 
     /// The account paying usdc for Basket tokens
-    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = usdc_token_authority)]
+    #[account(mut, associated_token::mint = usdc_mint, associated_token::authority = usdc_token_authority)]
     pub buyer_token: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that recieves the Basket Tokens
@@ -80,7 +81,7 @@ pub struct Buy<'info> {
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
-    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = usdc_token_authority)]
+    #[account(mut)]
     pub beamsplitter_token: Box<Account<'info, TokenAccount>>,
 
     pub rent: Sysvar<'info, Rent>,

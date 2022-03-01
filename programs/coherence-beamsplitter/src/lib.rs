@@ -101,17 +101,17 @@ pub mod coherence_beamsplitter {
         // Sum all weights * max bid prices together
         let mut weighted_sum = Decimal::zero();
 
-        for (idx, weighted_token) in weighted_tokens.iter().enumerate() {
+        for idx in 0..mkt_accts.len() {
             let market_account = &mkt_accts[idx].market;
             let bids_account = &mkt_accts[idx].bids;
             let market = &MarketState::load(market_account, &dex::id(), false)?;
             let bids = &market.load_bids_mut(bids_account)?;
             let max_bid = Decimal::from(get_slab_price(bids)?);
 
-            weighted_sum += Decimal::from(weighted_token.weight) * max_bid;
+            weighted_sum += Decimal::from(weighted_tokens[idx].weight) * max_bid;
         }
 
-        for (idx, &weighted_token) in weighted_tokens.iter().enumerate() {
+        for idx in 0..mkt_accts.len() {
             let portion_amount;
             let max_bid;
 
@@ -132,28 +132,11 @@ pub mod coherence_beamsplitter {
 
                 let _slippage = &(min_ask - max_bid);
 
-                let weight = &Decimal::from(weighted_token.weight);
-                portion_amount = &amount * (weight / &weighted_sum);
-            }
-
-            {
-                // Transfer from buyer to Beamsplitter
-                let transfer_accounts = Transfer {
-                    to: ctx.accounts.beamsplitter_token.to_account_info(),
-                    from: buyer_token.to_account_info(),
-                    authority: ctx.accounts.usdc_token_authority.to_account_info(),
-                };
-
-                let transfer_ctx = CpiContext::new(
-                    ctx.accounts.token_program.to_account_info(),
-                    transfer_accounts,
-                );
-
-                let transfer_amount = &portion_amount
-                    .to_u64()
-                    .ok_or(ProgramError::InvalidArgument)?;
-
-                transfer(transfer_ctx, *transfer_amount)?;
+                // let weight = &Decimal::from(weighted_token.weight);
+                // portion_amount = &amount * (weight / &weighted_sum);
+                // TODO: Remove after testing
+                let weight = Decimal::from(50);
+                portion_amount = weight;
             }
 
             {
