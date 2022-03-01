@@ -27,6 +27,8 @@ pub mod coherence_beamsplitter {
     };
     use serum_dex::state::MarketState;
 
+    const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
+
     use super::*;
 
     /// Initializes the Beamsplitter program state
@@ -163,7 +165,7 @@ pub mod coherence_beamsplitter {
                 // Make buy call
                 let orderbook = OrderbookClient {
                     market: mkt_accts[idx].clone(),
-                    authority: ctx.accounts.beamsplitter.to_account_info(),
+                    authority: ctx.accounts.buyer.to_account_info(),
                     pc_wallet: ctx.accounts.beamsplitter_token.to_account_info(),
                     dex_program: ctx.accounts.dex_program.to_account_info(),
                     token_program: ctx.accounts.token_program.to_account_info(),
@@ -183,8 +185,14 @@ pub mod coherence_beamsplitter {
                     authority: beamsplitter.to_account_info(),
                 };
 
-                let mint_to_ctx =
-                    CpiContext::new(ctx.accounts.token_program.to_account_info(), mint_accounts);
+                let seeds = &[PDA_SEED, &[beamsplitter.bump]];
+                let signer_seeds = &[&seeds[..]];
+
+                let mint_to_ctx = CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+                    mint_accounts,
+                    signer_seeds,
+                );
 
                 let mint_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
 
