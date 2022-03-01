@@ -18,9 +18,10 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod coherence_beamsplitter {
-    use std::mem::size_of;
+    use std::{mem::size_of, ops::Mul};
 
     use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
+    use bigdecimal::num_traits::Pow;
     use rust_decimal::{
         prelude::{ToPrimitive, Zero},
         Decimal,
@@ -116,6 +117,7 @@ pub mod coherence_beamsplitter {
         for idx in 0..mkt_accts.len() {
             let portion_amount;
             let max_bid;
+            let decimals;
 
             {
                 // Get Max Ask Price
@@ -134,11 +136,9 @@ pub mod coherence_beamsplitter {
 
                 let _slippage = &(min_ask - max_bid);
 
-                // let weight = &Decimal::from(weighted_token.weight);
-                // portion_amount = &amount * (weight / &weighted_sum);
-                // TODO: Remove after testing
-                let weight = Decimal::from(50);
-                portion_amount = weight;
+                decimals = Decimal::from(10.pow(ctx.accounts.usdc_mint.decimals));
+                let weight = &Decimal::from(weighted_tokens[idx].weight);
+                portion_amount = &amount * (weight / &weighted_sum);
             }
 
             {
@@ -154,7 +154,7 @@ pub mod coherence_beamsplitter {
                     transfer_accounts,
                 );
 
-                let transfer_amount = &portion_amount
+                let transfer_amount = &(portion_amount * max_bid)
                     .to_u64()
                     .ok_or(ProgramError::InvalidArgument)?;
 
@@ -171,7 +171,7 @@ pub mod coherence_beamsplitter {
                     token_program: ctx.accounts.token_program.to_account_info(),
                     rent: ctx.accounts.rent.to_account_info(),
                 };
-                orderbook.buy(portion_amount.to_u64().unwrap(), None)?;
+                orderbook.buy(portion_amount.mul(decimals).to_u64().unwrap(), None)?;
                 orderbook.settle(None)?;
             }
 
@@ -194,7 +194,9 @@ pub mod coherence_beamsplitter {
                     signer_seeds,
                 );
 
-                let mint_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+                let mint_amount = portion_amount
+                    .to_u64()
+                    .ok_or(ProgramError::InvalidArgument)?;
 
                 mint_to(mint_to_ctx, mint_amount)?;
             }

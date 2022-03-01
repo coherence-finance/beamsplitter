@@ -376,7 +376,7 @@ describe("swap", () => {
             fromToken,
             usdcAuthority,
             [],
-            100
+            10 * 10 ** 6
           )
         );
         return tx;
@@ -393,22 +393,20 @@ describe("swap", () => {
             owner: provider.wallet.publicKey,
             delegate: beamsplitter,
             source: fromToken,
-            amount: 100,
+            amount: 10 * 10 ** 6,
           })
         );
         return tx;
       })()
     );
 
-    // Swap exactly enough USDC to get 1.2 A tokens (best offer price is 6.041 USDC).
-    const expectedResultantAmount = 7.2;
-    const bestOfferPrice = 6.041;
+    const expectedResultantAmount = 1665 / 10 ** 6;
+    const bestOfferPrice = 6.004;
     const amountToSpend = expectedResultantAmount * bestOfferPrice;
-    const swapAmount = new BN((amountToSpend / (1 - TAKER_FEE)) * 10 ** 6);
 
-    const [tokenAChange, usdcChange] = await withBalanceChange(
+    const [fromTokenChange, toChange] = await withBalanceChange(
       program.provider,
-      [ORDERBOOK_ENV.godA, ORDERBOOK_ENV.godUsdc],
+      [fromToken, toToken],
       async () => {
         await program.rpc.buy({
           accounts: {
@@ -432,37 +430,9 @@ describe("swap", () => {
       }
     );
 
-    assert.ok(tokenAChange === expectedResultantAmount);
-    assert.ok(usdcChange > -swapAmount.toNumber() / 10 ** 6);
+    expect(fromTokenChange).to.be.equal(-10);
+    expect(toChange).to.be.equal(expectedResultantAmount);
   });
-
-  // it("Swaps from Token A to USDC", async () => {
-  //   const marketA = ORDERBOOK_ENV.marketA;
-
-  //   // Swap out A tokens for USDC.
-  //   const swapAmount = 8.1;
-  //   const bestBidPrice = 6.004;
-  //   const amountToFill = swapAmount * bestBidPrice;
-  //   const resultantAmount = new BN(amountToFill * TAKER_FEE * 10 ** 6);
-
-  //   const [tokenAChange, usdcChange] = await withBalanceChange(
-  //     program.provider,
-  //     [ORDERBOOK_ENV.godA, ORDERBOOK_ENV.godUsdc],
-  //     async () => {
-  //       await program.rpc.swap(
-  //         Side.Ask,
-  //         new BN(swapAmount * 10 ** 6),
-  //         new BN(swapAmount),
-  //         {
-  //           accounts: SWAP_A_USDC_ACCOUNTS,
-  //         }
-  //       );
-  //     }
-  //   );
-
-  //   assert.ok(tokenAChange === -swapAmount);
-  //   assert.ok(usdcChange > resultantAmount.toNumber() / 10 ** 6);
-  // });
 });
 
 // Side rust enum used for the program's RPC API.
