@@ -187,16 +187,18 @@ pub struct Cohere<'info> {
     pub orderer: Signer<'info>,
 
     /// The authority on the transfer mint
-    pub transfer_authority: System<'info>
+    pub transfer_authority: SystemAccount<'info>,
 
     /// The mint of the asset being transfered
     pub transfer_mint: Account<'info, Mint>,
 
     /// The [TokenAccount] that transfers out tokens
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = transfer_authority)]
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
-    pub beamsplitter_ata: Box<Account<'info, TokenAccount>>,
+    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = transfer_authority, payer = orderer)]
+    pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(
@@ -206,6 +208,10 @@ pub struct Cohere<'info> {
         bump = beamsplitter.bump,
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+
+    pub rent: Sysvar<'info, Rent>,
+
+    pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub token_program: Program<'info, Token>,
 

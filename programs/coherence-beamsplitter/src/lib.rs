@@ -14,10 +14,15 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod coherence_beamsplitter {
-    use std::{mem::size_of, ops::Mul};
+    use std::{
+        convert::TryFrom,
+        mem::size_of,
+        ops::{Mul, MulAssign},
+    };
 
     use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
     use bigdecimal::num_traits::Pow;
+
     use rust_decimal::{
         prelude::{ToPrimitive, Zero},
         Decimal,
@@ -143,7 +148,6 @@ pub mod coherence_beamsplitter {
         }
 
         order_state.amount = amount;
-        order_state.dec = dec;
         order_state.is_construction = order_type;
         order_state.is_pending = true;
 
@@ -189,7 +193,7 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer amount of required tokens to Beamspltitter from user ata accounts
     */
-    pub fn cohere(ctx: Context<Cohere>, index: u32) -> ProgramResult {
+    pub fn cohere(ctx: Context<Cohere>, index: usize) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
 
         if !order_state.is_pending {
@@ -200,29 +204,49 @@ pub mod coherence_beamsplitter {
             return Err(ProgramError::InvalidArgument.into());
         }
 
-        // let delegated_amoutn =
-        let amount = Decimal::from(ctx.accounts.orderer_transfer_ata.delegated_amount);
+        let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
+        let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
-        let mint_accounts = Transfer {
-            mint: ctx.accounts.transfer_mint.to_account_info(),
-            to: ctx.accounts.orderer_etf_ata.to_account_info(),
+        // The index passed must correspond to the
+        if weighted_tokens.weighted_tokens[index].mint != ctx.accounts.transfer_mint.key() {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        // The weighted token of asset being transferred
+        let weighted_token = &weighted_tokens.weighted_tokens[index];
+        let required_amount = &mut Decimal::from(order_state.amount);
+
+        let delegated_amount = ctx.accounts.orderer_transfer_ata.delegated_amount;
+        let amount = &Decimal::from(delegated_amount);
+        let weight = &mut Decimal::from(weighted_token.weight);
+
+        // Scales the weight by how many decimals it uses (eg Dec = 1 for value 10 == 1.0)
+        match weight.set_scale(weighted_token.dec as u32) {
+            Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+            _ => (),
+        }
+
+        required_amount.mul_assign(*weight);
+
+        if amount < required_amount {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        let transfer_accounts = Transfer {
+            to: ctx.accounts.beamsplitter_transfer_ata.to_account_info(),
             authority: ctx.accounts.transfer_authority.to_account_info(),
-            from: todo!(),
+            from: ctx.accounts.orderer_transfer_ata.to_account_info(),
         };
 
-        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
-        let signer_seeds = &[&seeds[..]];
-
-        let burn_ctx = CpiContext::new_with_signer(
+        let transfer_ctx = CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
-            mint_accounts,
-            signer_seeds,
+            transfer_accounts,
         );
 
-        let burn_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+        // Mark this token as successfully transferred
+        transferred_tokens.transferred_tokens[index] = true;
 
-        burn(burn_ctx, burn_amount)?;
-        // Get's amount approved to buy
+        transfer(transfer_ctx, order_state.amount)?;
 
         Ok(())
     }

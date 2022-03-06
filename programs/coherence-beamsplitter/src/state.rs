@@ -44,8 +44,6 @@ pub struct OrderState {
     pub is_pending: bool, // TODO use enum
     // The amount being CONSTRUCTed or DECONSTRUCTed
     pub amount: u64,
-    // The decimals for the amount
-    pub dec: u8,
     /// The bump for this PDA account
     pub bump: u8,
 }
