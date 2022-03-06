@@ -133,7 +133,7 @@ pub struct StartOrder<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(init_if_needed, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, payer = orderer)]
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(owner = crate::ID)]
@@ -217,22 +217,40 @@ pub struct Cohere<'info> {
 
     pub system_program: Program<'info, System>,
 }
-/*
+
 #[derive(Accounts)]
 pub struct Decohere<'info> {
-    #[account(mut)]
     pub prism_etf_mint: Account<'info, Mint>,
 
     /// The Prism ETF [Account] that describes the assets being purchased
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+
+    #[account(init_if_needed, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, payer = orderer)]
+    pub order_state: Box<Account<'info, OrderState>>,
+
     #[account(owner = crate::ID)]
-    pub prism_etf: AccountLoader<'info, PrismEtf>,
+    pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
+
+    #[account(owner = crate::ID, mut)]
+    pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
-    pub buyer: Signer<'info>,
+    pub orderer: Signer<'info>,
 
-    /// The [TokenAccount] that recieves the Basket Tokens
-    #[account(mut, associated_token::mint = prism_etf_mint, associated_token::authority = beamsplitter)]
-    pub reciever_token: Box<Account<'info, TokenAccount>>,
+    /// The authority on the transfer mint
+    pub transfer_authority: SystemAccount<'info>,
+
+    /// The mint of the asset being transfered
+    pub transfer_mint: Account<'info, Mint>,
+
+    /// The [TokenAccount] that transfers out tokens
+    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = transfer_authority, payer = orderer)]
+    pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
+
+    /// The [TokenAccount] that transfers in tokens
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = transfer_authority)]
+    pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(
@@ -240,76 +258,55 @@ pub struct Decohere<'info> {
             b"Beamsplitter".as_ref(),
         ],
         bump = beamsplitter.bump,
-        owner = crate::ID,
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
-    #[account(mut)]
-    pub beamsplitter_token: Box<Account<'info, TokenAccount>>,
-
     pub rent: Sysvar<'info, Rent>,
-
-    pub dex_program: Program<'info, Dex>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub token_program: Program<'info, Token>,
 
     pub system_program: Program<'info, System>,
-}*/
-/*
+}
 
 #[derive(Accounts)]
-pub struct Sell<'info> {
-    /// Authority that has admin rights over the [PrismEtf].
-    pub seller: Signer<'info>,
+pub struct FinalizeOrder<'info> {
+    pub prism_etf_mint: Account<'info, Mint>,
 
-    // Account that holds seller's tokens
-    #[account(mut, associated_token::mint = mint::USDC, associated_token::authority = seller)]
-    pub seller_token: Account<'info, TokenAccount>,
+    /// The Prism ETF [Account] that describes the assets being purchased
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    /// The central mint authority for all registered tokens, used for checks
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    pub order_state: Box<Account<'info, OrderState>>,
+
+    #[account(owner = crate::ID)]
+    pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
+
+    #[account(owner = crate::ID, mut)]
+    pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
+
+    /// The [Signer] of the tx and owner of the [Deposit] [Account]
+    pub orderer: Signer<'info>,
+
+    /// The [TokenAccount] that recieves the Basket Tokens
+    #[account(init_if_needed, associated_token::mint = prism_etf_mint, associated_token::authority = beamsplitter, payer = orderer)]
+    pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(
         seeds = [
             b"Beamsplitter".as_ref(),
         ],
         bump = beamsplitter.bump,
     )]
-    pub beamsplitter: Account<'info, Beamsplitter>,
-
-    /// [Mint] of the [PrismEtf].
-    pub token_mint: Account<'info, Mint>,
-
-    // PrismEtf Account
-    #[account(owner = crate::ID)]
-    pub prism_etf: AccountLoader<'info, PrismEtf>,
-
-    /// Needed to interact with the associated token program
+    pub rent: Sysvar<'info, Rent>,
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+    ///
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    /// Needed to interact with the token program
     pub token_program: Program<'info, Token>,
-
-    /// Needed to interact with the system program
+    /// The [System] program.
     pub system_program: Program<'info, System>,
-}*/
-
-/*
-#[derive(Accounts)]
-#[instruction(bump: u8)]
-pub struct WeightedTokensInit<'info> {
-    #[account(
-        init,
-        seeds = [
-            b"WeightedTokens".as_ref(),
-            payer.key().to_bytes().as_ref(),
-        ],
-        bump,
-        payer = payer,
-    )]
-    pub weighted_tokens: AccountLoader<'info, WeightedTokenArray>,
-    pub payer: Signer<'info>,
-
-    /// Needed to interact with the system program
-    pub system_program: Program<'info, System>,
-}*/
+}

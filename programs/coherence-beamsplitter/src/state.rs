@@ -64,7 +64,6 @@ pub struct TransferredTokens {
 pub struct WeightedToken {
     pub mint: Pubkey,
     pub weight: u32,
-    pub dec: u8,
 }
 
 #[account]

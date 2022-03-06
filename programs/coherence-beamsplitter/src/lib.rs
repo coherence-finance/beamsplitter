@@ -14,14 +14,14 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod coherence_beamsplitter {
-    use std::ps::MulAssign;
+    use std::ops::MulAssign;
 
-    use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
-
-    use rust_decimal::{
-        prelude::{ToPrimitive, Zero},
-        Decimal,
+    use anchor_spl::{
+        mint,
+        token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer},
     };
+
+    use rust_decimal::{prelude::ToPrimitive, Decimal};
     const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
 
     use super::*;
@@ -211,7 +211,7 @@ pub mod coherence_beamsplitter {
         let weight = &mut Decimal::from(weighted_token.weight);
 
         // Scales the weight by how many decimals it uses (eg Dec = 1 for value 10 == 1.0)
-        match weight.set_scale(weighted_token.dec as u32) {
+        match weight.set_scale(ctx.accounts.transfer_mint.decimals as u32) {
             Err(_error) => return Err(ProgramError::InvalidArgument.into()),
             _ => (),
         }
@@ -236,7 +236,7 @@ pub mod coherence_beamsplitter {
         // Mark this token as successfully transferred
         transferred_tokens.transferred_tokens[index] = true;
 
-        transfer(transfer_ctx, order_state.amount)?;
+        transfer(transfer_ctx, weighted_token.weight.into())?;
 
         Ok(())
     }
@@ -255,15 +255,46 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer tokens from beamsplitter to user
     */
-    /*pub fn decohere(ctx: Context<Decohere>) -> ProgramResult {
-        let prism_etf = &ctx.accounts.prism_etf.load()?;
+    pub fn decohere(ctx: Context<Cohere>, index: usize) -> ProgramResult {
+        let order_state = &mut ctx.accounts.order_state;
 
-        // COND: Validate order type
+        if !order_state.is_pending {
+            return Err(ProgramError::InvalidArgument.into());
+        }
 
-        // Get's amount approved to buy
+        if order_state.is_construction {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
+        let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
+
+        // The index passed must correspond to the
+        if weighted_tokens.weighted_tokens[index].mint != ctx.accounts.transfer_mint.key() {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        // The weighted token of asset being transferred
+        let weighted_token = &weighted_tokens.weighted_tokens[index];
+
+        let transfer_accounts = Transfer {
+            to: ctx.accounts.orderer_transfer_ata.to_account_info(),
+            authority: ctx.accounts.transfer_authority.to_account_info(),
+            from: ctx.accounts.beamsplitter_transfer_ata.to_account_info(),
+        };
+
+        let transfer_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_accounts,
+        );
+
+        // Mark this token as successfully transferred
+        transferred_tokens.transferred_tokens[index] = true;
+
+        transfer(transfer_ctx, weighted_token.weight.into())?;
 
         Ok(())
-    }*/
+    }
 
     /*
     Finalize a Prism ETF CONSTRUCTION or DECONSTRUCTION order
@@ -279,45 +310,38 @@ pub mod coherence_beamsplitter {
     1. Set order_state.status = SUCCEEDED
     2. if order_state.type == CONSTRUCTION, mint order_state.amount of tokens
     */
-    /*pub fn finalize_order<'info>(ctx: Context<FinalizeOrder>) -> ProgramResult {
-        let prism_etf = &ctx.accounts.prism_etf.load()?;
+    pub fn finalize_order(ctx: Context<FinalizeOrder>) -> ProgramResult {
+        let order_state = &mut ctx.accounts.order_state;
 
-        // Get's amount approved to buy
+        if order_state.is_pending {
+            return Err(ProgramError::InvalidArgument.into());
+        }
 
-        Ok(())
-    }*/
+        let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
+        let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
+        transferred_tokens.index = weighted_tokens.index;
 
-    // MINT CODE
-    /*{
-        // Mint
-        let mint_accounts = MintTo {
-            mint: ctx.accounts.prism_etf_mint.to_account_info(),
-            to: ctx.accounts.reciever_token.to_account_info(),
-            authority: beamsplitter.to_account_info(),
-        };
+        if order_state.is_construction {
+            let mint_accounts = MintTo {
+                mint: ctx.accounts.prism_etf_mint.to_account_info(),
+                to: ctx.accounts.orderer_etf_ata.to_account_info(),
+                authority: ctx.accounts.beamsplitter.to_account_info(),
+            };
 
-        let seeds = &[PDA_SEED, &[beamsplitter.bump]];
-        let signer_seeds = &[&seeds[..]];
+            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+            let signer_seeds = &[&seeds[..]];
 
-        let mint_to_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            mint_accounts,
-            signer_seeds,
-        );
+            let mint_ctx = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                mint_accounts,
+                signer_seeds,
+            );
 
-        let mint_amount = portion_amount
-            .to_u64()
-            .ok_or(ProgramError::InvalidArgument)?;
+            mint_to(mint_ctx, order_state.amount)?;
+        }
 
-        mint_to(mint_to_ctx, mint_amount)?;
-    }*/
-
-    // TODO: Factor in decimals into price
-    /*pub fn get_price(ctx: Context<GetPrice>, dex_pid: Pubkey) -> ProgramResult {
-        let price_account = &mut ctx.accounts.price;
-
-        price_account.price = get_slab_price(&bids)?;
+        order_state.is_pending = false;
 
         Ok(())
-    }*/
+    }
 }
