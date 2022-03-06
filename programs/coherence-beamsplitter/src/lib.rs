@@ -14,14 +14,9 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod coherence_beamsplitter {
-    use std::{
-        convert::TryFrom,
-        mem::size_of,
-        ops::{Mul, MulAssign},
-    };
+    use std::ps::MulAssign;
 
     use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
-    use bigdecimal::num_traits::Pow;
 
     use rust_decimal::{
         prelude::{ToPrimitive, Zero},
@@ -135,12 +130,7 @@ pub mod coherence_beamsplitter {
     2. Set order_state.type = <order_type>
     3. if order_state.type == DECONSTRUCTION, burn <amount> of tokens
     */
-    pub fn start_order(
-        ctx: Context<StartOrder>,
-        order_type: bool,
-        amount: u64,
-        dec: u8,
-    ) -> ProgramResult {
+    pub fn start_order(ctx: Context<StartOrder>, order_type: bool, amount: u64) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
 
         if order_state.is_pending {
