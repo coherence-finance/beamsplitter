@@ -25,7 +25,7 @@ import type BN from "bn.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
 import type { WeightedToken } from ".";
-import { getUSDCMint } from ".";
+import { generatePrismEtfAddressTest, getUSDCMint } from ".";
 import { PROGRAM_ID } from "./constants";
 import { generateBeamsplitterAddress } from "./pda";
 import type {
@@ -177,6 +177,34 @@ export class CoherenceBeamsplitterSDK {
     }
 
     return tx.combine(setAuthTx);
+  }
+
+  async init_registration({
+    beamsplitter,
+    prismEtfKP = Keypair.generate(),
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfKP?: Keypair;
+  }): Promise<TransactionEnvelope> {
+    const [pdaAddress] = await generatePrismEtfAddressTest();
+    return new TransactionEnvelope(
+      this.provider,
+      [
+        await this.program.account.prismEtf.createInstruction(
+          prismEtfKP,
+          589928 + 8 // use size_of on PrismEtf to get this value (8 is reserved for disscriminator)
+        ),
+        this.program.instruction.initRegistration({
+          accounts: {
+            prismEtf: prismEtfKP.publicKey,
+            adminAuthority: this.provider.wallet.publicKey,
+            beamsplitter,
+            systemProgram: SystemProgram.programId,
+          },
+        }),
+      ],
+      [prismEtfKP]
+    );
   }
 
   async buy({

@@ -1,4 +1,4 @@
-use std::cmp;
+/* use std::cmp;
 
 use anchor_lang::prelude::{AccountInfo, ProgramError};
 use serum_dex::critbit::Slab;
@@ -17,6 +17,7 @@ const MKT_ACCT_FIELD_NUM: usize = 11;
     });
     sum
 }*/
+
 
 pub fn get_slab_price(bids: &Slab) -> Result<u64, ProgramError> {
     let mut highest_bid: u64 = 0;
@@ -61,3 +62,4 @@ pub fn extract_market_accounts<'info>(
 
     return Ok(mkt_accounts_vec);
 }
+*/

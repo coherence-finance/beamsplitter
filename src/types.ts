@@ -19,6 +19,8 @@ export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 export type Defined = BeamsplitterTypes["Defined"];
 export type WeightedToken = Defined["WeightedToken"];
 
+export type PRISM_ETF_SIZE = Defined[];
+
 export type RequiredMarketAccounts = {
   marketAccount: PublicKey;
   bidAccount: PublicKey;

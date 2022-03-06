@@ -177,7 +177,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea94b04fc9a0aaae4d4473b0595fb5f55b6c9b38e0d6f596df8c8060f95f096"
 dependencies = [
  "anchor-lang",
- "serum_dex 0.4.0",
+ "serum_dex",
  "solana-program",
  "spl-associated-token-account",
  "spl-token",
@@ -433,10 +433,10 @@ dependencies = [
  "anchor-spl",
  "bigdecimal",
  "borsh",
+ "mem_macros",
  "pyth-client",
  "rust_decimal",
  "rust_decimal_macros",
- "serum_dex 0.5.4",
  "solana-program",
  "spl-token",
 ]
@@ -804,6 +804,12 @@ checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
 ]
+
+[[package]]
+name = "mem_macros"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6533f8d40a489f5eba44718880fe6c88d38deff1f12398930462c1246a2aa017"
 
 [[package]]
 name = "memchr"
@@ -1207,29 +1213,6 @@ name = "serum_dex"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02705854bae4622e552346c8edd43ab90c7425da35d63d2c689f39238f8d8b25"
-dependencies = [
- "arrayref",
- "bincode",
- "bytemuck",
- "byteorder",
- "enumflags2",
- "field-offset",
- "itertools 0.9.0",
- "num-traits",
- "num_enum",
- "safe-transmute",
- "serde",
- "solana-program",
- "spl-token",
- "static_assertions",
- "thiserror",
- "without-alloc",
-]
-
-[[package]]
-name = "serum_dex"
-version = "0.5.4"
-source = "git+https://github.com/coherence-finance/serum-dex#3a5b46b5f4ae420b7b2c82024a0127c98a7afa67"
 dependencies = [
  "arrayref",
  "bincode",

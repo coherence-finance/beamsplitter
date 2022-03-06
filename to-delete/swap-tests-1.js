@@ -376,7 +376,7 @@ describe("swap", () => {
             fromToken,
             usdcAuthority,
             [],
-            10 * 10 ** 6
+            100
           )
         );
         return tx;
@@ -393,20 +393,31 @@ describe("swap", () => {
             owner: provider.wallet.publicKey,
             delegate: beamsplitter,
             source: fromToken,
-            amount: 10 * 10 ** 6,
+            amount: 100,
           })
         );
         return tx;
       })()
     );
 
-    const expectedResultantAmount = 1665 / 10 ** 6;
-    const bestOfferPrice = 6.004;
+    // Swap exactly enough USDC to get 1.2 A tokens (best offer price is 6.041 USDC).
+    const expectedResultantAmount = 7.2;
+    const bestOfferPrice = 6.041;
     const amountToSpend = expectedResultantAmount * bestOfferPrice;
+    const swapAmount = new BN((amountToSpend / (1 - TAKER_FEE)) * 10 ** 6);
 
-    const [fromTokenChange, toChange] = await withBalanceChange(
+    console.log(
+      "usdc before " +
+        (await serumCmn.getTokenAccount(provider, fromToken)).amount.toString()
+    );
+    console.log(
+      "etf before " +
+        (await serumCmn.getTokenAccount(provider, toToken)).amount.toString()
+    );
+
+    const [tokenAChange, usdcChange] = await withBalanceChange(
       program.provider,
-      [fromToken, toToken],
+      [ORDERBOOK_ENV.godA, ORDERBOOK_ENV.godUsdc],
       async () => {
         await program.rpc.buy({
           accounts: {
@@ -430,9 +441,46 @@ describe("swap", () => {
       }
     );
 
-    expect(fromTokenChange).to.be.equal(-10);
-    expect(toChange).to.be.equal(expectedResultantAmount);
+    console.log(
+      "usdc after " +
+        (await serumCmn.getTokenAccount(provider, fromToken)).amount.toString()
+    );
+    console.log(
+      "etf after " +
+        (await serumCmn.getTokenAccount(provider, toToken)).amount.toString()
+    );
+
+    assert.ok(tokenAChange === expectedResultantAmount);
+    assert.ok(usdcChange > -swapAmount.toNumber() / 10 ** 6);
   });
+
+  // it("Swaps from Token A to USDC", async () => {
+  //   const marketA = ORDERBOOK_ENV.marketA;
+
+  //   // Swap out A tokens for USDC.
+  //   const swapAmount = 8.1;
+  //   const bestBidPrice = 6.004;
+  //   const amountToFill = swapAmount * bestBidPrice;
+  //   const resultantAmount = new BN(amountToFill * TAKER_FEE * 10 ** 6);
+
+  //   const [tokenAChange, usdcChange] = await withBalanceChange(
+  //     program.provider,
+  //     [ORDERBOOK_ENV.godA, ORDERBOOK_ENV.godUsdc],
+  //     async () => {
+  //       await program.rpc.swap(
+  //         Side.Ask,
+  //         new BN(swapAmount * 10 ** 6),
+  //         new BN(swapAmount),
+  //         {
+  //           accounts: SWAP_A_USDC_ACCOUNTS,
+  //         }
+  //       );
+  //     }
+  //   );
+
+  //   assert.ok(tokenAChange === -swapAmount);
+  //   assert.ok(usdcChange > resultantAmount.toNumber() / 10 ** 6);
+  // });
 });
 
 // Side rust enum used for the program's RPC API.

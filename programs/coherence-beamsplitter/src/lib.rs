@@ -1,9 +1,7 @@
 //pub mod anchor_swap;
 pub mod context;
-pub mod dex;
 pub mod errors;
 pub mod state;
-pub mod swap;
 pub mod util;
 
 use anchor_lang::prelude::*;
@@ -11,8 +9,6 @@ use anchor_spl::token;
 use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
-use swap::*;
-use util::get_slab_price;
 
 declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
@@ -26,8 +22,6 @@ pub mod coherence_beamsplitter {
         prelude::{ToPrimitive, Zero},
         Decimal,
     };
-    use serum_dex::state::MarketState;
-
     const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
 
     use super::*;
@@ -57,287 +51,259 @@ pub mod coherence_beamsplitter {
         Ok(())
     }*/
 
-    /// Registers a new Prism ETF
-    pub fn register_token(
-        ctx: Context<RegisterToken>,
-        bump: u8,
-        weighted_tokens: Vec<WeightedToken>,
-    ) -> ProgramResult {
-        msg![&size_of::<PrismEtf>().to_string()[..]];
-        let prism_etf = &mut ctx.accounts.prism_etf.load_init()?;
-        let beamsplitter = &ctx.accounts.beamsplitter;
-        let mint = &ctx.accounts.token_mint;
-        let signer = &ctx.accounts.admin_authority;
+    pub fn init_weighted_tokens(ctx: Context<InitWeightedTokens>) -> ProgramResult {
+        let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_init()?;
+        weighted_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
+        Ok(())
+    }
 
-        prism_etf.authority = ctx.accounts.admin_authority.key();
+    pub fn init_transferred_tokens(ctx: Context<InitTransferredTokens>) -> ProgramResult {
+        let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_init()?;
+        transferred_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
+        Ok(())
+    }
+
+    pub fn init_prism_etf(ctx: Context<InitPrismEtf>, bump: u8) -> ProgramResult {
+        let prism_etf = &mut ctx.accounts.prism_etf;
+        let beamsplitter = &ctx.accounts.beamsplitter;
+        let weighted_tokens = &ctx.accounts.weighted_tokens;
+        let mint = &ctx.accounts.prism_etf_mint;
+        let manager = &ctx.accounts.manager;
+
+        prism_etf.manager = manager.key();
         prism_etf.bump = bump;
-        prism_etf.mint = ctx.accounts.token_mint.key();
-        prism_etf.prism_etf = beamsplitter.key();
+        prism_etf.weighted_tokens = weighted_tokens.key();
+        prism_etf.is_finished = false;
 
         // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
         if beamsplitter.owner != authority(&mint.to_account_info())?
-            && signer.key() != beamsplitter.owner
+            && manager.key() != beamsplitter.owner
         {
             return Err(BeamsplitterErrors::NotMintAuthority.into());
         }
-        // TODO ensure all of weighted token pairs have USDC as base token
-        for i in 0..weighted_tokens.len() {
-            prism_etf.weighted_tokens[i] = weighted_tokens[i];
-        }
-        // TODO Add token address to a registry account
 
         Ok(())
     }
 
-    pub fn buy<'info>(ctx: Context<'_, '_, '_, 'info, Buy<'info>>) -> ProgramResult {
-        let prism_etf = &ctx.accounts.prism_etf.load()?;
+    /// Push weighted tokens into an ETF
+    pub fn push_tokens(ctx: Context<PushTokens>, new_tokens: Vec<WeightedToken>) -> ProgramResult {
+        let prism_etf = &ctx.accounts.prism_etf;
+        let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_mut()?;
 
-        // Get's amount approved to buy
-        let amount = Decimal::from(ctx.accounts.buyer_token.delegated_amount);
-
-        let mkt_accts = util::extract_market_accounts(ctx.remaining_accounts)?;
-
-        let buyer_token = &ctx.accounts.buyer_token;
-        let weighted_tokens = &prism_etf.weighted_tokens;
-        let beamsplitter = &ctx.accounts.beamsplitter;
-
-        // Sum all weights * max bid prices together
-        let mut weighted_sum = Decimal::zero();
-
-        for idx in 0..mkt_accts.len() {
-            let market_account = &mkt_accts[idx].market;
-            let bids_account = &mkt_accts[idx].bids;
-            let market = &MarketState::load(market_account, &dex::id(), false)?;
-            let bids = &market.load_bids_mut(bids_account)?;
-            let max_bid = Decimal::from(get_slab_price(bids)?);
-
-            weighted_sum += Decimal::from(weighted_tokens[idx].weight) * max_bid;
+        if prism_etf.is_finished == true {
+            return Err(BeamsplitterErrors::IsFinished.into());
         }
 
-        for idx in 0..mkt_accts.len() {
-            let portion_amount;
-            let max_bid;
-            let decimals;
-
-            {
-                // Get Max Ask Price
-                let market_account = &mkt_accts[idx].market;
-                let bids_account = &mkt_accts[idx].bids;
-                let asks_account = &mkt_accts[idx].asks;
-                let market = &MarketState::load(market_account, &dex::id(), false)?;
-
-                let bids = &market.load_bids_mut(bids_account)?;
-
-                // TODO max bid is computed in weighted sum for loop, we should allocate a Box and store these to reduce recomputing
-                max_bid = Decimal::from(get_slab_price(&bids)?);
-
-                let asks = &market.load_asks_mut(asks_account)?;
-                let min_ask = &Decimal::from(get_slab_price(&asks)?);
-
-                let _slippage = &(min_ask - max_bid);
-
-                decimals = Decimal::from(10.pow(ctx.accounts.usdc_mint.decimals));
-                let weight = &Decimal::from(weighted_tokens[idx].weight);
-                portion_amount = &amount * (weight / &weighted_sum);
+        for (idx, weighted_token) in new_tokens.iter().enumerate() {
+            if weighted_tokens.index >= weighted_tokens.capacity {
+                return Err(BeamsplitterErrors::ETFFull.into());
             }
-
-            {
-                // Transfer from buyer to Beamsplitter
-                let transfer_accounts = Transfer {
-                    to: ctx.accounts.beamsplitter_token.to_account_info(),
-                    from: buyer_token.to_account_info(),
-                    authority: ctx.accounts.usdc_token_authority.to_account_info(),
-                };
-
-                let transfer_ctx = CpiContext::new(
-                    ctx.accounts.token_program.to_account_info(),
-                    transfer_accounts,
-                );
-
-                let transfer_amount = &(portion_amount * max_bid)
-                    .to_u64()
-                    .ok_or(ProgramError::InvalidArgument)?;
-
-                transfer(transfer_ctx, *transfer_amount)?;
-            }
-
-            {
-                // Make buy call
-                let orderbook = OrderbookClient {
-                    market: mkt_accts[idx].clone(),
-                    authority: ctx.accounts.buyer.to_account_info(),
-                    pc_wallet: ctx.accounts.beamsplitter_token.to_account_info(),
-                    dex_program: ctx.accounts.dex_program.to_account_info(),
-                    token_program: ctx.accounts.token_program.to_account_info(),
-                    rent: ctx.accounts.rent.to_account_info(),
-                };
-                orderbook.buy(portion_amount.mul(decimals).to_u64().unwrap(), None)?;
-                orderbook.settle(None)?;
-            }
-
-            // Transfer out difference between max_ask and max_bid
-
-            {
-                // Mint
-                let mint_accounts = MintTo {
-                    mint: ctx.accounts.prism_etf_mint.to_account_info(),
-                    to: ctx.accounts.reciever_token.to_account_info(),
-                    authority: beamsplitter.to_account_info(),
-                };
-
-                let seeds = &[PDA_SEED, &[beamsplitter.bump]];
-                let signer_seeds = &[&seeds[..]];
-
-                let mint_to_ctx = CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
-                    mint_accounts,
-                    signer_seeds,
-                );
-
-                let mint_amount = portion_amount
-                    .to_u64()
-                    .ok_or(ProgramError::InvalidArgument)?;
-
-                mint_to(mint_to_ctx, mint_amount)?;
-            }
+            let etf_idx = weighted_tokens.index as usize;
+            weighted_tokens.weighted_tokens[idx + etf_idx] = weighted_token.clone();
         }
+
+        weighted_tokens.index += 1;
 
         Ok(())
     }
 
-    // TODO: Factor in decimals into price
-    pub fn get_price(ctx: Context<GetPrice>, dex_pid: Pubkey) -> ProgramResult {
-        let price_account = &mut ctx.accounts.price;
+    pub fn init_order_state(ctx: Context<InitOrderState>, bump: u8) -> ProgramResult {
+        let order_state = &mut ctx.accounts.order_state;
+        order_state.bump = bump;
+        order_state.transfered_tokens = ctx.accounts.transferred_tokens.key();
+        order_state.is_pending = false;
+        Ok(())
+    }
 
-        let market_account = &ctx.remaining_accounts[0];
-        let bids_account = &ctx.remaining_accounts[1];
+    /*
+    Initalize a new Prism ETF CONSTRUCTION or DECONSTRUCTION order
 
-        let market = MarketState::load(market_account, &dex_pid, false)?;
-        let bids = market.load_bids_mut(bids_account)?;
+    Failure cases:
+    - prism_etf.weighted_tokens_at != weighted_tokens.key()
+    - order_state.status = PENDING
+    - prism_etf is not owned by Beamsplitter
+    - order_state is not owned by Beamsplitter
+    - the amount of etf tokens being constructed or deconstructed is invalid
 
-        price_account.price = get_slab_price(&bids)?;
+    Flow:
+    1. Set order_state.status = PENDING
+    2. Set order_state.type = <order_type>
+    3. if order_state.type == DECONSTRUCTION, burn <amount> of tokens
+    */
+    pub fn start_order(
+        ctx: Context<StartOrder>,
+        order_type: bool,
+        amount: u64,
+        dec: u8,
+    ) -> ProgramResult {
+        let order_state = &mut ctx.accounts.order_state;
+
+        if order_state.is_pending {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        order_state.amount = amount;
+        order_state.dec = dec;
+        order_state.is_construction = order_type;
+        order_state.is_pending = true;
+
+        let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
+        let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
+        transferred_tokens.index = weighted_tokens.index;
+
+        if !order_state.is_construction {
+            let mint_accounts = Burn {
+                mint: ctx.accounts.prism_etf_mint.to_account_info(),
+                to: ctx.accounts.orderer_etf_ata.to_account_info(),
+                authority: ctx.accounts.beamsplitter.to_account_info(),
+            };
+
+            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+            let signer_seeds = &[&seeds[..]];
+
+            let burn_ctx = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                mint_accounts,
+                signer_seeds,
+            );
+
+            let burn_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+
+            burn(burn_ctx, burn_amount)?;
+        }
 
         Ok(())
     }
 
     /*
-    // TODO: Instruction for user selling their etf tokens
-    pub fn sell(ctx: Context<Sell>) -> ProgramResult {
-        let beamsplitter = &mut ctx.accounts.beamsplitter;
-        let seller = &mut ctx.accounts.seller;
-        let seller_token = &mut ctx.accounts.seller_token;
-        let placeholder_amount = 10;
+    Cohere an asset to the etf being built. Used in CONSTRUCTION orders
 
-        // user hits sell instruction to sell their prism etf tokens
-        // we sell the specified value of the underlying assets of the prism etf tokens into USDC (Bitcoin, Eth, Solana, etc)
-        //// cpi call to new_order to sell
+    Failure cases:
+    - prism_etf.weighted_tokens_at != weighted_tokens.key()
+    - order_state.type = DECONSTRUCTION
+    - order_state.status = CANCELLED || SUCCEEDED
+    - prism_etf is not owned by Beamsplitter
+    - order_state is not owned by Beamsplitter
+    - the amount delegated is below required amount for the etf tokens being created
 
-        // Assign seed values
-        let seeds = &[PDA_SEED, &[beamsplitter.bump]];
+    Flow:
+    1. Transfer amount of required tokens to Beamspltitter from user ata accounts
+    */
+    pub fn cohere(ctx: Context<Cohere>, index: u32) -> ProgramResult {
+        let order_state = &mut ctx.accounts.order_state;
+
+        if !order_state.is_pending {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        if !order_state.is_construction {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        // let delegated_amoutn =
+        let amount = Decimal::from(ctx.accounts.orderer_transfer_ata.delegated_amount);
+
+        let mint_accounts = Transfer {
+            mint: ctx.accounts.transfer_mint.to_account_info(),
+            to: ctx.accounts.orderer_etf_ata.to_account_info(),
+            authority: ctx.accounts.transfer_authority.to_account_info(),
+            from: todo!(),
+        };
+
+        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
         let signer_seeds = &[&seeds[..]];
-
-        // We transfer the value in USDC of the underlying assets to the user's account
-        // Accounts used by transfer cpi instruction
-        let transfer_accounts = Transfer {
-            from: seller_token.to_account_info(),
-            to: seller.to_account_info(),
-            authority: beamsplitter.to_account_info(),
-        };
-
-        let transfer_ctx = CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            transfer_accounts,
-            signer_seeds,
-        );
-
-        transfer(transfer_ctx, placeholder_amount)?;
-
-        // We burn the prism etf tokens the user is selling
-        //// Cpi anchor spl program to burn prism etf tokens
-        // Accounts used by burn cpi instruction
-        let burn_accounts = Burn {
-            mint: ctx.accounts.token_mint.to_account_info(),
-            to: ctx.accounts.prism_etf.to_account_info(),
-            authority: beamsplitter.to_account_info(),
-        };
 
         let burn_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
-            burn_accounts,
+            mint_accounts,
             signer_seeds,
         );
 
-        burn(burn_ctx, placeholder_amount)?;
+        let burn_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+
+        burn(burn_ctx, burn_amount)?;
+        // Get's amount approved to buy
+
+        Ok(())
+    }
+
+    /*
+    Decohere an asset from the etf being built. Used in CONSTRUCTION orders
+
+    Failure cases:
+    - prism_etf.weighted_tokens_at != weighted_tokens.key()
+    - order_state.type = CONSTRUCTION
+    - order_state.status = CANCELLED || SUCCEEDED
+    - prism_etf is not owned by Beamsplitter
+    - order_state is not owned by Beamsplitter
+    - the amount delegated is below required amount for the etf tokens being created
+
+    Flow:
+    1. Transfer tokens from beamsplitter to user
+    */
+    /*pub fn decohere(ctx: Context<Decohere>) -> ProgramResult {
+        let prism_etf = &ctx.accounts.prism_etf.load()?;
+
+        // COND: Validate order type
+
+        // Get's amount approved to buy
 
         Ok(())
     }*/
 
-    /// Swaps two tokens on a single A/B market, where A is the base currency
-    /// and B is the quote currency. This is just a direct IOC trade that
-    /// instantly settles.
-    ///
-    /// When side is "bid", then swaps B for A. When side is "ask", then swaps
-    /// A for B.
-    ///
-    /// Arguments:
-    ///
-    /// * `side`                     - The direction to swap.
-    /// * `amount`                   - The amount to swap *from*
-    /// * `min_expected_swap_amount` - The minimum amount of the *to* token the
-    ///    client expects to receive from the swap. The instruction fails if
-    ///    execution would result in less.
-    #[access_control(is_valid_swap(&ctx))]
-    pub fn swap<'info>(
-        ctx: Context<'_, '_, '_, 'info, Swap<'info>>,
-        side: Side,
-        amount: u64,
-        min_expected_swap_amount: u64,
-    ) -> ProgramResult {
-        // Optional referral account (earns a referral fee).
-        let referral = ctx.remaining_accounts.iter().next().map(Clone::clone);
+    /*
+    Finalize a Prism ETF CONSTRUCTION or DECONSTRUCTION order
 
-        // Side determines swap direction.
-        let (from_token, to_token) = match side {
-            Side::Bid => (&ctx.accounts.pc_wallet, &ctx.accounts.market.coin_wallet),
-            Side::Ask => (&ctx.accounts.market.coin_wallet, &ctx.accounts.pc_wallet),
-        };
+    Failure cases:
+    - prism_etf.weighted_tokens_at != weighted_tokens.key()
+    - order_state.status = CANCELLED || SUCCEEDED (at instruction start)
+    - prism_etf is not owned by Beamsplitter
+    - order_state is not owned by Beamsplitter
+    - the amount of etf tokens being constructed or deconstructed is invalid
 
-        // Token balances before the trade.
-        let from_amount_before = token::accessor::amount(from_token)?;
-        let to_amount_before = token::accessor::amount(to_token)?;
+    Flow:
+    1. Set order_state.status = SUCCEEDED
+    2. if order_state.type == CONSTRUCTION, mint order_state.amount of tokens
+    */
+    /*pub fn finalize_order<'info>(ctx: Context<FinalizeOrder>) -> ProgramResult {
+        let prism_etf = &ctx.accounts.prism_etf.load()?;
 
-        // Execute trade.
-        let orderbook: OrderbookClient<'info> = (&*ctx.accounts).into();
-        match side {
-            Side::Bid => orderbook.buy(amount, referral.clone())?,
-            Side::Ask => orderbook.sell(amount, referral.clone())?,
-        };
-        orderbook.settle(referral)?;
-
-        // Token balances after the trade.
-        let from_amount_after = token::accessor::amount(from_token)?;
-        let to_amount_after = token::accessor::amount(to_token)?;
-
-        //  Calculate the delta, i.e. the amount swapped.
-        let from_amount = from_amount_before.checked_sub(from_amount_after).unwrap();
-        let to_amount = to_amount_after.checked_sub(to_amount_before).unwrap();
-
-        // Safety checks.
-        apply_risk_checks(DidSwap {
-            authority: *ctx.accounts.authority.key,
-            given_amount: amount,
-            min_expected_swap_amount,
-            from_amount,
-            to_amount,
-            spill_amount: 0,
-            from_mint: token::accessor::mint(from_token)?,
-            to_mint: token::accessor::mint(to_token)?,
-            quote_mint: match side {
-                Side::Bid => token::accessor::mint(from_token)?,
-                Side::Ask => token::accessor::mint(to_token)?,
-            },
-        })?;
+        // Get's amount approved to buy
 
         Ok(())
-    }
+    }*/
+
+    // MINT CODE
+    /*{
+        // Mint
+        let mint_accounts = MintTo {
+            mint: ctx.accounts.prism_etf_mint.to_account_info(),
+            to: ctx.accounts.reciever_token.to_account_info(),
+            authority: beamsplitter.to_account_info(),
+        };
+
+        let seeds = &[PDA_SEED, &[beamsplitter.bump]];
+        let signer_seeds = &[&seeds[..]];
+
+        let mint_to_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            mint_accounts,
+            signer_seeds,
+        );
+
+        let mint_amount = portion_amount
+            .to_u64()
+            .ok_or(ProgramError::InvalidArgument)?;
+
+        mint_to(mint_to_ctx, mint_amount)?;
+    }*/
+
+    // TODO: Factor in decimals into price
+    /*pub fn get_price(ctx: Context<GetPrice>, dex_pid: Pubkey) -> ProgramResult {
+        let price_account = &mut ctx.accounts.price;
+
+        price_account.price = get_slab_price(&bids)?;
+
+        Ok(())
+    }*/
 }

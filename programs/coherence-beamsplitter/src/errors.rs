@@ -14,4 +14,8 @@ pub enum BeamsplitterErrors {
     SwapTokensCannotMatch,
     #[msg("Slippage tolerance exceeded")]
     SlippageExceeded,
+    #[msg("PrismEtf full, cannot add anymore assets")]
+    ETFFull,
+    #[msg("The ETF is already done being built and cannot be modified further without rebalaning")]
+    IsFinished,
 }

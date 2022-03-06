@@ -19,6 +19,13 @@ export const generatePrismEtfAddress = (
   );
 };
 
+export const generatePrismEtfAddressTest = (): Promise<[PublicKey, number]> => {
+  return PublicKey.findProgramAddress(
+    [utils.bytes.utf8.encode("seeds")],
+    PROGRAM_ID
+  );
+};
+
 export const generateWeightedTokensAddress = (
   creator: PublicKey
 ): Promise<[PublicKey, number]> => {
