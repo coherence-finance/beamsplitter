@@ -26,7 +26,7 @@ import type {
 import { TRANSFERRED_TOKENS_SIZE, WEIGHTED_TOKENS_SIZE } from "./types";
 
 // How many weighted tokens are chunked together per tx
-const TX_CHUNK_SIZE = 24;
+const PUSH_TX_CHUNK_SIZE = 24;
 
 export class CoherenceBeamsplitterSDK {
   constructor(
@@ -219,8 +219,11 @@ export class CoherenceBeamsplitterSDK {
     }
 
     const pushTokenTxChunks: TransactionEnvelope[] = [];
-    for (let i = 0; i < weightedTokens.length; i += TX_CHUNK_SIZE) {
-      const weightedTokensChunk = weightedTokens.slice(i, i + TX_CHUNK_SIZE);
+    for (let i = 0; i < weightedTokens.length; i += PUSH_TX_CHUNK_SIZE) {
+      const weightedTokensChunk = weightedTokens.slice(
+        i,
+        i + PUSH_TX_CHUNK_SIZE
+      );
       pushTokenTxChunks.push(
         new TransactionEnvelope(this.provider, [
           this.program.instruction.pushTokens(weightedTokensChunk, {

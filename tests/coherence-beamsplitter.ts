@@ -89,8 +89,8 @@ describe("coherence-beamsplitter", () => {
     assert(!prismEtf.isFinished);
   });
 
-  const randomNumberTokens = WEIGHTED_TOKENS_CAPACITY;
-    //Math.floor(Math.random() * WEIGHTED_TOKENS_CAPACITY) + 1;
+  const randomNumberTokens =
+    Math.floor((Math.random() * WEIGHTED_TOKENS_CAPACITY) / 30) + 1;
   it(`Initialize a prism etf with ${randomNumberTokens} asset(s)`, async () => {
     const [initPrismEtFTx, prismEtfMint] = await sdk.initPrismEtf({
       beamsplitter,
