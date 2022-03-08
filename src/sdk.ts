@@ -8,13 +8,10 @@ import {
   SolanaAugmentedProvider,
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
-import {
-  createInitMintInstructions,
-  TOKEN_PROGRAM_ID,
-} from "@saberhq/token-utils";
-import { Token } from "@solana/spl-token";
+import { createInitMintInstructions, getMintInfo } from "@saberhq/token-utils";
 import type { Connection, Signer } from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { BN } from "bn.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
 import { PROGRAM_ID } from "./constants";
@@ -24,8 +21,12 @@ import type {
   BeamsplitterProgram,
   PrismEtfData,
   WeightedToken,
+  WeightedTokensData,
 } from "./types";
 import { TRANSFERRED_TOKENS_SIZE, WEIGHTED_TOKENS_SIZE } from "./types";
+
+// How many weighted tokens are chunked together per tx
+const TX_CHUNK_SIZE = 24;
 
 export class CoherenceBeamsplitterSDK {
   constructor(
@@ -122,61 +123,56 @@ export class CoherenceBeamsplitterSDK {
     );
   }
 
-  async _initPrismEtf({
+  // Initialize a new PrismEtf PDA (and included weighted tokens account), returns TransactionEnvelope along with key of PrismEtfMint
+  async initPrismEtf({
     beamsplitter,
-    mintKP = Keypair.generate(), // KP used for mint account
-    mint = mintKP.publicKey, // SPL token mint for the ETF, if not specified, a token is created using intialMintAuthorityKp
-    weightedTokensKP = Keypair.generate(), // Keypair used to alloc the weighted token account
-    iniitalMintAuthorityKp = Keypair.generate(), // Keypair used to alloc the weighted token account
-    assignedMintAuthority = beamsplitter, // The mint authority of the spl token mint, which must be beamsplitter unless provider.wallet is owner of beamsplitter
+    prismEtfMint, // SPL token mint for the ETF, if not specified, a token is created for you
   }: {
     beamsplitter: PublicKey;
-    mint?: PublicKey;
-    weightedTokensKP?: Keypair;
-    iniitalMintAuthorityKp?: Keypair;
-    assignedMintAuthority?: PublicKey;
-    mintKP?: Keypair;
-  }): Promise<TransactionEnvelope> {
+    prismEtfMint?: PublicKey;
+  }): Promise<[TransactionEnvelope, PublicKey]> {
+    const weightedTokensKP = Keypair.generate();
+
     // Allocate the WeightedTokens Envelope
-    const initWeightedTokensEnvelope = await this._initWeightedTokens({
+    let initPrismEtfEnvelope = await this._initWeightedTokens({
       weightedTokensKP,
     });
 
-    // Intialize a SPL Token mint for this token
-    const initMintTx = await createInitMintInstructions({
-      provider: this.provider,
-      mintKP,
-      decimals: 9,
-      mintAuthority: iniitalMintAuthorityKp.publicKey,
-    });
+    if (!prismEtfMint) {
+      const prismEtfMintKP = Keypair.generate();
+      // Intialize a SPL Token mint for this token
+      const initMintEnvelope = await createInitMintInstructions({
+        provider: this.provider,
+        mintKP: prismEtfMintKP,
+        decimals: 9,
+        mintAuthority: beamsplitter,
+      });
+
+      prismEtfMint = prismEtfMintKP.publicKey;
+      initPrismEtfEnvelope = initPrismEtfEnvelope.combine(initMintEnvelope);
+    } else {
+      const prismEtfMintData = await getMintInfo(this.provider, prismEtfMint);
+
+      if (!prismEtfMintData.supply.eq(new BN(0))) {
+        throw new Error("Prism ETF token supply must start at zero.");
+      }
+
+      if (prismEtfMintData.mintAuthority !== beamsplitter) {
+        throw new Error("PrismETF token mint Authority is not beamsplitter");
+      }
+    }
 
     // Find the pda of the prismEtf account being initialized
     const [prismEtfPda, bump] = await generatePrismEtfAddress(
-      mint,
+      prismEtfMint,
       beamsplitter
-    );
-
-    // Transfer authority of the mint to assignedAuthority (which should be Beamsplitter, except for testing)
-    const setAuthEnvelopeEnvelope = new TransactionEnvelope(
-      this.provider,
-      [
-        Token.createSetAuthorityInstruction(
-          TOKEN_PROGRAM_ID,
-          mintKP.publicKey,
-          beamsplitter,
-          "MintTokens",
-          assignedMintAuthority,
-          []
-        ),
-      ],
-      [iniitalMintAuthorityKp]
     );
 
     // Initialize the prism Etf account
     const initPrismEtfTx = this.program.instruction.initPrismEtf(bump, {
       accounts: {
         prismEtf: prismEtfPda,
-        prismEtfMint: mint,
+        prismEtfMint,
         weightedTokens: weightedTokensKP.publicKey,
         manager: this.provider.wallet.publicKey,
         beamsplitter: beamsplitter,
@@ -184,39 +180,21 @@ export class CoherenceBeamsplitterSDK {
       },
     });
 
-    // Combine the envelopes together, in order
-    const initPrismEtfEnvelope = initWeightedTokensEnvelope
-      .combine(initMintTx)
-      .combine(setAuthEnvelopeEnvelope)
-      .addInstructions(initPrismEtfTx);
+    initPrismEtfEnvelope.addInstructions(initPrismEtfTx);
 
-    return initPrismEtfEnvelope;
+    return [initPrismEtfEnvelope, prismEtfMint];
   }
 
   // Push tokens into Prism ETF being built
   async pushTokens({
     beamsplitter, // Beamsplitter program
     weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
-    prismEtfMint, // Mint of the corresponding PrismEtf SPL token, must be passed if the PrismEtf was inited already
+    prismEtfMint, // Mint of the corresponding PrismEtf SPL token
   }: {
     beamsplitter: PublicKey;
     weightedTokens: WeightedToken[];
-    prismEtfMint?: PublicKey;
-  }): Promise<TransactionEnvelope> {
-    const pushTokensEnvelope = new TransactionEnvelope(this.provider, []);
-
-    // Initialize new Prism ETF if no mint is given
-    if (!prismEtfMint) {
-      const prismEtfMintKp = Keypair.generate();
-      pushTokensEnvelope.combine(
-        await this._initPrismEtf({
-          beamsplitter,
-          mintKP: prismEtfMintKp,
-        })
-      );
-      prismEtfMint = prismEtfMintKp.publicKey;
-    }
-
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope[]> {
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
@@ -226,7 +204,7 @@ export class CoherenceBeamsplitterSDK {
 
     if (!prismEtfData) {
       throw new Error(
-        "prismEtf PDA derived from prismEtfMint passed does not exist. Delete `prismEtfMint` arguement to automagically create it."
+        "prismEtf PDA derived from prismEtfMint passed does not exist. Use initPrismEtf to initialize the PDA and pass in the resulting mint PublicKey."
       );
     }
 
@@ -236,31 +214,54 @@ export class CoherenceBeamsplitterSDK {
       );
     }
 
-    if (this.provider.wallet.publicKey !== prismEtfData.manager) {
+    if (!this.provider.wallet.publicKey.equals(prismEtfData.manager)) {
       throw new Error("You must be manager of the PrismEtf to modify it.");
     }
 
-    // TODO batch these in groups of two or more to save on Tx costs
-    for (const weightedToken of weightedTokens) {
-      pushTokensEnvelope.addInstructions(
-        this.program.instruction.pushTokens([weightedToken], {
-          accounts: {
-            prismEtf,
-            prismEtfMint,
-            beamsplitter,
-            weightedTokens: prismEtfData.weightedTokens,
-            manager: this.provider.wallet.publicKey,
-            systemProgram: SystemProgram.programId,
-          },
-        })
+    const pushTokenTxChunks: TransactionEnvelope[] = [];
+    for (let i = 0; i < weightedTokens.length; i += TX_CHUNK_SIZE) {
+      const weightedTokensChunk = weightedTokens.slice(i, i + TX_CHUNK_SIZE);
+      pushTokenTxChunks.push(
+        new TransactionEnvelope(this.provider, [
+          this.program.instruction.pushTokens(weightedTokensChunk, {
+            accounts: {
+              prismEtf,
+              prismEtfMint,
+              beamsplitter,
+              weightedTokens: prismEtfData.weightedTokens,
+              manager: this.provider.wallet.publicKey,
+              systemProgram: SystemProgram.programId,
+            },
+          }),
+        ])
       );
     }
 
-    return pushTokensEnvelope;
+    return pushTokenTxChunks;
   }
 
-  // TODO: Finalize PrismETF (you will no longer be able to modify it without rebalancing)
-  //async finalizePrismEtf() {}
+  // Finalize PrismETF (you will no longer be able to modify it without rebalancing)
+  async finalizePrismEtf({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.finalizePrismEtf({
+        accounts: {
+          beamsplitter,
+          prismEtf,
+          prismEtfMint,
+        },
+      }),
+    ]);
+  }
 
   // Fetch the main Beamsplitter state account
   async fetchBeamsplitterData(
@@ -275,6 +276,46 @@ export class CoherenceBeamsplitterSDK {
     return (await this.program.account.prismEtf.fetchNullable(
       key
     )) as PrismEtfData;
+  }
+
+  // Gets the PrismEtf from it's corresponding Mint and Beamsplitter seeds
+  async fetchPrismEtfDataFromSeeds({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<PrismEtfData | null> {
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+    return await this.fetchPrismEtfData(prismEtf);
+  }
+
+  /*
+  async fetchWeightedTokensFromPrismEtf(
+    key: PublicKey
+  ): Promise<WeightedTokensData | null> {
+    const prismEtfData = await this.fetchPrismEtfData(key);
+
+    if (!prismEtfData) {
+      throw new Error(
+        "prismEtf PDA derived from prismEtfMint passed does not exist. Use initPrismEtf to initialize the PDA and pass in the resulting mint PublicKey."
+      );
+    }
+
+    return (await this.program.account.weightedTokens.fetchNullable(
+      prismEtfData.weightedTokens
+    )) as PrismEtfData;
+  }*/
+
+  async fetchWeightedTokens(
+    key: PublicKey
+  ): Promise<WeightedTokensData | null> {
+    return (await this.program.account.weightedTokens.fetchNullable(
+      key
+    )) as WeightedTokensData;
   }
 
   // TODO this should take pair of tokens and return market account and bid

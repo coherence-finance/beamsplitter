@@ -16,6 +16,8 @@ pub enum BeamsplitterErrors {
     SlippageExceeded,
     #[msg("PrismEtf full, cannot add anymore assets")]
     ETFFull,
-    #[msg("The ETF is already done being built and cannot be modified further without rebalaning")]
+    #[msg(
+        "The ETF is already done being built and cannot be modified further without rebalancing"
+    )]
     IsFinished,
 }

@@ -13,9 +13,12 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 
 #[program]
 pub mod coherence_beamsplitter {
-    use std::ops::MulAssign;
+    use std::{mem::size_of, ops::MulAssign};
 
-    use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
+    use anchor_spl::token::{
+        accessor::{amount, authority},
+        burn, mint_to, transfer, Burn, MintTo, Transfer,
+    };
 
     use rust_decimal::{prelude::ToPrimitive, Decimal};
     const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
@@ -32,12 +35,14 @@ pub mod coherence_beamsplitter {
     }
 
     pub fn init_weighted_tokens(ctx: Context<InitWeightedTokens>) -> ProgramResult {
+        msg![&size_of::<WeightedTokens>().to_string()[..]];
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_init()?;
         weighted_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
         Ok(())
     }
 
     pub fn init_transferred_tokens(ctx: Context<InitTransferredTokens>) -> ProgramResult {
+        msg![&size_of::<TransferredTokens>().to_string()[..]];
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_init()?;
         transferred_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
         Ok(())
@@ -62,6 +67,17 @@ pub mod coherence_beamsplitter {
             return Err(BeamsplitterErrors::NotMintAuthority.into());
         }
 
+        if amount(&mint.to_account_info())? != 0 {
+            return Err(BeamsplitterErrors::NonZeroSupply.into());
+        }
+
+        Ok(())
+    }
+
+    pub fn finalize_prism_etf(ctx: Context<FinalizePrismEtf>) -> ProgramResult {
+        let prism_etf = &mut ctx.accounts.prism_etf;
+        prism_etf.is_finished = true;
+
         Ok(())
     }
 
@@ -82,10 +98,7 @@ pub mod coherence_beamsplitter {
             weighted_tokens.weighted_tokens[idx + etf_idx] = weighted_token.clone();
         }
 
-        weighted_tokens.index += 1;
-
-        // TODO TODO !!!!!!!!!!!!!!! Move this into seperate finalize_prism_etf otherwise users can only add one token to etf
-        prism_etf.is_finished = true;
+        weighted_tokens.index += new_tokens.len() as u32;
 
         Ok(())
     }
@@ -166,8 +179,9 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer amount of required tokens to Beamspltitter from user ata accounts
     */
-    pub fn cohere(ctx: Context<Cohere>, index: usize) -> ProgramResult {
+    pub fn cohere(ctx: Context<Cohere>, index: u32) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
+        let index_usize = index as usize;
 
         if !order_state.is_pending {
             return Err(ProgramError::InvalidArgument.into());
@@ -181,12 +195,12 @@ pub mod coherence_beamsplitter {
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
         // The index passed must correspond to the
-        if weighted_tokens.weighted_tokens[index].mint != ctx.accounts.transfer_mint.key() {
+        if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
             return Err(ProgramError::InvalidArgument.into());
         }
 
         // The weighted token of asset being transferred
-        let weighted_token = &weighted_tokens.weighted_tokens[index];
+        let weighted_token = &weighted_tokens.weighted_tokens[index_usize];
         let required_amount = &mut Decimal::from(order_state.amount);
 
         let delegated_amount = ctx.accounts.orderer_transfer_ata.delegated_amount;
@@ -217,7 +231,7 @@ pub mod coherence_beamsplitter {
         );
 
         // Mark this token as successfully transferred
-        transferred_tokens.transferred_tokens[index] = true;
+        transferred_tokens.transferred_tokens[index_usize] = true;
 
         transfer(transfer_ctx, weighted_token.weight.into())?;
 
@@ -238,7 +252,8 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer tokens from beamsplitter to user
     */
-    pub fn decohere(ctx: Context<Cohere>, index: usize) -> ProgramResult {
+    pub fn decohere(ctx: Context<Cohere>, index: u32) -> ProgramResult {
+        let index_usize = index as usize;
         let order_state = &mut ctx.accounts.order_state;
 
         if !order_state.is_pending {
@@ -253,12 +268,12 @@ pub mod coherence_beamsplitter {
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
         // The index passed must correspond to the
-        if weighted_tokens.weighted_tokens[index].mint != ctx.accounts.transfer_mint.key() {
+        if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
             return Err(ProgramError::InvalidArgument.into());
         }
 
         // The weighted token of asset being transferred
-        let weighted_token = &weighted_tokens.weighted_tokens[index];
+        let weighted_token = &weighted_tokens.weighted_tokens[index_usize];
 
         let transfer_accounts = Transfer {
             to: ctx.accounts.orderer_transfer_ata.to_account_info(),
@@ -272,7 +287,7 @@ pub mod coherence_beamsplitter {
         );
 
         // Mark this token as successfully transferred
-        transferred_tokens.transferred_tokens[index] = true;
+        transferred_tokens.transferred_tokens[index_usize] = true;
 
         transfer(transfer_ctx, weighted_token.weight.into())?;
 

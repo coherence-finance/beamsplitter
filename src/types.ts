@@ -16,7 +16,10 @@ export type BeamsplitterTypes = AnchorTypes<
 type Accounts = BeamsplitterTypes["Accounts"];
 export type PrismEtfData = Accounts["prismEtf"];
 export type BeamsplitterData = Accounts["beamsplitter"];
-export type WeightedTokensData = Accounts["weightedTokens"];
+export type WeightedTokensData = Omit<
+  Accounts["weightedTokens"],
+  "weightedTokens"
+> & { weightedTokens: WeightedToken[] };
 export type TransferredTokensData = Accounts["transferredTokens"];
 export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 
@@ -24,8 +27,9 @@ export type Defined = BeamsplitterTypes["Defined"];
 export type WeightedToken = Defined["WeightedToken"];
 
 // TODO figure out how to get this out of idl
-export const WEIGHTED_TOKENS_SIZE = 81928 + 8;
-export const TRANSFERRED_TOKENS_SIZE = 16392 + 8;
+export const WEIGHTED_TOKENS_SIZE = 589832 + 8; // Bytes
+export const TRANSFERRED_TOKENS_SIZE = 16392 + 8; // Bytes
+export const WEIGHTED_TOKENS_CAPACITY = 16384;
 
 export type RequiredMarketAccounts = {
   marketAccount: PublicKey;
