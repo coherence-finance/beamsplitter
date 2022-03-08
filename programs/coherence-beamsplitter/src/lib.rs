@@ -319,7 +319,7 @@ pub mod coherence_beamsplitter {
     pub fn finalize_order(ctx: Context<FinalizeOrder>) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
 
-        if order_state.is_pending {
+        if !order_state.is_pending {
             return Err(ProgramError::InvalidArgument.into());
         }
 
