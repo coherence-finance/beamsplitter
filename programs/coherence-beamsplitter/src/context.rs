@@ -1,10 +1,8 @@
 use crate::state::*;
-use anchor_spl::dex::Dex;
 
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    mint,
     token::{Mint, Token, TokenAccount},
 };
 
@@ -174,7 +172,7 @@ pub struct Cohere<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(init_if_needed, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, payer = orderer)]
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(owner = crate::ID)]
@@ -226,7 +224,7 @@ pub struct Decohere<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(init_if_needed, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, payer = orderer)]
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(owner = crate::ID)]

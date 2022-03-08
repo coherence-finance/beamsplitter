@@ -8,18 +8,24 @@ export type BeamsplitterTypes = AnchorTypes<
   {
     prismEtf: PrismEtfData;
     beamsplitter: BeamsplitterData;
+    weightedTokens: WeightedTokensData;
+    transferredTokens: TransferredTokensData;
   }
 >;
 
 type Accounts = BeamsplitterTypes["Accounts"];
 export type PrismEtfData = Accounts["prismEtf"];
 export type BeamsplitterData = Accounts["beamsplitter"];
+export type WeightedTokensData = Accounts["weightedTokens"];
+export type TransferredTokensData = Accounts["transferredTokens"];
 export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 
 export type Defined = BeamsplitterTypes["Defined"];
 export type WeightedToken = Defined["WeightedToken"];
 
-export type PRISM_ETF_SIZE = Defined[];
+// TODO figure out how to get this out of idl
+export const WEIGHTED_TOKENS_SIZE = 81928 + 8;
+export const TRANSFERRED_TOKENS_SIZE = 16392 + 8;
 
 export type RequiredMarketAccounts = {
   marketAccount: PublicKey;

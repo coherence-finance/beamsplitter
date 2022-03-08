@@ -5,7 +5,6 @@ pub mod state;
 pub mod util;
 
 use anchor_lang::prelude::*;
-use anchor_spl::token;
 use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
@@ -16,10 +15,7 @@ declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
 pub mod coherence_beamsplitter {
     use std::ops::MulAssign;
 
-    use anchor_spl::{
-        mint,
-        token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer},
-    };
+    use anchor_spl::token::{accessor::authority, burn, mint_to, transfer, Burn, MintTo, Transfer};
 
     use rust_decimal::{prelude::ToPrimitive, Decimal};
     const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
@@ -34,22 +30,6 @@ pub mod coherence_beamsplitter {
 
         Ok(())
     }
-
-    /*pub fn init_weighted_tokens(
-        ctx: Context<WeightedTokensInit>,
-        bump: u8,
-        tokens: Vec<WeightedToken>,
-    ) -> ProgramResult {
-        if tokens.len() >= 1024 {
-            return Err(ProgramError::InvalidArgument);
-        }
-        let arr_account = &mut ctx.accounts.weighted_tokens.load_init()?;
-        arr_account.index = tokens.len() as u32;
-        for (idx, &weighted_token) in tokens.iter().enumerate() {
-            arr_account.weighted_tokens[idx] = weighted_token;
-        }
-        Ok(())
-    }*/
 
     pub fn init_weighted_tokens(ctx: Context<InitWeightedTokens>) -> ProgramResult {
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_init()?;
