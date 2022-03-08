@@ -83,7 +83,7 @@ pub mod coherence_beamsplitter {
 
     /// Push weighted tokens into an ETF
     pub fn push_tokens(ctx: Context<PushTokens>, new_tokens: Vec<WeightedToken>) -> ProgramResult {
-        let prism_etf = &mut ctx.accounts.prism_etf;
+        let prism_etf = &ctx.accounts.prism_etf;
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_mut()?;
 
         if prism_etf.is_finished == true {
@@ -194,6 +194,10 @@ pub mod coherence_beamsplitter {
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
+        if index >= weighted_tokens.capacity {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
         // The index passed must correspond to the
         if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
             return Err(ProgramError::InvalidArgument.into());
@@ -266,6 +270,10 @@ pub mod coherence_beamsplitter {
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
+
+        if index >= weighted_tokens.capacity {
+            return Err(ProgramError::InvalidArgument.into());
+        }
 
         // The index passed must correspond to the
         if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
