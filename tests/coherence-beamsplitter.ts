@@ -68,7 +68,7 @@ describe("coherence-beamsplitter", () => {
     beamsplitter = pdaKey;
   });
 
-  it("Initialize a prism etf without assets", async () => {
+  it("Create an empty Prism ETF", async () => {
     const [initPrismEtFTx, prismEtfMint] = await sdk.initPrismEtf({
       beamsplitter,
     });
@@ -76,7 +76,7 @@ describe("coherence-beamsplitter", () => {
     await expectTX(initPrismEtFTx, "Initialize asset with assetToken").to.be
       .fulfilled;
 
-    const prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+    let prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
       beamsplitter,
       prismEtfMint,
     });
@@ -87,11 +87,29 @@ describe("coherence-beamsplitter", () => {
 
     assert(prismEtf.manager.equals(authority));
     assert(!prismEtf.isFinished);
+
+    const finalizePrismEtfTx = await sdk.finalizePrismEtf({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    await expectTX(finalizePrismEtfTx, "Finalize PrismEtf").to.be.fulfilled;
+
+    prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!prismEtf) {
+      assert.fail("Prism Etf was not successfully created");
+    }
+
+    assert(prismEtf.isFinished);
   });
 
   const randomNumberTokens =
     Math.floor((Math.random() * WEIGHTED_TOKENS_CAPACITY) / 30) + 1;
-  it(`Initialize a prism etf with ${randomNumberTokens} asset(s)`, async () => {
+  it(`Create a Prism ETF with ${randomNumberTokens} asset(s)`, async () => {
     const [initPrismEtFTx, prismEtfMint] = await sdk.initPrismEtf({
       beamsplitter,
     });

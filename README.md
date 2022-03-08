@@ -34,19 +34,6 @@ Next, compile the program and generate the IDL for the tests with Anchor's [buil
 anchor build
 ```
 
-Next, install submodules
-
-```bash
-git submodule init
-git submodule update
-```
-
-Next, build the DEX submodule
-
-```bash
-cd deps/serum-dex/dex/ && cargo build-bpf && cd ../../../
-```
-
 Deploy the program with Anchor's [deploy](https://project-serum.github.io/anchor/cli/commands.html#deploy) command:
 
 ```bash
