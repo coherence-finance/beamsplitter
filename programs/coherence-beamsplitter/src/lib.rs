@@ -67,7 +67,7 @@ pub mod coherence_beamsplitter {
 
     /// Push weighted tokens into an ETF
     pub fn push_tokens(ctx: Context<PushTokens>, new_tokens: Vec<WeightedToken>) -> ProgramResult {
-        let prism_etf = &ctx.accounts.prism_etf;
+        let prism_etf = &mut ctx.accounts.prism_etf;
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_mut()?;
 
         if prism_etf.is_finished == true {
@@ -83,6 +83,9 @@ pub mod coherence_beamsplitter {
         }
 
         weighted_tokens.index += 1;
+
+        // TODO TODO !!!!!!!!!!!!!!! Move this into seperate finalize_prism_etf otherwise users can only add one token to etf
+        prism_etf.is_finished = true;
 
         Ok(())
     }

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Market } from "@project-serum/serum";
-import { approve } from "@project-serum/serum/lib/token-instructions";
 import { PROGRAM_LAYOUT_VERSIONS } from "@project-serum/serum/lib/tokens_and_markets";
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
@@ -11,27 +10,20 @@ import {
 } from "@saberhq/solana-contrib";
 import {
   createInitMintInstructions,
-  createMintToInstruction,
-  getATAAddress,
-  getMintInfo,
-  getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
-import type { u64 } from "@solana/spl-token";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { Token } from "@solana/spl-token";
 import type { Connection, Signer } from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import type BN from "bn.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
-import type { WeightedToken } from ".";
-import { getUSDCMint } from ".";
 import { PROGRAM_ID } from "./constants";
 import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
 import type {
   BeamsplitterData,
   BeamsplitterProgram,
   PrismEtfData,
+  WeightedToken,
 } from "./types";
 import { TRANSFERRED_TOKENS_SIZE, WEIGHTED_TOKENS_SIZE } from "./types";
 
@@ -116,112 +108,56 @@ export class CoherenceBeamsplitterSDK {
         TRANSFERRED_TOKENS_SIZE
       );
 
-    return new TransactionEnvelope(this.provider, [
-      transferredTokensTx,
-      this.program.instruction.initTransferredTokens({
-        accounts: {
-          transferredTokens: transferredTokensKP.publicKey,
-        },
-      }),
-    ]);
+    return new TransactionEnvelope(
+      this.provider,
+      [
+        transferredTokensTx,
+        this.program.instruction.initTransferredTokens({
+          accounts: {
+            transferredTokens: transferredTokensKP.publicKey,
+          },
+        }),
+      ],
+      [transferredTokensKP]
+    );
   }
 
   async _initPrismEtf({
     beamsplitter,
-    mintKP = Keypair.generate(),
-    weightedTokensKP = Keypair.generate(),
-    authority = this.provider.wallet.publicKey,
+    mintKP = Keypair.generate(), // KP used for mint account
+    mint = mintKP.publicKey, // SPL token mint for the ETF, if not specified, a token is created using intialMintAuthorityKp
+    weightedTokensKP = Keypair.generate(), // Keypair used to alloc the weighted token account
+    iniitalMintAuthorityKp = Keypair.generate(), // Keypair used to alloc the weighted token account
+    assignedMintAuthority = beamsplitter, // The mint authority of the spl token mint, which must be beamsplitter unless provider.wallet is owner of beamsplitter
   }: {
     beamsplitter: PublicKey;
-    weightedTokensKP?: K
-    authority?: PublicKey;
+    mint?: PublicKey;
+    weightedTokensKP?: Keypair;
+    iniitalMintAuthorityKp?: Keypair;
+    assignedMintAuthority?: PublicKey;
     mintKP?: Keypair;
   }): Promise<TransactionEnvelope> {
-    const initWeightedTokensEnvelope = await this._initWeightedTokens({weightedTokensKP});
+    // Allocate the WeightedTokens Envelope
+    const initWeightedTokensEnvelope = await this._initWeightedTokens({
+      weightedTokensKP,
+    });
 
+    // Intialize a SPL Token mint for this token
     const initMintTx = await createInitMintInstructions({
       provider: this.provider,
       mintKP,
       decimals: 9,
-      mintAuthority: authority,
+      mintAuthority: iniitalMintAuthorityKp.publicKey,
     });
 
-    const [prismEtfPda, bump] = await generatePrismEtfAddress(mintKP.publicKey, beamsplitter);
-    const initPrismEtfTx = this.program.instruction.initPrismEtf(bump, {
-      accounts: {
-        prismEtf: prismEtfPda,
-        prismEtfMint: mintKP.publicKey,
-        weightedTokens: weightedTokensKP.publicKey,
-        manager: this.provider.wallet.publicKey,
-        beamsplitter: beamsplitter,
-        systemProgram: SystemProgram.programId,
-      },
-    });
-
-    const initPrismEtfEnvelope = initWeightedTokensEnvelope.combine(initMintTx);
-
-    return initPrismEtfEnvelope.addInstructions(initPrismEtfTx);
-  }
-
-  // TODO: Pass multisig in so we can use it as authority for ATA
-  async registerPrismEtf({
-    beamsplitter,
-    weightedTokens,
-    mintKP = Keypair.generate(),
-    authority = this.provider.wallet.publicKey,
-    authorityKp,
-    prismEtfKP,
-    initialSupply,
-  }: {
-    beamsplitter: PublicKey;
-    weightedTokens: WeightedToken[];
-    mintKP?: Keypair;
-    authority?: PublicKey;
-    prismEtfKP: Keypair;
-    authorityKp: Keypair;
-    // TODO: Remove later. Here to reduce testing redundancy
-    initialSupply?: u64;
-  }): Promise<TransactionEnvelope> {
-    ]);
-
-    const initMintTX = await createInitMintInstructions({
-      provider: this.provider,
-      mintKP,
-      decimals: 9,
-      mintAuthority: authority,
-    });
-
-    const { address: toAta, instruction: ataInstruction } =
-      await getOrCreateATA({
-        provider: this.provider,
-        mint: mintKP.publicKey,
-        owner: beamsplitter,
-      });
-
-    //const prismEtfKP = Keypair.generate();
-    const bump = 9;
-    const initBeamsplitterAndCreateAtaTx = new TransactionEnvelope(
-      this.provider,
-      [
-        await this.program.account.prismEtf.createInstruction(
-          prismEtfKP,
-          589928 + 8 // use size_of on PrismEtf to get this value (8 is reserved for disscriminator)
-        ),
-        this.program.instruction.registerToken(bump, weightedTokens, {
-          accounts: {
-            beamsplitter,
-            prismEtf: prismEtfKP.publicKey,
-            adminAuthority: authority,
-            tokenMint: mintKP.publicKey,
-            systemProgram: SystemProgram.programId,
-          },
-        }),
-        ...(ataInstruction ? [ataInstruction] : []),
-      ],
-      [prismEtfKP]
+    // Find the pda of the prismEtf account being initialized
+    const [prismEtfPda, bump] = await generatePrismEtfAddress(
+      mint,
+      beamsplitter
     );
 
-    const setAuthTx = new TransactionEnvelope(
+    // Transfer authority of the mint to assignedAuthority (which should be Beamsplitter, except for testing)
+    const setAuthEnvelopeEnvelope = new TransactionEnvelope(
       this.provider,
       [
         Token.createSetAuthorityInstruction(
@@ -229,146 +165,101 @@ export class CoherenceBeamsplitterSDK {
           mintKP.publicKey,
           beamsplitter,
           "MintTokens",
-          authority,
+          assignedMintAuthority,
           []
         ),
       ],
-      [authorityKp]
+      [iniitalMintAuthorityKp]
     );
 
-    //et tx = createLargeAcct.combine(initMintTX);
-    let tx = initMintTX.combine(initBeamsplitterAndCreateAtaTx);
+    // Initialize the prism Etf account
+    const initPrismEtfTx = this.program.instruction.initPrismEtf(bump, {
+      accounts: {
+        prismEtf: prismEtfPda,
+        prismEtfMint: mint,
+        weightedTokens: weightedTokensKP.publicKey,
+        manager: this.provider.wallet.publicKey,
+        beamsplitter: beamsplitter,
+        systemProgram: SystemProgram.programId,
+      },
+    });
 
-    if (initialSupply && authorityKp) {
-      tx = tx.combine(
-        createMintToInstruction({
-          provider: this.provider,
-          mint: mintKP.publicKey,
-          mintAuthorityKP: authorityKp,
-          to: toAta,
-          amount: initialSupply,
+    // Combine the envelopes together, in order
+    const initPrismEtfEnvelope = initWeightedTokensEnvelope
+      .combine(initMintTx)
+      .combine(setAuthEnvelopeEnvelope)
+      .addInstructions(initPrismEtfTx);
+
+    return initPrismEtfEnvelope;
+  }
+
+  // Push tokens into Prism ETF being built
+  async pushTokens({
+    beamsplitter, // Beamsplitter program
+    weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
+    prismEtfMint, // Mint of the corresponding PrismEtf SPL token, must be passed if the PrismEtf was inited already
+  }: {
+    beamsplitter: PublicKey;
+    weightedTokens: WeightedToken[];
+    prismEtfMint?: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const pushTokensEnvelope = new TransactionEnvelope(this.provider, []);
+
+    // Initialize new Prism ETF if no mint is given
+    if (!prismEtfMint) {
+      const prismEtfMintKp = Keypair.generate();
+      pushTokensEnvelope.combine(
+        await this._initPrismEtf({
+          beamsplitter,
+        })
+      );
+      prismEtfMint = prismEtfMintKp.publicKey;
+    }
+
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+
+    const prismEtfData = await this.fetchPrismEtfData(prismEtf);
+
+    if (!prismEtfData) {
+      throw new Error(
+        "prismEtf PDA derived from prismEtfMint passed does not exist. Delete `prismEtfMint` arguement to automagically create it."
+      );
+    }
+
+    if (prismEtfData.isFinished) {
+      throw new Error(
+        "prismEtf.is_finished is true. Etf is already done being designed. Use rebalancing to modify it further."
+      );
+    }
+
+    if (this.provider.wallet.publicKey !== prismEtfData.manager) {
+      throw new Error("You must be manager of the PrismEtf to modify it.");
+    }
+
+    // TODO batch these in groups of two or more to save on Tx costs
+    for (const weightedToken of weightedTokens) {
+      pushTokensEnvelope.addInstructions(
+        this.program.instruction.pushTokens([weightedToken], {
+          accounts: {
+            prismEtf,
+            prismEtfMint,
+            beamsplitter,
+            weightedTokens: prismEtfData.weightedTokens,
+            manager: this.provider.wallet.publicKey,
+            systemProgram: SystemProgram.programId,
+          },
         })
       );
     }
 
-    return tx.combine(setAuthTx);
+    return pushTokensEnvelope;
   }
 
-  async buy({
-    beamsplitter,
-    toToken,
-    prismEtf,
-    paymentMint = getUSDCMint(),
-    amount,
-  }: {
-    beamsplitter: PublicKey;
-    toToken?: PublicKey;
-    prismEtf: PublicKey;
-    paymentMint?: PublicKey;
-    amount: BN;
-  }): Promise<TransactionEnvelope> {
-    const prismEtfAccount = await this.fetchPrismEtfData(prismEtf);
-    let prismEtfMint;
-    if (!(prismEtfMint = prismEtfAccount?.mint))
-      throw new Error("Failed to fetch PrismEtf mint");
-
-    // user's recieving account for basket tokens
-    if (!toToken) {
-      toToken = await getATAAddress({
-        mint: prismEtfMint,
-        owner: this.provider.wallet.publicKey,
-      });
-    }
-
-    // user's token account used for payment
-    const fromToken = await getATAAddress({
-      mint: paymentMint,
-      owner: this.provider.wallet.publicKey,
-    });
-
-    // where user sends payment
-    const depositToken = await getATAAddress({
-      mint: paymentMint,
-      owner: beamsplitter,
-    });
-
-    // Approve transfer of [amount] tokens out of user token account
-    const approveInst = approve({
-      owner: this.provider.wallet.publicKey,
-      delegate: beamsplitter,
-      source: fromToken,
-      amount,
-    });
-
-    const approveTx = new TransactionEnvelope(this.provider, [approveInst]);
-
-    const usdcAuthority = (await getMintInfo(this.provider, getUSDCMint()))
-      .mintAuthority;
-    if (!usdcAuthority)
-      throw new Error("Failed to retrieve USDC mint authority");
-
-    const buyTx = new TransactionEnvelope(this.provider, [
-      this.program.instruction.buy("" as never, {
-        accounts: {
-          usdcTokenAuthority: usdcAuthority,
-          prismEtfMint: prismEtfMint,
-          prismEtf: prismEtf,
-          buyer: this.provider.wallet.publicKey,
-          buyerToken: fromToken,
-          recieverToken: toToken,
-          beamsplitter,
-          beamsplitterToken: depositToken,
-          systemProgram: SystemProgram.programId,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-      }),
-    ]);
-
-    return approveTx.combine(buyTx);
-  }
-
-  getPrice({
-    owner = this.provider.wallet.publicKey,
-    price,
-    priceSigner,
-    market,
-    bids,
-    dexPid = this.getLatestSerumDEXAddress(),
-  }: {
-    owner?: PublicKey;
-    price: PublicKey;
-    priceSigner: Signer;
-    market: PublicKey;
-    bids: PublicKey;
-    dexPid?: PublicKey;
-  }): TransactionEnvelope {
-    return new TransactionEnvelope(
-      this.provider,
-      [
-        this.program.instruction.getPrice(dexPid, {
-          accounts: {
-            price,
-            payer: owner,
-            systemProgram: SystemProgram.programId,
-          },
-          remainingAccounts: [
-            {
-              pubkey: market,
-              isWritable: false,
-              isSigner: false,
-            },
-            {
-              pubkey: bids,
-              isWritable: false,
-              isSigner: false,
-            },
-          ],
-        }),
-      ],
-      [priceSigner]
-    );
-  }
+  // TODO: Finalize PrismETF (you will no longer be able to modify it without rebalancing)
+  //async finalizePrismEtf() {}
 
   // Fetch the main Beamsplitter state account
   async fetchBeamsplitterData(
