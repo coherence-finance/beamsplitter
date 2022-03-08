@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Market } from "@project-serum/serum";
-import { PROGRAM_LAYOUT_VERSIONS } from "@project-serum/serum/lib/tokens_and_markets";
 import { newProgram } from "@saberhq/anchor-contrib";
 import type { AugmentedProvider, Provider } from "@saberhq/solana-contrib";
 import {
@@ -9,8 +5,8 @@ import {
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
 import { createInitMintInstructions, getMintInfo } from "@saberhq/token-utils";
-import type { Connection, Signer } from "@solana/web3.js";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import type { PublicKey, Signer } from "@solana/web3.js";
+import { Keypair, SystemProgram } from "@solana/web3.js";
 import { BN } from "bn.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
@@ -188,12 +184,12 @@ export class CoherenceBeamsplitterSDK {
   // Push tokens into Prism ETF being built
   async pushTokens({
     beamsplitter, // Beamsplitter program
-    weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
     prismEtfMint, // Mint of the corresponding PrismEtf SPL token
+    weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
   }: {
     beamsplitter: PublicKey;
-    weightedTokens: WeightedToken[];
     prismEtfMint: PublicKey;
+    weightedTokens: WeightedToken[];
   }): Promise<TransactionEnvelope[]> {
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
@@ -296,63 +292,11 @@ export class CoherenceBeamsplitterSDK {
     return await this.fetchPrismEtfData(prismEtf);
   }
 
-  /*
-  async fetchWeightedTokensFromPrismEtf(
-    key: PublicKey
-  ): Promise<WeightedTokensData | null> {
-    const prismEtfData = await this.fetchPrismEtfData(key);
-
-    if (!prismEtfData) {
-      throw new Error(
-        "prismEtf PDA derived from prismEtfMint passed does not exist. Use initPrismEtf to initialize the PDA and pass in the resulting mint PublicKey."
-      );
-    }
-
-    return (await this.program.account.weightedTokens.fetchNullable(
-      prismEtfData.weightedTokens
-    )) as PrismEtfData;
-  }*/
-
   async fetchWeightedTokens(
     key: PublicKey
   ): Promise<WeightedTokensData | null> {
     return (await this.program.account.weightedTokens.fetchNullable(
       key
     )) as WeightedTokensData;
-  }
-
-  // TODO this should take pair of tokens and return market account and bid
-  // For now user manually has to locate market account
-  async loadMarketAndBidAccounts({
-    connection,
-    marketAccount,
-    dexProgram = this.getLatestSerumDEXAddress(),
-  }: {
-    connection: Connection;
-    marketAccount: PublicKey;
-    dexProgram?: PublicKey;
-  }): Promise<PublicKey> {
-    const market = await Market.load(
-      connection,
-      marketAccount,
-      undefined,
-      dexProgram
-    );
-    return market.bidsAddress;
-  }
-
-  // Retrieve latest DEX address (ie version 3 at time of writing)
-  getLatestSerumDEXAddress(): PublicKey {
-    const latestVersion = Math.max(...Object.values(PROGRAM_LAYOUT_VERSIONS));
-    const lastestAddress = Object.entries<number>(PROGRAM_LAYOUT_VERSIONS).find(
-      (addrEntry) => {
-        if (addrEntry[1] === latestVersion) {
-          return addrEntry;
-        }
-      }
-    );
-    if (!lastestAddress)
-      throw new Error("Failed to retrieve latest version of Serum DEX Address");
-    return new PublicKey(lastestAddress[0]);
   }
 }
