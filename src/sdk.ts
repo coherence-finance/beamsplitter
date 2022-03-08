@@ -211,6 +211,7 @@ export class CoherenceBeamsplitterSDK {
       pushTokensEnvelope.combine(
         await this._initPrismEtf({
           beamsplitter,
+          mintKP: prismEtfMintKp,
         })
       );
       prismEtfMint = prismEtfMintKp.publicKey;
