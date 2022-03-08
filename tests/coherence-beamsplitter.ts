@@ -2,14 +2,19 @@ import { Provider, setProvider } from "@project-serum/anchor";
 import { makeSaberProvider } from "@saberhq/anchor-contrib";
 import { chaiSolana, expectTX } from "@saberhq/chai-solana";
 import type { Provider as SaberProvider } from "@saberhq/solana-contrib";
-import { PendingTransaction, PublicKey } from "@saberhq/solana-contrib";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  PendingTransaction,
+  PublicKey,
+  TransactionEnvelope,
+} from "@saberhq/solana-contrib";
+import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import chai, { assert, expect } from "chai";
 
 import type { WeightedToken } from "../src";
 import {
   CoherenceBeamsplitterSDK,
   generateBeamsplitterAddress,
+  generatePrismEtfAddress,
   WEIGHTED_TOKENS_CAPACITY,
 } from "../src";
 
@@ -66,6 +71,49 @@ describe("coherence-beamsplitter", () => {
     expect(beamsplitterData?.bump).to.equal(bump);
 
     beamsplitter = pdaKey;
+  });
+
+  it("Reintialization attack should fail", async () => {
+    const [initPrismEtFTx, prismEtfMint] = await sdk.initPrismEtf({
+      beamsplitter,
+    });
+
+    await expectTX(initPrismEtFTx, "Initialize asset with assetToken").to.be
+      .fulfilled;
+
+    const prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!prismEtf) {
+      assert.fail("Prism Etf was not successfully created");
+    }
+
+    assert(prismEtf.manager.equals(authority));
+    assert(!prismEtf.isFinished);
+
+    const [prismEtfPda, bump] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+
+    const initPrismEtfAgainTx = new TransactionEnvelope(provider, [
+      sdk.program.instruction.initPrismEtf(bump, {
+        accounts: {
+          prismEtf: prismEtfPda,
+          prismEtfMint,
+          weightedTokens: prismEtf.weightedTokens,
+          manager: authority,
+          beamsplitter: beamsplitter,
+          systemProgram: SystemProgram.programId,
+        },
+      }),
+    ]);
+
+    await expectTX(initPrismEtfAgainTx).to.be.rejectedWith(
+      "Signature verification failed"
+    );
   });
 
   it("Create an empty Prism ETF", async () => {
