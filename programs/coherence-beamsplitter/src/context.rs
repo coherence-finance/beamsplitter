@@ -112,10 +112,6 @@ pub struct PushTokens<'info> {
 pub struct InitOrderState<'info> {
     pub prism_etf_mint: Account<'info, Mint>,
 
-    /// The Prism ETF [Account] that describes the assets being purchased
-    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
-    pub prism_etf: Account<'info, PrismEtf>,
-
     #[account(init, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = bump, payer = orderer)]
     pub order_state: Account<'info, OrderState>,
 
@@ -124,10 +120,6 @@ pub struct InitOrderState<'info> {
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
     pub orderer: Signer<'info>,
-
-    /// The [TokenAccount] that recieves the Basket Tokens
-    #[account(mut, associated_token::mint = prism_etf_mint, associated_token::authority = beamsplitter)]
-    pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(

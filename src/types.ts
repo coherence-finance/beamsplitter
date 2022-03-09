@@ -10,6 +10,7 @@ export type BeamsplitterTypes = AnchorTypes<
     beamsplitter: BeamsplitterData;
     weightedTokens: WeightedTokensData;
     transferredTokens: TransferredTokensData;
+    orderState: OrderStateData;
   }
 >;
 
@@ -20,6 +21,7 @@ export type WeightedTokensData = Omit<
   Accounts["weightedTokens"],
   "weightedTokens"
 > & { weightedTokens: WeightedToken[] };
+export type OrderStateData = Accounts["orderState"];
 export type TransferredTokensData = Accounts["transferredTokens"];
 export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 

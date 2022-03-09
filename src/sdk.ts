@@ -4,17 +4,28 @@ import {
   SolanaAugmentedProvider,
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
-import { createInitMintInstructions, getMintInfo } from "@saberhq/token-utils";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createInitMintInstructions,
+  getMintInfo,
+  getOrCreateATA,
+  TOKEN_PROGRAM_ID,
+} from "@saberhq/token-utils";
 import type { PublicKey, Signer } from "@solana/web3.js";
-import { Keypair, SystemProgram } from "@solana/web3.js";
+import { Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import { BN } from "bn.js";
 
 import { IDL } from "../target/types/coherence_beamsplitter";
 import { PROGRAM_ID } from "./constants";
-import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
+import {
+  generateBeamsplitterAddress,
+  generateOrderStateAddress,
+  generatePrismEtfAddress,
+} from "./pda";
 import type {
   BeamsplitterData,
   BeamsplitterProgram,
+  OrderStateData,
   PrismEtfData,
   WeightedToken,
   WeightedTokensData,
@@ -260,6 +271,206 @@ export class CoherenceBeamsplitterSDK {
         },
       }),
     ]);
+  }
+
+  async _initOrderState({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const transferredTokensKP = Keypair.generate();
+
+    const initOrderStateEnvelope = await this._initTransferredTokens({
+      transferredTokensKP,
+    });
+
+    const [orderStatePda, bump] = await generateOrderStateAddress(
+      prismEtfMint,
+      beamsplitter,
+      this.provider.wallet.publicKey
+    );
+
+    initOrderStateEnvelope.addInstructions(
+      this.program.instruction.initOrderState(bump, {
+        accounts: {
+          prismEtfMint: prismEtfMint,
+          orderState: orderStatePda,
+          orderer: this.provider.wallet.publicKey,
+          transferredTokens: transferredTokensKP.publicKey,
+          beamsplitter,
+          systemProgram: SystemProgram.programId,
+        },
+      })
+    );
+
+    return initOrderStateEnvelope;
+  }
+
+  async startOrder({
+    beamsplitter,
+    prismEtfMint,
+    isConstruction,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+    isConstruction: boolean;
+  }): Promise<TransactionEnvelope> {
+    let orderState = await this.fetchOrderStateDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
+
+    if (!orderState) {
+      initOrderStateEnvelope.combine(
+        await this._initOrderState({
+          beamsplitter,
+          prismEtfMint,
+        })
+      );
+    }
+    orderState = orderState as OrderStateData;
+
+    const prismEtf = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!prismEtf) {
+      throw new Error("You must create the prismEtf first.");
+    }
+
+    const { address: transferredTokensAta, instruction: createATATx } =
+      await getOrCreateATA({
+        provider: this.provider,
+        mint: prismEtfMint,
+      });
+
+    if (createATATx) {
+      initOrderStateEnvelope.addInstructions(createATATx);
+    }
+
+    const [prismEtfPda] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+
+    const [orderStatePda] = await generateOrderStateAddress(
+      prismEtfMint,
+      beamsplitter,
+      this.provider.wallet.publicKey
+    );
+
+    return initOrderStateEnvelope.addInstructions(
+      this.program.instruction.startOrder(isConstruction, {
+        accounts: {
+          prismEtf: prismEtfPda,
+          prismEtfMint,
+          orderState: orderStatePda,
+          transferredTokens: orderState.transferredTokens,
+          orderer: this.provider.wallet.publicKey,
+          ordererEtfAta: transferredTokensAta,
+          beamsplitter,
+          rent: SYSVAR_RENT_PUBKEY,
+          weightedTokens: prismEtf.weightedTokens,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        },
+      })
+    );
+  }
+
+  async finalizeOrder({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const orderState = await this.fetchOrderStateDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
+
+    if (!orderState) {
+      throw new Error("You must init the orderState first. Call startOrder()");
+    }
+
+    const prismEtf = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!prismEtf) {
+      throw new Error(
+        "You must create the prismEtf first. Call initPrismEtf()"
+      );
+    }
+
+    const { address: transferredTokensAta, instruction: createATATx } =
+      await getOrCreateATA({
+        provider: this.provider,
+        mint: prismEtfMint,
+      });
+
+    if (createATATx) {
+      initOrderStateEnvelope.addInstructions(createATATx);
+    }
+
+    const [prismEtfPda] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+
+    const [orderStatePda] = await generateOrderStateAddress(
+      prismEtfMint,
+      beamsplitter,
+      this.provider.wallet.publicKey
+    );
+
+    return initOrderStateEnvelope.addInstructions(
+      this.program.instruction.finalizeOrder({
+        accounts: {
+          prismEtf: prismEtfPda,
+          prismEtfMint,
+          orderState: orderStatePda,
+          transferredTokens: orderState.transferredTokens,
+          orderer: this.provider.wallet.publicKey,
+          ordererEtfAta: transferredTokensAta,
+          beamsplitter,
+          rent: SYSVAR_RENT_PUBKEY,
+          weightedTokens: prismEtf.weightedTokens,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        },
+      })
+    );
+  }
+
+  async fetchOrderStateDataFromSeeds({
+    beamsplitter,
+    prismEtfMint,
+    orderer = this.provider.wallet.publicKey,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+    orderer?: PublicKey;
+  }): Promise<OrderStateData | null> {
+    const [orderState] = await generateOrderStateAddress(
+      prismEtfMint,
+      beamsplitter,
+      orderer
+    );
+    return (await this.program.account.orderState.fetchNullable(
+      orderState
+    )) as OrderStateData;
   }
 
   // Fetch the main Beamsplitter state account

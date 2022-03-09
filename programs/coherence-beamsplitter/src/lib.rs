@@ -106,7 +106,7 @@ pub mod coherence_beamsplitter {
     pub fn init_order_state(ctx: Context<InitOrderState>, bump: u8) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
         order_state.bump = bump;
-        order_state.transfered_tokens = ctx.accounts.transferred_tokens.key();
+        order_state.transferred_tokens = ctx.accounts.transferred_tokens.key();
         order_state.is_pending = false;
         Ok(())
     }
@@ -237,6 +237,7 @@ pub mod coherence_beamsplitter {
         // Mark this token as successfully transferred
         transferred_tokens.transferred_tokens[index_usize] = true;
 
+        // TODO MULTIPLY WEIGHT BY AMOUNT
         transfer(transfer_ctx, weighted_token.weight.into())?;
 
         Ok(())
@@ -297,6 +298,7 @@ pub mod coherence_beamsplitter {
         // Mark this token as successfully transferred
         transferred_tokens.transferred_tokens[index_usize] = true;
 
+        // TODO MULTIPLY WEIGHT BY AMOUNT
         transfer(transfer_ctx, weighted_token.weight.into())?;
 
         Ok(())
