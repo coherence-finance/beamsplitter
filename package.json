@@ -23,6 +23,7 @@
     "test": "anchor test"
   },
   "dependencies": {
+    "idl": "./target/types",
     "@project-serum/common": "^0.0.1-beta.3",
     "@saberhq/anchor-contrib": "^1.12.36",
     "@saberhq/solana-contrib": "^1.12.36",
