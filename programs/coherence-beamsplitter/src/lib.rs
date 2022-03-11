@@ -128,8 +128,13 @@ pub mod coherence_beamsplitter {
     */
     pub fn start_order(ctx: Context<StartOrder>, order_type: bool, amount: u64) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
+        let prism_etf = &ctx.accounts.prism_etf;
 
         if order_state.is_pending {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        if !prism_etf.is_finished {
             return Err(ProgramError::InvalidArgument.into());
         }
 
