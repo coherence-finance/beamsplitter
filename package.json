@@ -1,6 +1,6 @@
 {
   "name": "@coherence-fin/sdk",
-  "version": "0.0.10",
+  "version": "0.0.13",
   "description": "SDK for Prismsplitter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",

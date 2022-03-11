@@ -35,10 +35,8 @@ import { TRANSFERRED_TOKENS_SIZE, WEIGHTED_TOKENS_SIZE } from "./types";
 // How many weighted tokens are chunked together per tx
 const PUSH_TX_CHUNK_SIZE = 24;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const CONSTRUCT_TX_CHUNK_SIZE = 24;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const DECONSTRUCT_TX_CHUNK_SIZE = 24;
+// const CONSTRUCT_TX_CHUNK_SIZE = 24;
+// const DECONSTRUCT_TX_CHUNK_SIZE = 24;
 
 export class CoherenceBeamsplitterSDK {
   constructor(
@@ -426,7 +424,7 @@ export class CoherenceBeamsplitterSDK {
       throw new Error("Weighted tokens was not initalized.");
     }
 
-    const weightedTokens: WeightedToken[] = weightedTokensAcct.weightedTokens;
+    const weightedTokens = weightedTokensAcct.weightedTokens as WeightedToken[];
 
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
@@ -542,7 +540,7 @@ export class CoherenceBeamsplitterSDK {
       throw new Error("Weighted tokens was not initalized.");
     }
 
-    const weightedTokens: WeightedToken[] = weightedTokensAcct.weightedTokens;
+    const weightedTokens = weightedTokensAcct.weightedTokens as WeightedToken[];
 
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
