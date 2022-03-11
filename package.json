@@ -1,9 +1,9 @@
 {
-  "name": "@coherence-finance/sdk",
-  "version": "0.0.5",
+  "name": "@coherence-fin/sdk",
+  "version": "0.0.10",
   "description": "SDK for Prismsplitter",
-  "main": "dist/cjs/src/index.js",
-  "module": "dist/esm/src/index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:coherence-finance/beamsplitter.git"
@@ -23,23 +23,21 @@
     "test": "anchor test"
   },
   "dependencies": {
-    "idl": "./target/types",
-    "@project-serum/common": "^0.0.1-beta.3",
-    "@saberhq/anchor-contrib": "^1.12.36",
-    "@saberhq/solana-contrib": "^1.12.36",
-    "@saberhq/token-utils": "^1.12.36",
-    "@saberhq/tsconfig": "^1.12.36",
-    "@solana/web3.js": "^1.33.0",
-    "spl-token-faucet": "https://github.com/coherence-finance/spl-token-faucet"
+    "@saberhq/tsconfig": "^1.12.36"
   },
   "devDependencies": {
     "@project-serum/anchor": "^0.19.1-beta.1",
+    "@project-serum/common": "^0.0.1-beta.3",
     "@project-serum/serum": "^0.13.61",
     "@rushstack/eslint-patch": "^1.1.0",
+    "@saberhq/anchor-contrib": "^1.12.50",
     "@saberhq/chai-solana": "^1.12.9",
     "@saberhq/eslint-config": "^1.12.9",
     "@saberhq/solana": "^0.7.9",
+    "@saberhq/solana-contrib": "^1.12.50",
+    "@saberhq/token-utils": "^1.12.50",
     "@solana/spl-token": "^0.1.8",
+    "@solana/web3.js": "^1.36.0",
     "@types/bn.js": "^5.1.0",
     "@types/mocha": "^9.0.0",
     "bn.js": "^5.2.0",
@@ -57,6 +55,10 @@
   },
   "peerDependencies": {
     "@project-serum/anchor": "^0.19",
+    "@saberhq/anchor-contrib": "^1.12.50",
+    "@saberhq/solana-contrib": "^1.12.50",
+    "@saberhq/token-utils": "^1.12.50",
+    "@solana/web3.js": "^1.36.0",
     "bn.js": "^5.2.0"
   },
   "lint-staged": {

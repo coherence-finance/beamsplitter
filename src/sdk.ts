@@ -13,9 +13,9 @@ import {
 } from "@saberhq/token-utils";
 import type { PublicKey, Signer } from "@solana/web3.js";
 import { Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
-import BN, { BN } from "bn.js";
+import BN from "bn.js";
 
-import { IDL } from "../target/types/coherence_beamsplitter";
+import { IDL } from "./coherence_beamsplitter";
 import { PROGRAM_ID } from "./constants";
 import {
   generateBeamsplitterAddress,
@@ -35,8 +35,8 @@ import { TRANSFERRED_TOKENS_SIZE, WEIGHTED_TOKENS_SIZE } from "./types";
 // How many weighted tokens are chunked together per tx
 const PUSH_TX_CHUNK_SIZE = 24;
 
-const CONSTRUCT_TX_CHUNK_SIZE = 24;
-const DECONSTRUCT_TX_CHUNK_SIZE = 24;
+// const CONSTRUCT_TX_CHUNK_SIZE = 24;
+// const DECONSTRUCT_TX_CHUNK_SIZE = 24;
 
 export class CoherenceBeamsplitterSDK {
   constructor(
@@ -389,100 +389,97 @@ export class CoherenceBeamsplitterSDK {
     );
   }
 
-  async contruct({
-    beamsplitter,
-    prismEtfMint,
-  }: {
-    beamsplitter: PublicKey;
-    prismEtfMint: PublicKey;
-  }): Promise<TransactionEnvelope[]> {
-    const orderState = await this.fetchOrderStateDataFromSeeds({
-      beamsplitter,
-      prismEtfMint,
-    });
+  // async contruct({
+  //   beamsplitter,
+  //   prismEtfMint,
+  // }: {
+  //   beamsplitter: PublicKey;
+  //   prismEtfMint: PublicKey;
+  // }): Promise<TransactionEnvelope[]> {
+  //   const orderState = await this.fetchOrderStateDataFromSeeds({
+  //     beamsplitter,
+  //     prismEtfMint,
+  //   });
 
-    if (!orderState) {
-      throw new Error(
-        "You must start an order first. Call startOrder() before construct."
-      );
-    }
+  //   if (!orderState) {
+  //     throw new Error(
+  //       "You must start an order first. Call startOrder() before construct."
+  //     );
+  //   }
 
-    const prismEtf = await this.fetchPrismEtfDataFromSeeds({
-      beamsplitter,
-      prismEtfMint,
-    });
+  //   const prismEtf = await this.fetchPrismEtfDataFromSeeds({
+  //     beamsplitter,
+  //     prismEtfMint,
+  //   });
 
-    if (!prismEtf) {
-      throw new Error("You must create the prismEtf first.");
-    }
+  //   if (!prismEtf) {
+  //     throw new Error("You must create the prismEtf first.");
+  //   }
 
+  //   const weightedTokensAcct = await this.fetchWeightedTokens(
+  //     prismEtf.weightedTokens
+  //   );
 
-    const weightedTokensAcct = await this.fetchWeightedTokens(
-      prismEtf.weightedTokens
-    );
+  //   if (!weightedTokensAcct) {
+  //     throw new Error("Weighted tokens was not initalized.");
+  //   }
 
-    if (!weightedTokensAcct) {
-      throw new Error("Weighted tokens was not initalized.");
-    }
+  //   const weightedTokens: WeightedToken[] = weightedTokensAcct.weightedTokens;
 
-    const weightedTokens: WeightedToken[] = weightedTokensAcct.weightedTokens;
+  //   const [prismEtfPda] = await generatePrismEtfAddress(
+  //     prismEtfMint,
+  //     beamsplitter
+  //   );
 
-    const [prismEtfPda] = await generatePrismEtfAddress(
-      prismEtfMint,
-      beamsplitter
-    );
+  //   const [orderStatePda] = await generateOrderStateAddress(
+  //     prismEtfMint,
+  //     beamsplitter,
+  //     this.provider.wallet.publicKey
+  //   );
 
-    const [orderStatePda] = await generateOrderStateAddress(
-      prismEtfMint,
-      beamsplitter,
-      this.provider.wallet.publicKey
-    );
+  //   const constructTxChunks: TransactionEnvelope[] = [];
+  //   for (let i = 0; i < weightedTokens.length; i++) {
+  //     if (!weightedTokens.at(i)) {
+  //       throw new Error("Outside weighted tokens array range");
+  //     }
 
-    const constructTxChunks: TransactionEnvelope[] = [];
-    for (let i = 0; i < weightedTokens.length; i++) {
+  //     const { instruction: createATATx } = await getOrCreateATA({
+  //       provider: this.provider,
+  //       mint: weightedTokens[i].mint,
+  //       owner: beamsplitter,
+  //     });
 
-      if (!weightedTokens.at(i)) {
-        throw new Error("Outside weighted tokens array range");
-      }
+  //     if (createATATx) {
+  //       initOrderStateEnvelope.addInstructions(createATATx);
+  //     }
 
-      const { address: , instruction: createATATx } =
-      await getOrCreateATA({
-        provider: this.provider,
-        mint: weightedTokens[i].mint,
-        owner: beamsplitter,
-      });
+  //     const { address: transferredTokensAta, instruction: createATATx } =
+  //       await getOrCreateATA({
+  //         provider: this.provider,
+  //         mint: weightedTokens[i].mint,
+  //       });
 
-      if (createATATx) {
-        initOrderStateEnvelope.addInstructions(createATATx);
-      }
+  //     if (createATATx) {
+  //       initOrderStateEnvelope.addInstructions(createATATx);
+  //     }
+  //     constructTxChunks.push(
+  //       new TransactionEnvelope(this.provider, [
+  //         this.program.instruction.construct(new BN(i), {
+  //           accounts: {
+  //             prismEtf: prismEtfPda,
+  //             prismEtfMint,
+  //             beamsplitter,
+  //             weightedTokens: prismEtf.weightedTokens,
+  //             manager: this.provider.wallet.publicKey,
+  //             systemProgram: SystemProgram.programId,
+  //           },
+  //         }),
+  //       ])
+  //     );
+  //   }
 
-      const { address: transferredTokensAta, instruction: createATATx } =
-      await getOrCreateATA({
-        provider: this.provider,
-        mint: weightedTokens[i].mint,
-      });
-
-      if (createATATx) {
-        initOrderStateEnvelope.addInstructions(createATATx);
-      }
-      constructTxChunks.push(
-        new TransactionEnvelope(this.provider, [
-          this.program.instruction.construct(new BN(i), {
-            accounts: {
-              prismEtf: prismEtfPda,
-              prismEtfMint,
-              beamsplitter,
-              weightedTokens: prismEtf.weightedTokens,
-              manager: this.provider.wallet.publicKey,
-              systemProgram: SystemProgram.programId,
-            },
-          }),
-        ])
-      );
-    }
-
-    return initOrderStateEnvelopes;
-  }
+  //   return initOrderStateEnvelopes;
+  // }
 
   async finalizeOrder({
     beamsplitter,

@@ -9,7 +9,7 @@ use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("4WWKCwKfhz7cVkd4sANskBk3y2aG9XpZ3fGSQcW1yTBB");
+declare_id!("7FPJNxBBaeaapXyhQC9jW9tnyy8J6rhhMmtUxtoPDEBi");
 
 #[program]
 pub mod coherence_beamsplitter {

@@ -1,7 +1,7 @@
 import type { AnchorTypes } from "@saberhq/anchor-contrib";
 import type { PublicKey } from "@solana/web3.js";
 
-import type { CoherenceBeamsplitter } from "../target/types/coherence_beamsplitter";
+import type { CoherenceBeamsplitter } from "./coherence_beamsplitter";
 
 export type BeamsplitterTypes = AnchorTypes<
   CoherenceBeamsplitter,
