@@ -31,9 +31,9 @@ export type Defined = BeamsplitterTypes["Defined"];
 export type WeightedToken = Defined["WeightedToken"];
 
 // TODO figure out how to get this out of idl
-export const WEIGHTED_TOKENS_SIZE = 80 + 8; // Bytes
-export const TRANSFERRED_TOKENS_SIZE = 9 + 8; // Bytes
-export const WEIGHTED_TOKENS_CAPACITY = 2;
+export const WEIGHTED_TOKENS_SIZE = 14408 + 8; // Bytes
+export const TRANSFERRED_TOKENS_SIZE = 408 + 8; // Bytes
+export const WEIGHTED_TOKENS_CAPACITY = 400;
 
 export type RequiredMarketAccounts = {
   marketAccount: PublicKey;

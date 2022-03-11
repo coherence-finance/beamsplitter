@@ -5,7 +5,7 @@ use anchor_lang::prelude::*;
 #[constant]
 pub const _PRISM_ETF_SIZE: usize = size_of::<PrismEtf>();
 #[constant]
-pub const MAX_WEIGHTED_TOKENS: usize = 2;
+pub const MAX_WEIGHTED_TOKENS: usize = 400;
 
 /// Contains the info of the prism etf.
 #[account]
@@ -29,7 +29,7 @@ pub struct WeightedTokens {
     /// Max capacity of the array
     pub capacity: u32,
     /// [WeightedToken] array
-    pub weighted_tokens: [WeightedToken; 2], // TODO find better name
+    pub weighted_tokens: [WeightedToken; 400], // TODO find better name
 }
 
 /// Contains the info of the prism etf.
@@ -56,7 +56,7 @@ pub struct TransferredTokens {
     /// Max capacity of the array
     pub capacity: u32,
     /// Each bool is true if the corresponding weight_token was transferred succesfully in the order
-    pub transferred_tokens: [bool; 1], // TODO find better name
+    pub transferred_tokens: [bool; 400], // TODO find better name
 }
 
 #[zero_copy]

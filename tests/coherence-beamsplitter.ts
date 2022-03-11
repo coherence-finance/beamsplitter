@@ -195,11 +195,9 @@ describe("coherence-beamsplitter", () => {
     for (const pushTokensEnvelope of pushTokensEnvelopes) {
       await expectTX(pushTokensEnvelope).to.be.fulfilled;
     }
-    console.log("HERE");
     const weightedTokenData = await sdk.fetchWeightedTokens(
       prismEtf.weightedTokens
     );
-    console.log("HERE AFTER");
     expect(weightedTokenData?.index).to.be.equal(randomNumberTokens);
 
     for (let i = 0; i < randomNumberTokens; i++) {
