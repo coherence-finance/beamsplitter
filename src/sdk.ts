@@ -35,8 +35,10 @@ import { TRANSFERRED_TOKENS_SIZE, WEIGHTED_TOKENS_SIZE } from "./types";
 // How many weighted tokens are chunked together per tx
 const PUSH_TX_CHUNK_SIZE = 24;
 
-// const CONSTRUCT_TX_CHUNK_SIZE = 24;
-// const DECONSTRUCT_TX_CHUNK_SIZE = 24;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const CONSTRUCT_TX_CHUNK_SIZE = 24;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const DECONSTRUCT_TX_CHUNK_SIZE = 24;
 
 export class CoherenceBeamsplitterSDK {
   constructor(
@@ -167,7 +169,7 @@ export class CoherenceBeamsplitterSDK {
         throw new Error("Prism ETF token supply must start at zero.");
       }
 
-      if (prismEtfMintData.mintAuthority !== beamsplitter) {
+      if (!prismEtfMintData.mintAuthority?.equals(beamsplitter)) {
         throw new Error("PrismETF token mint Authority is not beamsplitter");
       }
     }
@@ -389,97 +391,237 @@ export class CoherenceBeamsplitterSDK {
     );
   }
 
-  // async contruct({
-  //   beamsplitter,
-  //   prismEtfMint,
-  // }: {
-  //   beamsplitter: PublicKey;
-  //   prismEtfMint: PublicKey;
-  // }): Promise<TransactionEnvelope[]> {
-  //   const orderState = await this.fetchOrderStateDataFromSeeds({
-  //     beamsplitter,
-  //     prismEtfMint,
-  //   });
+  async cohere({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope[]> {
+    const orderState = await this.fetchOrderStateDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
 
-  //   if (!orderState) {
-  //     throw new Error(
-  //       "You must start an order first. Call startOrder() before construct."
-  //     );
-  //   }
+    if (!orderState) {
+      throw new Error(
+        "You must start an order first. Call startOrder() before construct."
+      );
+    }
 
-  //   const prismEtf = await this.fetchPrismEtfDataFromSeeds({
-  //     beamsplitter,
-  //     prismEtfMint,
-  //   });
+    const prismEtf = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
 
-  //   if (!prismEtf) {
-  //     throw new Error("You must create the prismEtf first.");
-  //   }
+    if (!prismEtf) {
+      throw new Error("You must create the prismEtf first.");
+    }
 
-  //   const weightedTokensAcct = await this.fetchWeightedTokens(
-  //     prismEtf.weightedTokens
-  //   );
+    const weightedTokensAcct = await this.fetchWeightedTokens(
+      prismEtf.weightedTokens
+    );
 
-  //   if (!weightedTokensAcct) {
-  //     throw new Error("Weighted tokens was not initalized.");
-  //   }
+    if (!weightedTokensAcct) {
+      throw new Error("Weighted tokens was not initalized.");
+    }
 
-  //   const weightedTokens: WeightedToken[] = weightedTokensAcct.weightedTokens;
+    const weightedTokens: WeightedToken[] = weightedTokensAcct.weightedTokens;
 
-  //   const [prismEtfPda] = await generatePrismEtfAddress(
-  //     prismEtfMint,
-  //     beamsplitter
-  //   );
+    const [prismEtfPda] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
 
-  //   const [orderStatePda] = await generateOrderStateAddress(
-  //     prismEtfMint,
-  //     beamsplitter,
-  //     this.provider.wallet.publicKey
-  //   );
+    const [orderStatePda] = await generateOrderStateAddress(
+      prismEtfMint,
+      beamsplitter,
+      this.provider.wallet.publicKey
+    );
 
-  //   const constructTxChunks: TransactionEnvelope[] = [];
-  //   for (let i = 0; i < weightedTokens.length; i++) {
-  //     if (!weightedTokens.at(i)) {
-  //       throw new Error("Outside weighted tokens array range");
-  //     }
+    const constructTxChunks: TransactionEnvelope[] = [];
+    for (let i = 0; i < weightedTokens.length; i++) {
+      const contstructEnvelope = new TransactionEnvelope(this.provider, []);
 
-  //     const { instruction: createATATx } = await getOrCreateATA({
-  //       provider: this.provider,
-  //       mint: weightedTokens[i].mint,
-  //       owner: beamsplitter,
-  //     });
+      if (!weightedTokens.at(i)) {
+        throw new Error("Outside weighted tokens array range");
+      }
 
-  //     if (createATATx) {
-  //       initOrderStateEnvelope.addInstructions(createATATx);
-  //     }
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const mintAddress = weightedTokens[i]!.mint;
 
-  //     const { address: transferredTokensAta, instruction: createATATx } =
-  //       await getOrCreateATA({
-  //         provider: this.provider,
-  //         mint: weightedTokens[i].mint,
-  //       });
+      const {
+        address: beamsplitterTransferAta,
+        instruction: createBeamsplitterAta,
+      } = await getOrCreateATA({
+        provider: this.provider,
+        mint: mintAddress,
+        owner: beamsplitter,
+      });
 
-  //     if (createATATx) {
-  //       initOrderStateEnvelope.addInstructions(createATATx);
-  //     }
-  //     constructTxChunks.push(
-  //       new TransactionEnvelope(this.provider, [
-  //         this.program.instruction.construct(new BN(i), {
-  //           accounts: {
-  //             prismEtf: prismEtfPda,
-  //             prismEtfMint,
-  //             beamsplitter,
-  //             weightedTokens: prismEtf.weightedTokens,
-  //             manager: this.provider.wallet.publicKey,
-  //             systemProgram: SystemProgram.programId,
-  //           },
-  //         }),
-  //       ])
-  //     );
-  //   }
+      if (createBeamsplitterAta) {
+        contstructEnvelope.addInstructions(createBeamsplitterAta);
+      }
 
-  //   return initOrderStateEnvelopes;
-  // }
+      const { address: ordererTransferAta, instruction: createOrdererAta } =
+        await getOrCreateATA({
+          provider: this.provider,
+          mint: mintAddress,
+        });
+
+      if (createOrdererAta) {
+        contstructEnvelope.addInstructions(createOrdererAta);
+      }
+
+      const mintData = await getMintInfo(this.provider, mintAddress);
+
+      if (!mintData.mintAuthority) {
+        throw new Error("Transfer Token Mint has no authority");
+      }
+
+      constructTxChunks.push(
+        contstructEnvelope.addInstructions(
+          this.program.instruction.cohere(i, {
+            accounts: {
+              prismEtfMint,
+              prismEtf: prismEtfPda,
+              orderState: orderStatePda,
+              weightedTokens: prismEtf.weightedTokens,
+              transferredTokens: orderState.transferredTokens,
+              orderer: this.provider.wallet.publicKey,
+              transferAuthority: mintData.mintAuthority,
+              transferMint: mintAddress,
+              ordererTransferAta,
+              beamsplitterTransferAta,
+              beamsplitter,
+              rent: SYSVAR_RENT_PUBKEY,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            },
+          })
+        )
+      );
+    }
+
+    return constructTxChunks;
+  }
+
+  async decohere({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope[]> {
+    const orderState = await this.fetchOrderStateDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!orderState) {
+      throw new Error(
+        "You must start an order first. Call startOrder() before construct."
+      );
+    }
+
+    const prismEtf = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!prismEtf) {
+      throw new Error("You must create the prismEtf first.");
+    }
+
+    const weightedTokensAcct = await this.fetchWeightedTokens(
+      prismEtf.weightedTokens
+    );
+
+    if (!weightedTokensAcct) {
+      throw new Error("Weighted tokens was not initalized.");
+    }
+
+    const weightedTokens: WeightedToken[] = weightedTokensAcct.weightedTokens;
+
+    const [prismEtfPda] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+
+    const [orderStatePda] = await generateOrderStateAddress(
+      prismEtfMint,
+      beamsplitter,
+      this.provider.wallet.publicKey
+    );
+
+    const constructTxChunks: TransactionEnvelope[] = [];
+    for (let i = 0; i < weightedTokens.length; i++) {
+      const contstructEnvelope = new TransactionEnvelope(this.provider, []);
+
+      if (!weightedTokens.at(i)) {
+        throw new Error("Outside weighted tokens array range");
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const mintAddress = weightedTokens[i]!.mint;
+
+      const {
+        address: beamsplitterTransferAta,
+        instruction: createBeamsplitterAta,
+      } = await getOrCreateATA({
+        provider: this.provider,
+        mint: mintAddress,
+        owner: beamsplitter,
+      });
+
+      if (createBeamsplitterAta) {
+        contstructEnvelope.addInstructions(createBeamsplitterAta);
+      }
+
+      const { address: ordererTransferAta, instruction: createOrdererAta } =
+        await getOrCreateATA({
+          provider: this.provider,
+          mint: mintAddress,
+        });
+
+      if (createOrdererAta) {
+        contstructEnvelope.addInstructions(createOrdererAta);
+      }
+
+      const mintData = await getMintInfo(this.provider, mintAddress);
+
+      if (!mintData.mintAuthority) {
+        throw new Error("Transfer Token Mint has no authority");
+      }
+
+      constructTxChunks.push(
+        contstructEnvelope.addInstructions(
+          this.program.instruction.decohere(i, {
+            accounts: {
+              prismEtfMint,
+              prismEtf: prismEtfPda,
+              orderState: orderStatePda,
+              weightedTokens: prismEtf.weightedTokens,
+              transferredTokens: orderState.transferredTokens,
+              orderer: this.provider.wallet.publicKey,
+              transferAuthority: mintData.mintAuthority,
+              transferMint: mintAddress,
+              ordererTransferAta,
+              beamsplitterTransferAta,
+              beamsplitter,
+              rent: SYSVAR_RENT_PUBKEY,
+              associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            },
+          })
+        )
+      );
+    }
+
+    return constructTxChunks;
+  }
 
   async finalizeOrder({
     beamsplitter,

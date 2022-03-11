@@ -7,6 +7,7 @@ import {
   PublicKey,
   TransactionEnvelope,
 } from "@saberhq/solana-contrib";
+import { createInitMintInstructions } from "@saberhq/token-utils";
 import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import chai, { assert, expect } from "chai";
 
@@ -185,6 +186,92 @@ describe("coherence-beamsplitter", () => {
       });
     }
 
+    const pushTokensEnvelopes = await sdk.pushTokens({
+      beamsplitter,
+      weightedTokens,
+      prismEtfMint,
+    });
+
+    // Have to do pushing in seq (Promise.all is not an option)
+    for (const pushTokensEnvelope of pushTokensEnvelopes) {
+      await expectTX(pushTokensEnvelope).to.be.fulfilled;
+    }
+
+    const weightedTokenData = await sdk.fetchWeightedTokens(
+      prismEtf.weightedTokens
+    );
+
+    expect(weightedTokenData?.index).to.be.equal(randomNumberTokens);
+    for (let i = 0; i < randomNumberTokens; i++) {
+      assert(
+        weightedTokenData?.weightedTokens[i]?.mint.equals(new PublicKey(i))
+      );
+      expect(weightedTokenData?.weightedTokens[i]?.weight).to.be.equal(i);
+    }
+
+    const finalizePrismEtfTx = await sdk.finalizePrismEtf({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    await expectTX(finalizePrismEtfTx, "Finalize PrismEtf").to.be.fulfilled;
+
+    prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!prismEtf) {
+      assert.fail("Prism Etf was not successfully created");
+    }
+
+    assert(prismEtf.isFinished);
+  });
+
+  it(`Construct two asset Prism ETF`, async () => {
+    const [initPrismEtFTx, prismEtfMint] = await sdk.initPrismEtf({
+      beamsplitter,
+    });
+
+    await expectTX(initPrismEtFTx, "Initialize asset with assetToken").to.be
+      .fulfilled;
+
+    let prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+
+    if (!prismEtf) {
+      assert.fail("Prism Etf was not successfully created");
+    }
+
+    assert(prismEtf.manager.equals(authority));
+    assert(!prismEtf.isFinished);
+
+    const tokenAKP = Keypair.generate();
+    const tokenAMintTx = await createInitMintInstructions({
+      provider: provider,
+      mintKP: tokenAKP,
+      decimals: 9,
+    });
+
+    const tokenBKP = Keypair.generate();
+    const tokenBMintTx = await createInitMintInstructions({
+      provider: provider,
+      mintKP: tokenAKP,
+      decimals: 9,
+    });
+
+    const weightedTokens: WeightedToken[] = [
+      {
+        mint: tokenAKP.publicKey,
+        weight: 1,
+      },
+      {
+        mint: tokenBKP.publicKey,
+        weight: 2,
+      },
+    ];
     const pushTokensEnvelopes = await sdk.pushTokens({
       beamsplitter,
       weightedTokens,
