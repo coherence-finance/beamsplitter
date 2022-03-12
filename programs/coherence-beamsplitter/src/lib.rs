@@ -216,7 +216,7 @@ pub mod coherence_beamsplitter {
         let amount = &Decimal::from(delegated_amount);
         let weight = &mut Decimal::from(weighted_token.weight);
 
-        // Scales the weight by how many decimals it uses (eg Dec = 1 for value 10 == 1.0)
+        // Scales the weight by how many decimals it uses (eg Scale = 1 for value 10 -> 1.0)
         match weight.set_scale(ctx.accounts.transfer_mint.decimals as u32) {
             Err(_error) => return Err(ProgramError::InvalidArgument.into()),
             _ => (),
@@ -243,7 +243,12 @@ pub mod coherence_beamsplitter {
         transferred_tokens.transferred_tokens[index_usize] = true;
 
         // TODO MULTIPLY WEIGHT BY AMOUNT
-        transfer(transfer_ctx, weighted_token.weight.into())?;
+        transfer(
+            transfer_ctx,
+            required_amount
+                .to_u64()
+                .ok_or(ProgramError::InvalidArgument)?,
+        )?;
 
         Ok(())
     }
@@ -303,7 +308,6 @@ pub mod coherence_beamsplitter {
         // Mark this token as successfully transferred
         transferred_tokens.transferred_tokens[index_usize] = true;
 
-        // TODO MULTIPLY WEIGHT BY AMOUNT
         transfer(transfer_ctx, weighted_token.weight.into())?;
 
         Ok(())
@@ -330,9 +334,17 @@ pub mod coherence_beamsplitter {
             return Err(ProgramError::InvalidArgument.into());
         }
 
-        let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
-        transferred_tokens.index = weighted_tokens.index;
+        let transferred_tokens_index = transferred_tokens.index as usize;
+
+        for transferred_token in
+            transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+        {
+            if !*transferred_token {
+                return Err(BeamsplitterErrors::StillPending.into());
+            }
+            *transferred_token = false;
+        }
 
         if order_state.is_construction {
             let mint_accounts = MintTo {

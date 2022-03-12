@@ -708,6 +708,11 @@ export type CoherenceBeamsplitter = {
       "code": 6007,
       "name": "IsFinished",
       "msg": "The ETF is already done being built and cannot be modified further without rebalancing"
+    },
+    {
+      "code": 6008,
+      "name": "StillPending",
+      "msg": "Attempted to finalize but etf is still pending (some assets not transferred)"
     }
   ]
 };
@@ -1422,6 +1427,11 @@ export const IDL: CoherenceBeamsplitter = {
       "code": 6007,
       "name": "IsFinished",
       "msg": "The ETF is already done being built and cannot be modified further without rebalancing"
+    },
+    {
+      "code": 6008,
+      "name": "StillPending",
+      "msg": "Attempted to finalize but etf is still pending (some assets not transferred)"
     }
   ]
 };

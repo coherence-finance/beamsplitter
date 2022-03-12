@@ -380,6 +380,8 @@ describe("coherence-beamsplitter", () => {
     });
 
     it(`Construct two asset Prism ETF`, async () => {
+      const AMOUNT_TO_CONSTRUCT = new BN(1);
+
       const [, bump] = await generateOrderStateAddress(
         prismEtfMint,
         beamsplitter,
@@ -406,18 +408,60 @@ describe("coherence-beamsplitter", () => {
         beamsplitter,
         prismEtfMint,
         isConstruction: true,
-        amount: new BN(1),
+        amount: AMOUNT_TO_CONSTRUCT,
       });
 
       await expectTX(startOrder).to.be.fulfilled;
 
-      const orderState2 = await sdk.fetchOrderStateDataFromSeeds({
+      orderState = await sdk.fetchOrderStateDataFromSeeds({
         beamsplitter,
         prismEtfMint,
       });
 
-      expect(orderState2?.isPending).to.be.true;
-      expect(orderState2?.isConstruction).to.be.equal(true);
+      assert(orderState?.amount.eq(new BN(AMOUNT_TO_CONSTRUCT)));
+      expect(orderState?.isPending).to.be.true;
+      expect(orderState?.isConstruction).to.be.equal(true);
+
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      await Promise.all(
+        cohere.map((cohereChunk) => expectTX(cohereChunk).to.be.fulfilled)
+      );
+
+      if (!orderState?.transferredTokens) {
+        return new Error("fail");
+      }
+
+      const transferredTokens = await sdk.fetchTransferredTokens(
+        orderState?.transferredTokens
+      );
+
+      if (!transferredTokens?.transferredTokens) {
+        return new Error("fail");
+      }
+
+      const transferredTokensArr = transferredTokens.transferredTokens;
+
+      for (let i = 0; i < transferredTokens.index; i++) {
+        expect(transferredTokensArr[i]).to.be.true;
+      }
+
+      const finalizeOrder = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      await expectTX(finalizeOrder).to.be.fulfilled;
+
+      orderState = await sdk.fetchOrderStateDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      expect(orderState?.isPending).to.be.false;
     });
   });
 });

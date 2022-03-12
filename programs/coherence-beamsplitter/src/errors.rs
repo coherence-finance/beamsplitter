@@ -20,4 +20,6 @@ pub enum BeamsplitterErrors {
         "The ETF is already done being built and cannot be modified further without rebalancing"
     )]
     IsFinished,
+    #[msg("Attempted to finalize but etf is still pending (some assets not transferred)")]
+    StillPending,
 }
