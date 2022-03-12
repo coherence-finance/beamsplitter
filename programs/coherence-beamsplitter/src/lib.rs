@@ -141,32 +141,33 @@ pub mod coherence_beamsplitter {
         order_state.amount = amount;
         order_state.is_construction = order_type;
         order_state.is_pending = true;
-        msg!["here"];
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
         transferred_tokens.index = weighted_tokens.index;
 
-        if !order_state.is_construction {
-            let mint_accounts = Burn {
-                mint: ctx.accounts.prism_etf_mint.to_account_info(),
-                to: ctx.accounts.orderer_etf_ata.to_account_info(),
-                authority: ctx.accounts.beamsplitter.to_account_info(),
-            };
-
-            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
-            let signer_seeds = &[&seeds[..]];
-
-            let burn_ctx = CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                mint_accounts,
-                signer_seeds,
-            );
-
-            let burn_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
-
-            burn(burn_ctx, burn_amount)?;
+        if order_state.is_construction {
+            return Ok(());
         }
+
+        let mint_accounts = Burn {
+            mint: ctx.accounts.prism_etf_mint.to_account_info(),
+            to: ctx.accounts.orderer_etf_ata.to_account_info(),
+            authority: ctx.accounts.beamsplitter.to_account_info(),
+        };
+
+        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let signer_seeds = &[&seeds[..]];
+
+        let burn_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            mint_accounts,
+            signer_seeds,
+        );
+
+        let burn_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+
+        burn(burn_ctx, burn_amount)?;
         Ok(())
     }
 
@@ -199,7 +200,11 @@ pub mod coherence_beamsplitter {
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
-        if index >= weighted_tokens.capacity {
+        if transferred_tokens.transferred_tokens[index_usize] {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        if index >= weighted_tokens.index {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -300,9 +305,13 @@ pub mod coherence_beamsplitter {
             from: ctx.accounts.beamsplitter_transfer_ata.to_account_info(),
         };
 
-        let transfer_ctx = CpiContext::new(
+        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let signer_seeds = &[&seeds[..]];
+
+        let transfer_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             transfer_accounts,
+            signer_seeds,
         );
 
         // Mark this token as successfully transferred

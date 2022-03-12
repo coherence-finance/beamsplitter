@@ -270,6 +270,7 @@ export class CoherenceBeamsplitterSDK {
     return new TransactionEnvelope(this.provider, [
       this.program.instruction.finalizePrismEtf({
         accounts: {
+          manager: this.provider.wallet.publicKey,
           beamsplitter,
           prismEtf,
           prismEtfMint,

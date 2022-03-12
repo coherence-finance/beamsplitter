@@ -121,6 +121,11 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
           "name": "beamsplitter",
           "isMut": false,
           "isSigner": false
@@ -253,12 +258,12 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "rent",
+          "name": "beamsplitter",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "beamsplitter",
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -840,6 +845,11 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
           "name": "beamsplitter",
           "isMut": false,
           "isSigner": false
@@ -972,12 +982,12 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "rent",
+          "name": "beamsplitter",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "beamsplitter",
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         },

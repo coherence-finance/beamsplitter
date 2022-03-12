@@ -65,11 +65,13 @@ pub struct InitPrismEtf<'info> {
 #[derive(Accounts)]
 pub struct FinalizePrismEtf<'info> {
     /// Information about the [PrismEtf].
-    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut)]
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = manager, mut)]
     pub prism_etf: Account<'info, PrismEtf>,
 
     /// [Mint] of the [PrismEtf].
     pub prism_etf_mint: Account<'info, Mint>,
+
+    pub manager: Signer<'info>,
 
     /// The central mint authority for all registered tokens, used for checks
     #[account(
@@ -84,7 +86,7 @@ pub struct FinalizePrismEtf<'info> {
 #[derive(Accounts)]
 pub struct PushTokens<'info> {
     /// Information about the [PrismEtf].
-    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens, has_one = manager)]
     pub prism_etf: Account<'info, PrismEtf>,
 
     #[account(mut)]
@@ -94,6 +96,7 @@ pub struct PushTokens<'info> {
     pub prism_etf_mint: Account<'info, Mint>,
 
     pub manager: Signer<'info>,
+
     /// The central mint authority for all registered tokens, used for checks
     #[account(
         seeds = [
@@ -102,6 +105,7 @@ pub struct PushTokens<'info> {
         bump = beamsplitter.bump,
     )]
     pub beamsplitter: Account<'info, Beamsplitter>,
+
     /// The [System] program.
     pub system_program: Program<'info, System>,
 }
@@ -125,7 +129,6 @@ pub struct InitOrderState<'info> {
             b"Beamsplitter".as_ref(),
         ],
         bump = beamsplitter.bump,
-        owner = crate::ID,
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
     /// The [System] program.
@@ -156,9 +159,6 @@ pub struct StartOrder<'info> {
     #[account(mut, associated_token::mint = prism_etf_mint, associated_token::authority = orderer)]
     pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
 
-    /// The [Beamsplitter] [Account] that holds all of the Program's funds
-    pub rent: Sysvar<'info, Rent>,
-
     #[account(
         seeds = [
             b"Beamsplitter".as_ref(),
@@ -166,6 +166,10 @@ pub struct StartOrder<'info> {
         bump = beamsplitter.bump,
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+
+    // ========================= PROGRAMS ===========================================
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    pub rent: Sysvar<'info, Rent>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -215,6 +219,8 @@ pub struct Cohere<'info> {
         bump = beamsplitter.bump,
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+
+    // ========================= PROGRAMS ===========================================
 
     pub rent: Sysvar<'info, Rent>,
 
