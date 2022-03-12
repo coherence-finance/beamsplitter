@@ -411,13 +411,13 @@ describe("coherence-beamsplitter", () => {
 
       await expectTX(startOrder).to.be.fulfilled;
 
-      orderState = await sdk.fetchOrderStateDataFromSeeds({
+      const orderState2 = await sdk.fetchOrderStateDataFromSeeds({
         beamsplitter,
         prismEtfMint,
       });
 
-      expect(orderState?.isPending).to.be.true;
-      expect(orderState?.isConstruction).to.be.equal(true);
+      expect(orderState2?.isPending).to.be.true;
+      expect(orderState2?.isConstruction).to.be.equal(true);
     });
   });
 });

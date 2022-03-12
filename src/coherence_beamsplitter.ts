@@ -219,7 +219,7 @@ export type CoherenceBeamsplitter = {
       "accounts": [
         {
           "name": "prismEtfMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -229,7 +229,7 @@ export type CoherenceBeamsplitter = {
         },
         {
           "name": "orderState",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -466,7 +466,7 @@ export type CoherenceBeamsplitter = {
       "accounts": [
         {
           "name": "prismEtfMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -933,7 +933,7 @@ export const IDL: CoherenceBeamsplitter = {
       "accounts": [
         {
           "name": "prismEtfMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -943,7 +943,7 @@ export const IDL: CoherenceBeamsplitter = {
         },
         {
           "name": "orderState",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1180,7 +1180,7 @@ export const IDL: CoherenceBeamsplitter = {
       "accounts": [
         {
           "name": "prismEtfMint",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {

@@ -44,7 +44,6 @@ pub struct InitPrismEtf<'info> {
     #[account(init, seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = bump, payer = manager)]
     pub prism_etf: Account<'info, PrismEtf>,
 
-    #[account(owner = crate::ID)]
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
 
     /// [Mint] of the [PrismEtf].
@@ -88,7 +87,7 @@ pub struct PushTokens<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Account<'info, PrismEtf>,
 
-    #[account(owner = crate::ID, mut)]
+    #[account(mut)]
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
 
     /// [Mint] of the [PrismEtf].
@@ -115,7 +114,6 @@ pub struct InitOrderState<'info> {
     #[account(init, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = bump, payer = orderer)]
     pub order_state: Account<'info, OrderState>,
 
-    #[account(owner = crate::ID)]
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
@@ -146,10 +144,9 @@ pub struct StartOrder<'info> {
     #[account(mut, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
-    #[account(owner = crate::ID)]
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
 
-    #[account(owner = crate::ID, mut)]
+    #[account(mut)]
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]\
@@ -188,10 +185,9 @@ pub struct Cohere<'info> {
     #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump =  order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
-    #[account(owner = crate::ID)]
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
 
-    #[account(owner = crate::ID, mut)]
+    #[account(mut)]
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
@@ -240,10 +236,9 @@ pub struct Decohere<'info> {
     #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
-    #[account(owner = crate::ID)]
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
 
-    #[account(owner = crate::ID, mut)]
+    #[account(mut)]
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
@@ -293,10 +288,9 @@ pub struct FinalizeOrder<'info> {
     #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut)]
     pub order_state: Box<Account<'info, OrderState>>,
 
-    #[account(owner = crate::ID)]
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
 
-    #[account(owner = crate::ID, mut)]
+    #[account(mut)]
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
