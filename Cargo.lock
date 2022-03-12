@@ -433,8 +433,6 @@ dependencies = [
  "anchor-spl",
  "bigdecimal",
  "borsh",
- "mem_macros",
- "pyth-client",
  "rust_decimal",
  "solana-program",
  "spl-token",
@@ -805,12 +803,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mem_macros"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6533f8d40a489f5eba44718880fe6c88d38deff1f12398930462c1246a2aa017"
-
-[[package]]
 name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -987,21 +979,6 @@ dependencies = [
  "syn",
  "version_check",
  "yansi",
-]
-
-[[package]]
-name = "pyth-client"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a99198087943003b585590a42c3e323523b94a2c9e1df3e2636ebce39535a26"
-dependencies = [
- "borsh",
- "borsh-derive",
- "bytemuck",
- "num-derive",
- "num-traits",
- "solana-program",
- "thiserror",
 ]
 
 [[package]]

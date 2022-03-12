@@ -11,6 +11,7 @@ import {
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
+import { Token } from "@solana/spl-token";
 import type { PublicKey, Signer } from "@solana/web3.js";
 import { Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import BN from "bn.js";
@@ -27,6 +28,7 @@ import type {
   BeamsplitterProgram,
   OrderStateData,
   PrismEtfData,
+  TransferredTokensData,
   WeightedToken,
   WeightedTokensData,
 } from "./types";
@@ -276,7 +278,7 @@ export class CoherenceBeamsplitterSDK {
     ]);
   }
 
-  async _initOrderState({
+  async initOrderState({
     beamsplitter,
     prismEtfMint,
   }: {
@@ -298,7 +300,7 @@ export class CoherenceBeamsplitterSDK {
     initOrderStateEnvelope.addInstructions(
       this.program.instruction.initOrderState(bump, {
         accounts: {
-          prismEtfMint: prismEtfMint,
+          prismEtfMint,
           orderState: orderStatePda,
           orderer: this.provider.wallet.publicKey,
           transferredTokens: transferredTokensKP.publicKey,
@@ -322,22 +324,24 @@ export class CoherenceBeamsplitterSDK {
     isConstruction: boolean;
     amount: BN;
   }): Promise<TransactionEnvelope> {
-    let orderState = await this.fetchOrderStateDataFromSeeds({
+    const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
+
+    const orderState = await this.fetchOrderStateDataFromSeeds({
       beamsplitter,
       prismEtfMint,
     });
 
-    const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
-
     if (!orderState) {
-      initOrderStateEnvelope.combine(
+      throw new Error(
+        "You need to init orderState first. Call initOrder() before construct."
+      );
+      /*initOrderStateEnvelope.combine(
         await this._initOrderState({
           beamsplitter,
           prismEtfMint,
         })
-      );
+      );*/
     }
-    orderState = orderState as OrderStateData;
 
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -348,7 +352,7 @@ export class CoherenceBeamsplitterSDK {
       throw new Error("You must create the prismEtf first.");
     }
 
-    const { address: transferredTokensAta, instruction: createATATx } =
+    const { address: ordererEtfAta, instruction: createATATx } =
       await getOrCreateATA({
         provider: this.provider,
         mint: prismEtfMint,
@@ -377,7 +381,7 @@ export class CoherenceBeamsplitterSDK {
           orderState: orderStatePda,
           transferredTokens: orderState.transferredTokens,
           orderer: this.provider.wallet.publicKey,
-          ordererEtfAta: transferredTokensAta,
+          ordererEtfAta,
           beamsplitter,
           rent: SYSVAR_RENT_PUBKEY,
           weightedTokens: prismEtf.weightedTokens,
@@ -424,7 +428,7 @@ export class CoherenceBeamsplitterSDK {
       throw new Error("Weighted tokens was not initalized.");
     }
 
-    const weightedTokens = weightedTokensAcct.weightedTokens as WeightedToken[];
+    const weightedTokens = weightedTokensAcct.weightedTokens;
 
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
@@ -439,46 +443,61 @@ export class CoherenceBeamsplitterSDK {
 
     const constructTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokens.length; i++) {
-      const contstructEnvelope = new TransactionEnvelope(this.provider, []);
+      const constructEnvelope = new TransactionEnvelope(this.provider, []);
 
       if (!weightedTokens.at(i)) {
         throw new Error("Outside weighted tokens array range");
       }
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const mintAddress = weightedTokens[i]!.mint;
+      const weightedToken = weightedTokens[i]!;
 
       const {
         address: beamsplitterTransferAta,
         instruction: createBeamsplitterAta,
       } = await getOrCreateATA({
         provider: this.provider,
-        mint: mintAddress,
+        mint: weightedToken.mint,
         owner: beamsplitter,
       });
 
       if (createBeamsplitterAta) {
-        contstructEnvelope.addInstructions(createBeamsplitterAta);
+        constructEnvelope.addInstructions(createBeamsplitterAta);
       }
 
       const { address: ordererTransferAta, instruction: createOrdererAta } =
         await getOrCreateATA({
           provider: this.provider,
-          mint: mintAddress,
+          mint: weightedToken.mint,
         });
 
       if (createOrdererAta) {
-        contstructEnvelope.addInstructions(createOrdererAta);
+        constructEnvelope.addInstructions(createOrdererAta);
       }
 
-      const mintData = await getMintInfo(this.provider, mintAddress);
+      const mintData = await getMintInfo(this.provider, weightedToken.mint);
 
       if (!mintData.mintAuthority) {
         throw new Error("Transfer Token Mint has no authority");
       }
 
+      const approvedAmount = orderState.amount.mul(
+        new BN(weightedToken.weight)
+      );
+
+      constructEnvelope.addInstructions(
+        Token.createApproveInstruction(
+          TOKEN_PROGRAM_ID,
+          ordererTransferAta,
+          beamsplitterTransferAta,
+          this.provider.wallet.publicKey,
+          [],
+          approvedAmount.toNumber()
+        )
+      );
+
       constructTxChunks.push(
-        contstructEnvelope.addInstructions(
+        constructEnvelope.addInstructions(
           this.program.instruction.cohere(i, {
             accounts: {
               prismEtfMint,
@@ -488,7 +507,7 @@ export class CoherenceBeamsplitterSDK {
               transferredTokens: orderState.transferredTokens,
               orderer: this.provider.wallet.publicKey,
               transferAuthority: mintData.mintAuthority,
-              transferMint: mintAddress,
+              transferMint: weightedToken.mint,
               ordererTransferAta,
               beamsplitterTransferAta,
               beamsplitter,
@@ -540,7 +559,7 @@ export class CoherenceBeamsplitterSDK {
       throw new Error("Weighted tokens was not initalized.");
     }
 
-    const weightedTokens = weightedTokensAcct.weightedTokens as WeightedToken[];
+    const weightedTokens = weightedTokensAcct.weightedTokens;
 
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
@@ -746,5 +765,13 @@ export class CoherenceBeamsplitterSDK {
     return (await this.program.account.weightedTokens.fetchNullable(
       key
     )) as WeightedTokensData;
+  }
+
+  async fetchTransferredTokens(
+    key: PublicKey
+  ): Promise<TransferredTokensData | null> {
+    return (await this.program.account.transferredTokens.fetchNullable(
+      key
+    )) as TransferredTokensData;
   }
 }

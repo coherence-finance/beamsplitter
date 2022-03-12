@@ -17,12 +17,10 @@ export type BeamsplitterTypes = AnchorTypes<
 type Accounts = BeamsplitterTypes["Accounts"];
 export type PrismEtfData = Accounts["prismEtf"];
 export type BeamsplitterData = Accounts["beamsplitter"];
-export type WeightedTokensData = Accounts["weightedTokens"];
-
-/*Omit<
+export type WeightedTokensData = Omit<
   Accounts["weightedTokens"],
   "weightedTokens"
-> & { weightedTokens: WeightedToken[] };*/
+> & { weightedTokens: WeightedToken[] };
 export type OrderStateData = Accounts["orderState"];
 export type TransferredTokensData = Accounts["transferredTokens"];
 export type BeamsplitterProgram = BeamsplitterTypes["Program"];

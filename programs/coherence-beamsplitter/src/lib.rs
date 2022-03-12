@@ -127,7 +127,7 @@ pub mod coherence_beamsplitter {
     3. if order_state.type == DECONSTRUCTION, burn <amount> of tokens
     */
     pub fn start_order(ctx: Context<StartOrder>, order_type: bool, amount: u64) -> ProgramResult {
-        let order_state = &mut ctx.accounts.order_state;
+        /*let order_state = &mut ctx.accounts.order_state;
         let prism_etf = &ctx.accounts.prism_etf;
 
         if order_state.is_pending {
@@ -141,6 +141,7 @@ pub mod coherence_beamsplitter {
         order_state.amount = amount;
         order_state.is_construction = order_type;
         order_state.is_pending = true;
+        msg!["here"];
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
@@ -165,8 +166,7 @@ pub mod coherence_beamsplitter {
             let burn_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
 
             burn(burn_ctx, burn_amount)?;
-        }
-
+        }*/
         Ok(())
     }
 

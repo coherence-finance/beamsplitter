@@ -136,13 +136,14 @@ pub struct InitOrderState<'info> {
 
 #[derive(Accounts)]
 pub struct StartOrder<'info> {
+    #[account(mut)]
     pub prism_etf_mint: Account<'info, Mint>,
 
     /// The Prism ETF [Account] that describes the assets being purchased
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    #[account(mut, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(owner = crate::ID)]
@@ -151,23 +152,24 @@ pub struct StartOrder<'info> {
     #[account(owner = crate::ID, mut)]
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
-    /// The [Signer] of the tx and owner of the [Deposit] [Account]
+    /// The [Signer] of the tx and owner of the [Deposit] [Account]\
     pub orderer: Signer<'info>,
 
     /// The [TokenAccount] that recieves the Basket Tokens
-    #[account(init_if_needed, associated_token::mint = prism_etf_mint, associated_token::authority = beamsplitter, payer = orderer)]
+    #[account(mut, associated_token::mint = prism_etf_mint, associated_token::authority = orderer)]
     pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    pub rent: Sysvar<'info, Rent>,
+
     #[account(
         seeds = [
             b"Beamsplitter".as_ref(),
         ],
         bump = beamsplitter.bump,
     )]
-    pub rent: Sysvar<'info, Rent>,
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
-    ///
+
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub token_program: Program<'info, Token>,
@@ -183,7 +185,7 @@ pub struct Cohere<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump =  order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(owner = crate::ID)]
@@ -202,11 +204,11 @@ pub struct Cohere<'info> {
     pub transfer_mint: Account<'info, Mint>,
 
     /// The [TokenAccount] that transfers out tokens
-    #[account(associated_token::mint = transfer_mint, associated_token::authority = transfer_authority)]
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = orderer)]
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
-    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = transfer_authority, payer = orderer)]
+    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = beamsplitter, payer = orderer)]
     pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
@@ -235,7 +237,7 @@ pub struct Decohere<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(owner = crate::ID)]
@@ -254,11 +256,11 @@ pub struct Decohere<'info> {
     pub transfer_mint: Account<'info, Mint>,
 
     /// The [TokenAccount] that transfers out tokens
-    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = transfer_authority, payer = orderer)]
+    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = orderer, payer = orderer)]
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
-    #[account(associated_token::mint = transfer_mint, associated_token::authority = transfer_authority)]
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = beamsplitter)]
     pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
@@ -281,13 +283,14 @@ pub struct Decohere<'info> {
 
 #[derive(Accounts)]
 pub struct FinalizeOrder<'info> {
+    #[account(mut)]
     pub prism_etf_mint: Account<'info, Mint>,
 
     /// The Prism ETF [Account] that describes the assets being purchased
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(owner = crate::ID)]
@@ -300,7 +303,7 @@ pub struct FinalizeOrder<'info> {
     pub orderer: Signer<'info>,
 
     /// The [TokenAccount] that recieves the Basket Tokens
-    #[account(init_if_needed, associated_token::mint = prism_etf_mint, associated_token::authority = beamsplitter, payer = orderer)]
+    #[account(associated_token::mint = prism_etf_mint, associated_token::authority = orderer, mut)]
     pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
@@ -310,8 +313,9 @@ pub struct FinalizeOrder<'info> {
         ],
         bump = beamsplitter.bump,
     )]
-    pub rent: Sysvar<'info, Rent>,
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+
+    pub rent: Sysvar<'info, Rent>,
     ///
     pub associated_token_program: Program<'info, AssociatedToken>,
 

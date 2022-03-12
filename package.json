@@ -21,7 +21,7 @@
     "prepare": "husky install",
     "typecheck": "tsc",
     "copy-idl": "cp ./target/types/coherence_beamsplitter.ts src/",
-    "test": "yarn copy-idl && anchor test"
+    "test": "anchor test && yarn copy-idl"
   },
   "dependencies": {
     "@saberhq/tsconfig": "^1.12.36"
