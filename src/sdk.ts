@@ -40,6 +40,9 @@ const PUSH_TX_CHUNK_SIZE = 24;
 // const CONSTRUCT_TX_CHUNK_SIZE = 24;
 // const DECONSTRUCT_TX_CHUNK_SIZE = 24;
 
+// Number of decimals used by prism etf by default
+const PRISM_ETF_DECIMALS = 9;
+
 export class CoherenceBeamsplitterSDK {
   constructor(
     readonly provider: AugmentedProvider,
@@ -156,7 +159,7 @@ export class CoherenceBeamsplitterSDK {
       const initMintEnvelope = await createInitMintInstructions({
         provider: this.provider,
         mintKP: prismEtfMintKP,
-        decimals: 9,
+        decimals: PRISM_ETF_DECIMALS,
         mintAuthority: beamsplitter,
       });
 

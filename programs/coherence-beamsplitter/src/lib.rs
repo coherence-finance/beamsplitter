@@ -35,14 +35,20 @@ pub mod coherence_beamsplitter {
     }
 
     pub fn init_weighted_tokens(ctx: Context<InitWeightedTokens>) -> ProgramResult {
-        msg![&size_of::<WeightedTokens>().to_string()[..]];
+        msg![
+            "weighted tokens (without discriminator) is {} bytes",
+            &size_of::<WeightedTokens>().to_string()[..]
+        ];
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_init()?;
         weighted_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
         Ok(())
     }
 
     pub fn init_transferred_tokens(ctx: Context<InitTransferredTokens>) -> ProgramResult {
-        msg![&size_of::<TransferredTokens>().to_string()[..]];
+        msg![
+            "transferred tokens (without discriminator) is {} bytes",
+            &size_of::<TransferredTokens>().to_string()[..]
+        ];
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_init()?;
         transferred_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
         Ok(())
@@ -247,7 +253,6 @@ pub mod coherence_beamsplitter {
         // Mark this token as successfully transferred
         transferred_tokens.transferred_tokens[index_usize] = true;
 
-        // TODO MULTIPLY WEIGHT BY AMOUNT
         transfer(
             transfer_ctx,
             required_amount

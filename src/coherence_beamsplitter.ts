@@ -14,7 +14,7 @@ export type CoherenceBeamsplitter = {
       "type": {
         "defined": "usize"
       },
-      "value": "400"
+      "value": "10"
     }
   ],
   "instructions": [
@@ -578,7 +578,7 @@ export type CoherenceBeamsplitter = {
                 {
                   "defined": "WeightedToken"
                 },
-                400
+                10
               ]
             }
           }
@@ -631,7 +631,7 @@ export type CoherenceBeamsplitter = {
             "type": {
               "array": [
                 "bool",
-                400
+                10
               ]
             }
           }
@@ -738,7 +738,7 @@ export const IDL: CoherenceBeamsplitter = {
       "type": {
         "defined": "usize"
       },
-      "value": "400"
+      "value": "10"
     }
   ],
   "instructions": [
@@ -1302,7 +1302,7 @@ export const IDL: CoherenceBeamsplitter = {
                 {
                   "defined": "WeightedToken"
                 },
-                400
+                10
               ]
             }
           }
@@ -1355,7 +1355,7 @@ export const IDL: CoherenceBeamsplitter = {
             "type": {
               "array": [
                 "bool",
-                400
+                10
               ]
             }
           }
