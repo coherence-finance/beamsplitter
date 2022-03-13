@@ -469,10 +469,15 @@ describe("coherence-beamsplitter", () => {
         return new Error("weight A undefined");
       }
 
-      const scalarA = 10 ** -(await getMintInfo(provider, tokenAMint)).decimals;
+      const mintADecimals = (await getMintInfo(provider, tokenAMint)).decimals;
+      const scalarA = 10 ** -mintADecimals;
+      const diffScalarA = 10 ** -(9 - mintADecimals);
 
       const expectedADiff =
-        AMOUNT_TO_CONSTRUCT.toNumber() * weightedTokens[0]?.weight * scalarA;
+        AMOUNT_TO_CONSTRUCT.toNumber() *
+        diffScalarA *
+        weightedTokens[0]?.weight *
+        scalarA;
 
       assert(actualTokenABalDiff.eq(new BN(expectedADiff)));
 
@@ -485,10 +490,15 @@ describe("coherence-beamsplitter", () => {
         return new Error("weight B undefined");
       }
 
-      const scalarB = 10 ** -(await getMintInfo(provider, tokenBMint)).decimals;
+      const mintBDecimals = (await getMintInfo(provider, tokenBMint)).decimals;
+      const scalarB = 10 ** -mintBDecimals;
+      const diffScalarB = 10 ** -(9 - mintBDecimals);
 
       const expectedBDiff =
-        AMOUNT_TO_CONSTRUCT.toNumber() * weightedTokens[1]?.weight * scalarB;
+        AMOUNT_TO_CONSTRUCT.toNumber() *
+        diffScalarB *
+        weightedTokens[1]?.weight *
+        scalarB;
       assert(actualTokenBBalDiff.eq(new BN(expectedBDiff)));
 
       if (!orderState?.transferredTokens) {

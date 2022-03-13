@@ -227,13 +227,15 @@ pub mod coherence_beamsplitter {
         let amount = &Decimal::from(delegated_amount);
         let weight = &mut Decimal::from(weighted_token.weight);
 
-        // Scales the weight by how many decimals it uses (eg Scale = 1 for value 10 -> 1.0)
-        match weight.set_scale(ctx.accounts.transfer_mint.decimals as u32) {
+        let prism_etf_decimals = ctx.accounts.prism_etf_mint.decimals;
+
+        required_amount.mul_assign(*weight);
+
+        // We need to account for the decimals of the input
+        match required_amount.set_scale(prism_etf_decimals.into()) {
             Err(_error) => return Err(ProgramError::InvalidArgument.into()),
             _ => (),
         }
-
-        required_amount.mul_assign(*weight);
 
         if amount < required_amount {
             return Err(ProgramError::InvalidArgument.into());
@@ -253,12 +255,17 @@ pub mod coherence_beamsplitter {
         // Mark this token as successfully transferred
         transferred_tokens.transferred_tokens[index_usize] = true;
 
-        transfer(
-            transfer_ctx,
-            required_amount
-                .to_u64()
-                .ok_or(ProgramError::InvalidArgument)?,
-        )?;
+        // Converts to u64, cut's off decimals,
+        let mut required_64 = required_amount
+            .to_u64()
+            .ok_or(ProgramError::InvalidArgument)?;
+
+        // This rounds up to 1 if the value was extremely small (prevent free cohere)
+        if required_64 <= 0 {
+            required_64 = 1;
+        };
+
+        transfer(transfer_ctx, required_64)?;
 
         /* msg![
             "required {}, amount {}, weight {}",
