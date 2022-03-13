@@ -9,7 +9,7 @@ use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("H8KmAV4pnxcwbixP5gHVZXp3vMJ1ykhDcNaoj3Lg34na");
+declare_id!("3wtYkmSihPDEmqn3sTE6drZkghTQLDTkAUMY87S219eY");
 
 #[program]
 pub mod coherence_beamsplitter {
@@ -267,23 +267,6 @@ pub mod coherence_beamsplitter {
 
         transfer(transfer_ctx, required_64)?;
 
-        /* msg![
-            "required {}, amount {}, weight {}",
-            required_amount
-                .to_f64()
-                .ok_or(ProgramError::InvalidArgument)?
-                .to_string(),
-            amount
-                .to_u64()
-                .ok_or(ProgramError::InvalidArgument)?
-                .to_string(),
-            weight
-                .to_f64()
-                .ok_or(ProgramError::InvalidArgument)?
-                .to_string(),
-        ];
-        panic!();*/
-
         Ok(())
     }
 
@@ -349,16 +332,16 @@ pub mod coherence_beamsplitter {
 
         let weighted_token = &weighted_tokens.weighted_tokens[index_usize];
         let required_amount = &mut Decimal::from(order_state.amount);
-
         let weight = &mut Decimal::from(weighted_token.weight);
+        let prism_etf_decimals = ctx.accounts.prism_etf_mint.decimals;
 
-        // Scales the weight by how many decimals it uses (eg Scale = 1 for value 10 -> 1.0)
-        match weight.set_scale(ctx.accounts.transfer_mint.decimals as u32) {
+        required_amount.mul_assign(*weight);
+
+        // We need to account for the decimals of the input
+        match required_amount.set_scale(prism_etf_decimals.into()) {
             Err(_error) => return Err(ProgramError::InvalidArgument.into()),
             _ => (),
         }
-
-        required_amount.mul_assign(*weight);
 
         transfer(
             transfer_ctx,
