@@ -244,6 +244,7 @@ describe("coherence-beamsplitter", () => {
     let tokenAMint: PublicKey;
     let tokenBATA: PublicKey;
     let tokenBMint: PublicKey;
+    const decimals = 9;
     let weightedTokens: WeightedToken[];
 
     /*
@@ -280,7 +281,7 @@ describe("coherence-beamsplitter", () => {
       const tokenAMintTx = await createInitMintInstructions({
         provider,
         mintKP: tokenAKP,
-        decimals: 9,
+        decimals,
         mintAuthority: authority,
       });
 
@@ -291,7 +292,7 @@ describe("coherence-beamsplitter", () => {
       const tokenBMintTx = await createInitMintInstructions({
         provider,
         mintKP: tokenBKP,
-        decimals: 9,
+        decimals,
         mintAuthority: authority,
       });
 
@@ -391,7 +392,9 @@ describe("coherence-beamsplitter", () => {
     });
 
     it(`Construct two asset Prism ETF`, async () => {
-      const AMOUNT_TO_CONSTRUCT = new BN(1);
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
 
       const tokenABalBefore = (await getTokenAccount(provider, tokenAATA))
         .amount;
@@ -466,12 +469,11 @@ describe("coherence-beamsplitter", () => {
 
       const scalar = 10 ** (await getMintInfo(provider, tokenAMint)).decimals;
 
-      const expectedDiff = tokenABalBefore.sub(
-        AMOUNT_TO_CONSTRUCT.mul(new BN(weightedTokens[0]?.weight))
+      //console.log(new BN(weightedTokens[0]?.weight * scalar).toString());
+      const expectedDiff = AMOUNT_TO_CONSTRUCT.div(
+        new BN(weightedTokens[0]?.weight * scalar)
       );
 
-      console.log(expectedDiff.toString());
-      console.log(actualTokenABalDiff.toString());
       assert(actualTokenABalDiff.eq(expectedDiff));
 
       const tokenBBalAfter = (await getTokenAccount(provider, tokenBATA))

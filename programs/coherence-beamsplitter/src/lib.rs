@@ -255,6 +255,23 @@ pub mod coherence_beamsplitter {
                 .ok_or(ProgramError::InvalidArgument)?,
         )?;
 
+        /*msg![
+            "required {}, amount {}, weight {}",
+            required_amount
+                .to_f64()
+                .ok_or(ProgramError::InvalidArgument)?
+                .to_string(),
+            amount
+                .to_u64()
+                .ok_or(ProgramError::InvalidArgument)?
+                .to_string(),
+            weight
+                .to_f64()
+                .ok_or(ProgramError::InvalidArgument)?
+                .to_string(),
+        ];
+        panic!();*/
+
         Ok(())
     }
 

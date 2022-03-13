@@ -339,7 +339,7 @@ export type CoherenceBeamsplitter = {
         },
         {
           "name": "ordererTransferAta",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -425,7 +425,7 @@ export type CoherenceBeamsplitter = {
         },
         {
           "name": "ordererTransferAta",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1063,7 +1063,7 @@ export const IDL: CoherenceBeamsplitter = {
         },
         {
           "name": "ordererTransferAta",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1149,7 +1149,7 @@ export const IDL: CoherenceBeamsplitter = {
         },
         {
           "name": "ordererTransferAta",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {

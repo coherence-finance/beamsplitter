@@ -204,7 +204,7 @@ pub struct Cohere<'info> {
     pub transfer_mint: Account<'info, Mint>,
 
     /// The [TokenAccount] that transfers out tokens
-    #[account(associated_token::mint = transfer_mint, associated_token::authority = orderer)]
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = orderer, mut)]
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
@@ -221,7 +221,6 @@ pub struct Cohere<'info> {
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
     // ========================= PROGRAMS ===========================================
-
     pub rent: Sysvar<'info, Rent>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -261,7 +260,7 @@ pub struct Decohere<'info> {
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
-    #[account(associated_token::mint = transfer_mint, associated_token::authority = beamsplitter)]
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = beamsplitter, mut)]
     pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
