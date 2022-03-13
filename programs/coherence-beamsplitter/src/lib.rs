@@ -255,7 +255,7 @@ pub mod coherence_beamsplitter {
                 .ok_or(ProgramError::InvalidArgument)?,
         )?;
 
-        /*msg![
+        /* msg![
             "required {}, amount {}, weight {}",
             required_amount
                 .to_f64()

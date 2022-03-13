@@ -414,13 +414,6 @@ describe("coherence-beamsplitter", () => {
       });
 
       await expectTX(initOrderState).to.be.fulfilled;
-      const etfATAAddress = await getATAAddress({
-        mint: prismEtfMint,
-        owner: authority,
-      });
-
-      /*const etfBalanceBefore = (await getTokenAccount(provider, etfATAAddress))
-      .amount;*/
 
       let orderState = await sdk.fetchOrderStateDataFromSeeds({
         beamsplitter,
@@ -439,6 +432,15 @@ describe("coherence-beamsplitter", () => {
       });
 
       await expectTX(startOrder).to.be.fulfilled;
+
+      assert(authority.equals(sdk.provider.wallet.publicKey));
+      const etfATAAddress = await getATAAddress({
+        mint: prismEtfMint,
+        owner: authority,
+      });
+
+      const etfBalanceBefore = (await getTokenAccount(provider, etfATAAddress))
+        .amount;
 
       orderState = await sdk.fetchOrderStateDataFromSeeds({
         beamsplitter,
@@ -467,19 +469,27 @@ describe("coherence-beamsplitter", () => {
         return new Error("weight A undefined");
       }
 
-      const scalar = 10 ** (await getMintInfo(provider, tokenAMint)).decimals;
+      const scalarA = 10 ** -(await getMintInfo(provider, tokenAMint)).decimals;
 
-      //console.log(new BN(weightedTokens[0]?.weight * scalar).toString());
-      const expectedDiff = AMOUNT_TO_CONSTRUCT.div(
-        new BN(weightedTokens[0]?.weight * scalar)
-      );
+      const expectedADiff =
+        AMOUNT_TO_CONSTRUCT.toNumber() * weightedTokens[0]?.weight * scalarA;
 
-      assert(actualTokenABalDiff.eq(expectedDiff));
+      assert(actualTokenABalDiff.eq(new BN(expectedADiff)));
 
       const tokenBBalAfter = (await getTokenAccount(provider, tokenBATA))
         .amount;
 
-      const tokenBBalDiff = tokenBBalAfter.sub(new BN(tokenBBalBefore));
+      const actualTokenBBalDiff = tokenBBalBefore.sub(new BN(tokenBBalAfter));
+
+      if (!weightedTokens[1]?.weight) {
+        return new Error("weight B undefined");
+      }
+
+      const scalarB = 10 ** -(await getMintInfo(provider, tokenBMint)).decimals;
+
+      const expectedBDiff =
+        AMOUNT_TO_CONSTRUCT.toNumber() * weightedTokens[1]?.weight * scalarB;
+      assert(actualTokenBBalDiff.eq(new BN(expectedBDiff)));
 
       if (!orderState?.transferredTokens) {
         return new Error("Transferred Tokens undefined");
@@ -508,6 +518,10 @@ describe("coherence-beamsplitter", () => {
 
       const etfBalanceAfter = (await getTokenAccount(provider, etfATAAddress))
         .amount;
+
+      const etfBalanceDiff = etfBalanceAfter.sub(etfBalanceBefore);
+
+      assert(etfBalanceDiff.eq(AMOUNT_TO_CONSTRUCT));
 
       orderState = await sdk.fetchOrderStateDataFromSeeds({
         beamsplitter,
