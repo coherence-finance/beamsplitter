@@ -9,7 +9,7 @@ use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("7FPJNxBBaeaapXyhQC9jW9tnyy8J6rhhMmtUxtoPDEBi");
+declare_id!("H8KmAV4pnxcwbixP5gHVZXp3vMJ1ykhDcNaoj3Lg34na");
 
 #[program]
 pub mod coherence_beamsplitter {
@@ -309,6 +309,10 @@ pub mod coherence_beamsplitter {
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
+        if transferred_tokens.transferred_tokens[index_usize] {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
         if index >= weighted_tokens.capacity {
             return Err(ProgramError::InvalidArgument.into());
         }
@@ -317,9 +321,6 @@ pub mod coherence_beamsplitter {
         if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
             return Err(ProgramError::InvalidArgument.into());
         }
-
-        // The weighted token of asset being transferred
-        let weighted_token = &weighted_tokens.weighted_tokens[index_usize];
 
         let transfer_accounts = Transfer {
             to: ctx.accounts.orderer_transfer_ata.to_account_info(),
@@ -339,7 +340,25 @@ pub mod coherence_beamsplitter {
         // Mark this token as successfully transferred
         transferred_tokens.transferred_tokens[index_usize] = true;
 
-        transfer(transfer_ctx, weighted_token.weight.into())?;
+        let weighted_token = &weighted_tokens.weighted_tokens[index_usize];
+        let required_amount = &mut Decimal::from(order_state.amount);
+
+        let weight = &mut Decimal::from(weighted_token.weight);
+
+        // Scales the weight by how many decimals it uses (eg Scale = 1 for value 10 -> 1.0)
+        match weight.set_scale(ctx.accounts.transfer_mint.decimals as u32) {
+            Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+            _ => (),
+        }
+
+        required_amount.mul_assign(*weight);
+
+        transfer(
+            transfer_ctx,
+            required_amount
+                .to_u64()
+                .ok_or(ProgramError::InvalidArgument)?,
+        )?;
 
         Ok(())
     }
