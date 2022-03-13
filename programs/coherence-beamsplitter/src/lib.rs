@@ -9,7 +9,14 @@ use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("3wtYkmSihPDEmqn3sTE6drZkghTQLDTkAUMY87S219eY");
+declare_id!("7LoSbSi8SrLPXfmefiWd6e75Nqbpdnm44owCb2eK2pfN");
+
+// The default share of transferred assets split between beamsplitter and
+const DEFAULT_CONSTRUCT_BPS: u16 = 45;
+const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
+
+// The default share of each fee given to managers of etf (20%)
+const DEFAULT_MANAGER_BPS: u16 = 2_000;
 
 #[program]
 pub mod coherence_beamsplitter {
