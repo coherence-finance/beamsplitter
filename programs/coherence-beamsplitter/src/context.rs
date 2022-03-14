@@ -13,7 +13,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         seeds = [
-            b"Beamsplitter".as_ref(),
+            b"Beamsplitter".as_ref(), 
         ],
         bump,
         payer = owner,
@@ -140,7 +140,7 @@ pub struct StartOrder<'info> {
     #[account(mut)]
     pub prism_etf_mint: Account<'info, Mint>,
 
-    /// The Prism ETF [Account] that describes the assets being purchased
+    /// The Prism ETF [Account] that this instruction uses
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
@@ -155,7 +155,7 @@ pub struct StartOrder<'info> {
     /// The [Signer] of the tx and owner of the [Deposit] [Account]\
     pub orderer: Signer<'info>,
 
-    /// The [TokenAccount] that recieves the Basket Tokens
+    /// The [TokenAccount] that receives the Basket Tokens
     #[account(mut, associated_token::mint = prism_etf_mint, associated_token::authority = orderer)]
     pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
 
@@ -182,7 +182,7 @@ pub struct StartOrder<'info> {
 pub struct Cohere<'info> {
     pub prism_etf_mint: Account<'info, Mint>,
 
-    /// The Prism ETF [Account] that describes the assets being purchased
+    /// The Prism ETF [Account] that this instruction uses
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
@@ -200,7 +200,7 @@ pub struct Cohere<'info> {
     /// The authority on the transfer mint
     pub transfer_authority: AccountInfo<'info>,
 
-    /// The mint of the asset being transfered
+    /// The mint of the asset being transferred
     pub transfer_mint: Account<'info, Mint>,
 
     /// The [TokenAccount] that transfers out tokens
@@ -234,7 +234,7 @@ pub struct Cohere<'info> {
 pub struct Decohere<'info> {
     pub prism_etf_mint: Account<'info, Mint>,
 
-    /// The Prism ETF [Account] that describes the assets being purchased
+    /// The Prism ETF [Account] that this instruction uses
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
@@ -252,7 +252,7 @@ pub struct Decohere<'info> {
     /// The authority on the transfer mint
     pub transfer_authority: AccountInfo<'info>,
 
-    /// The mint of the asset being transfered
+    /// The mint of the asset being transferred
     pub transfer_mint: Account<'info, Mint>,
 
     /// The [TokenAccount] that transfers out tokens
@@ -286,7 +286,7 @@ pub struct FinalizeOrder<'info> {
     #[account(mut)]
     pub prism_etf_mint: Account<'info, Mint>,
 
-    /// The Prism ETF [Account] that describes the assets being purchased
+    /// The Prism ETF [Account] that this instruction uses
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
@@ -315,7 +315,7 @@ pub struct FinalizeOrder<'info> {
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
     pub rent: Sysvar<'info, Rent>,
-    ///
+
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub token_program: Program<'info, Token>,

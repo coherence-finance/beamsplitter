@@ -171,9 +171,10 @@ describe("coherence-beamsplitter", () => {
   const randomNumberTokens =
     Math.floor((Math.random() * WEIGHTED_TOKENS_CAPACITY) / 40) + 1;
   it(`Create a Prism ETF with ${randomNumberTokens} asset(s)`, async () => {
-    const [initPrismEtFTx, prismEtfMint] = await sdk.initPrismEtf({
-      beamsplitter,
-    });
+    const [initPrismEtFTx, prismEtfMint, weightedTokensAcct] =
+      await sdk.initPrismEtf({
+        beamsplitter,
+      });
 
     await expectTX(initPrismEtFTx, "Initialize asset with assetToken").to.be
       .fulfilled;
@@ -202,6 +203,7 @@ describe("coherence-beamsplitter", () => {
       beamsplitter,
       weightedTokens,
       prismEtfMint,
+      weightedTokensAcct,
     });
 
     // Have to do pushing in seq (Promise.all is not an option)
@@ -243,6 +245,7 @@ describe("coherence-beamsplitter", () => {
     let prismEtfMint: PublicKey;
     let tokenAATA: PublicKey;
     let tokenBATA: PublicKey;
+    let transferredTokensAcct: PublicKey;
     let weightedTokens: WeightedToken[];
 
     const decimalsA = 16;
@@ -256,9 +259,10 @@ describe("coherence-beamsplitter", () => {
     3. Mint 100 of each token to testSigner.publicKey
     */
     before(async () => {
-      const [initPrismEtFTx, _prismEtfMint] = await sdk.initPrismEtf({
-        beamsplitter,
-      });
+      const [initPrismEtFTx, _prismEtfMint, weightedTokensAcct] =
+        await sdk.initPrismEtf({
+          beamsplitter,
+        });
 
       prismEtfMint = _prismEtfMint;
 
@@ -312,8 +316,9 @@ describe("coherence-beamsplitter", () => {
       ];
       const pushTokensEnvelopes = await sdk.pushTokens({
         beamsplitter,
-        weightedTokens,
         prismEtfMint,
+        weightedTokens,
+        weightedTokensAcct,
       });
 
       // Have to do pushing in seq (Promise.all is not an option)
@@ -409,10 +414,12 @@ describe("coherence-beamsplitter", () => {
         authority
       );
 
-      const initOrderState = await sdk.initOrderState({
+      const [initOrderState, _transferredTokens] = await sdk.initOrderState({
         beamsplitter,
         prismEtfMint,
       });
+
+      transferredTokensAcct = _transferredTokens;
 
       await expectTX(initOrderState).to.be.fulfilled;
 
@@ -430,6 +437,7 @@ describe("coherence-beamsplitter", () => {
         prismEtfMint,
         isConstruction: true,
         amount: AMOUNT_TO_CONSTRUCT,
+        transferredTokens: _transferredTokens,
       });
 
       await expectTX(startOrder).to.be.fulfilled;
@@ -455,6 +463,8 @@ describe("coherence-beamsplitter", () => {
       const cohere = await sdk.cohere({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: _transferredTokens,
+        orderStateAmount: AMOUNT_TO_CONSTRUCT,
       });
 
       await Promise.all(
@@ -520,6 +530,7 @@ describe("coherence-beamsplitter", () => {
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: _transferredTokens,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;
@@ -596,6 +607,7 @@ describe("coherence-beamsplitter", () => {
         prismEtfMint,
         isConstruction: false,
         amount: AMOUNT_TO_DECONSTRUCT,
+        transferredTokens: transferredTokensAcct,
       });
 
       await expectTX(startOrder).to.be.fulfilled;
@@ -614,6 +626,7 @@ describe("coherence-beamsplitter", () => {
       const decohere = await sdk.decohere({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: transferredTokensAcct,
       });
 
       await Promise.all(
@@ -675,6 +688,7 @@ describe("coherence-beamsplitter", () => {
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: transferredTokensAcct,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;

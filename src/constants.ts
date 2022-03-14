@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 
 export const PROGRAM_ID = new PublicKey(
-  "7LoSbSi8SrLPXfmefiWd6e75Nqbpdnm44owCb2eK2pfN"
+  "A29uL2xu7njxWSYSpsgYyWivAJ5DmmVC48hH6dnbJBq9"
 );
 
 //export const USDC_MINT_DEVNET = new PublicKey("");

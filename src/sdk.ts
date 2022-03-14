@@ -145,7 +145,7 @@ export class CoherenceBeamsplitterSDK {
   }: {
     beamsplitter: PublicKey;
     prismEtfMint?: PublicKey;
-  }): Promise<[TransactionEnvelope, PublicKey]> {
+  }): Promise<[TransactionEnvelope, PublicKey, PublicKey]> {
     const weightedTokensKP = Keypair.generate();
 
     // Allocate the WeightedTokens Envelope
@@ -197,7 +197,7 @@ export class CoherenceBeamsplitterSDK {
 
     initPrismEtfEnvelope.addInstructions(initPrismEtfTx);
 
-    return [initPrismEtfEnvelope, prismEtfMint];
+    return [initPrismEtfEnvelope, prismEtfMint, weightedTokensKP.publicKey];
   }
 
   // Push tokens into Prism ETF being built
@@ -205,33 +205,17 @@ export class CoherenceBeamsplitterSDK {
     beamsplitter, // Beamsplitter program
     prismEtfMint, // Mint of the corresponding PrismEtf SPL token
     weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
+    weightedTokensAcct, // Key of weighted tokens account (found inside prismETF PDA)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     weightedTokens: WeightedToken[];
+    weightedTokensAcct: PublicKey;
   }): Promise<TransactionEnvelope[]> {
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
     );
-
-    const prismEtfData = await this.fetchPrismEtfData(prismEtf);
-
-    if (!prismEtfData) {
-      throw new Error(
-        "prismEtf PDA derived from prismEtfMint passed does not exist. Use initPrismEtf to initialize the PDA and pass in the resulting mint PublicKey."
-      );
-    }
-
-    if (prismEtfData.isFinished) {
-      throw new Error(
-        "prismEtf.is_finished is true. Etf is already done being designed. Use rebalancing to modify it further."
-      );
-    }
-
-    if (!this.provider.wallet.publicKey.equals(prismEtfData.manager)) {
-      throw new Error("You must be manager of the PrismEtf to modify it.");
-    }
 
     const pushTokenTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokens.length; i += PUSH_TX_CHUNK_SIZE) {
@@ -246,7 +230,7 @@ export class CoherenceBeamsplitterSDK {
               prismEtf,
               prismEtfMint,
               beamsplitter,
-              weightedTokens: prismEtfData.weightedTokens,
+              weightedTokens: weightedTokensAcct,
               manager: this.provider.wallet.publicKey,
               systemProgram: SystemProgram.programId,
             },
@@ -288,7 +272,7 @@ export class CoherenceBeamsplitterSDK {
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
-  }): Promise<TransactionEnvelope> {
+  }): Promise<[TransactionEnvelope, PublicKey]> {
     const transferredTokensKP = Keypair.generate();
 
     const initOrderStateEnvelope = await this._initTransferredTokens({
@@ -314,7 +298,7 @@ export class CoherenceBeamsplitterSDK {
       })
     );
 
-    return initOrderStateEnvelope;
+    return [initOrderStateEnvelope, transferredTokensKP.publicKey];
   }
 
   async startOrder({
@@ -322,30 +306,15 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint,
     isConstruction,
     amount,
+    transferredTokens,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     isConstruction: boolean;
+    transferredTokens: PublicKey;
     amount: BN;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
-
-    const orderState = await this.fetchOrderStateDataFromSeeds({
-      beamsplitter,
-      prismEtfMint,
-    });
-
-    if (!orderState) {
-      throw new Error(
-        "You need to init orderState first. Call initOrder() before construct."
-      );
-      /*initOrderStateEnvelope.combine(
-        await this._initOrderState({
-          beamsplitter,
-          prismEtfMint,
-        })
-      );*/
-    }
 
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -383,7 +352,7 @@ export class CoherenceBeamsplitterSDK {
           prismEtf: prismEtfPda,
           prismEtfMint,
           orderState: orderStatePda,
-          transferredTokens: orderState.transferredTokens,
+          transferredTokens,
           orderer: this.provider.wallet.publicKey,
           ordererEtfAta,
           beamsplitter,
@@ -400,21 +369,14 @@ export class CoherenceBeamsplitterSDK {
   async cohere({
     beamsplitter,
     prismEtfMint,
+    transferredTokens,
+    orderStateAmount,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    transferredTokens: PublicKey;
+    orderStateAmount: BN;
   }): Promise<TransactionEnvelope[]> {
-    const orderState = await this.fetchOrderStateDataFromSeeds({
-      beamsplitter,
-      prismEtfMint,
-    });
-
-    if (!orderState) {
-      throw new Error(
-        "You must start an order first. Call startOrder() before construct."
-      );
-    }
-
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
       prismEtfMint,
@@ -486,9 +448,7 @@ export class CoherenceBeamsplitterSDK {
         throw new Error("Transfer Token Mint has no authority");
       }
 
-      const approvedAmount = orderState.amount.mul(
-        new BN(weightedToken.weight)
-      );
+      const approvedAmount = orderStateAmount.mul(new BN(weightedToken.weight));
 
       constructEnvelope.addInstructions(
         Token.createApproveInstruction(
@@ -497,7 +457,7 @@ export class CoherenceBeamsplitterSDK {
           beamsplitterTransferAta,
           this.provider.wallet.publicKey,
           [],
-          new u64(approvedAmount.toBuffer())
+          new u64(approvedAmount.toArrayLike(Buffer))
         )
       );
 
@@ -509,7 +469,7 @@ export class CoherenceBeamsplitterSDK {
               prismEtf: prismEtfPda,
               orderState: orderStatePda,
               weightedTokens: prismEtf.weightedTokens,
-              transferredTokens: orderState.transferredTokens,
+              transferredTokens,
               orderer: this.provider.wallet.publicKey,
               transferAuthority: this.provider.wallet.publicKey,
               transferMint: weightedToken.mint,
@@ -532,21 +492,12 @@ export class CoherenceBeamsplitterSDK {
   async decohere({
     beamsplitter,
     prismEtfMint,
+    transferredTokens,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    transferredTokens: PublicKey;
   }): Promise<TransactionEnvelope[]> {
-    const orderState = await this.fetchOrderStateDataFromSeeds({
-      beamsplitter,
-      prismEtfMint,
-    });
-
-    if (!orderState) {
-      throw new Error(
-        "You must start an order first. Call startOrder() before construct."
-      );
-    }
-
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
       prismEtfMint,
@@ -626,7 +577,7 @@ export class CoherenceBeamsplitterSDK {
               prismEtf: prismEtfPda,
               orderState: orderStatePda,
               weightedTokens: prismEtf.weightedTokens,
-              transferredTokens: orderState.transferredTokens,
+              transferredTokens,
               orderer: this.provider.wallet.publicKey,
               transferAuthority: beamsplitter,
               transferMint: weightedToken.mint,
@@ -649,20 +600,13 @@ export class CoherenceBeamsplitterSDK {
   async finalizeOrder({
     beamsplitter,
     prismEtfMint,
+    transferredTokens,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    transferredTokens: PublicKey;
   }): Promise<TransactionEnvelope> {
-    const orderState = await this.fetchOrderStateDataFromSeeds({
-      beamsplitter,
-      prismEtfMint,
-    });
-
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
-
-    if (!orderState) {
-      throw new Error("You must init the orderState first. Call startOrder()");
-    }
 
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -702,7 +646,7 @@ export class CoherenceBeamsplitterSDK {
           prismEtf: prismEtfPda,
           prismEtfMint,
           orderState: orderStatePda,
-          transferredTokens: orderState.transferredTokens,
+          transferredTokens,
           orderer: this.provider.wallet.publicKey,
           ordererEtfAta: transferredTokensAta,
           beamsplitter,
