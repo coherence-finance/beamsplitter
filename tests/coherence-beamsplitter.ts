@@ -245,6 +245,7 @@ describe("coherence-beamsplitter", () => {
     let prismEtfMint: PublicKey;
     let tokenAATA: PublicKey;
     let tokenBATA: PublicKey;
+    let transferredTokensAcct: PublicKey;
     let weightedTokens: WeightedToken[];
 
     const decimalsA = 16;
@@ -413,10 +414,12 @@ describe("coherence-beamsplitter", () => {
         authority
       );
 
-      const initOrderState = await sdk.initOrderState({
+      const [initOrderState, _transferredTokens] = await sdk.initOrderState({
         beamsplitter,
         prismEtfMint,
       });
+
+      transferredTokensAcct = _transferredTokens;
 
       await expectTX(initOrderState).to.be.fulfilled;
 
@@ -434,6 +437,7 @@ describe("coherence-beamsplitter", () => {
         prismEtfMint,
         isConstruction: true,
         amount: AMOUNT_TO_CONSTRUCT,
+        transferredTokens: _transferredTokens,
       });
 
       await expectTX(startOrder).to.be.fulfilled;
@@ -459,6 +463,8 @@ describe("coherence-beamsplitter", () => {
       const cohere = await sdk.cohere({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: _transferredTokens,
+        orderStateAmount: AMOUNT_TO_CONSTRUCT,
       });
 
       await Promise.all(
@@ -524,6 +530,7 @@ describe("coherence-beamsplitter", () => {
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: _transferredTokens,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;
@@ -600,6 +607,7 @@ describe("coherence-beamsplitter", () => {
         prismEtfMint,
         isConstruction: false,
         amount: AMOUNT_TO_DECONSTRUCT,
+        transferredTokens: transferredTokensAcct,
       });
 
       await expectTX(startOrder).to.be.fulfilled;
@@ -618,6 +626,7 @@ describe("coherence-beamsplitter", () => {
       const decohere = await sdk.decohere({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: transferredTokensAcct,
       });
 
       await Promise.all(
@@ -679,6 +688,7 @@ describe("coherence-beamsplitter", () => {
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
+        transferredTokens: transferredTokensAcct,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;
