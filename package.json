@@ -1,7 +1,7 @@
 {
   "name": "@coherence-fin/sdk",
   "version": "0.0.13",
-  "description": "SDK for Prismsplitter",
+  "description": "SDK for Beamsplitter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "repository": {

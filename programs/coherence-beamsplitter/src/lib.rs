@@ -1,4 +1,3 @@
-//pub mod anchor_swap;
 pub mod context;
 pub mod errors;
 pub mod state;
@@ -220,14 +219,14 @@ pub mod coherence_beamsplitter {
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
         if transferred_tokens.transferred_tokens[index_usize] {
-            return Err(ProgramError::InvalidArgument.into());
+            return Ok(());
         }
 
         if index >= weighted_tokens.index {
             return Err(ProgramError::InvalidArgument.into());
         }
 
-        // The index passed must correspond to the
+        // The index passed must correspond to the transfer_mint
         if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
             return Err(ProgramError::InvalidArgument.into());
         }
