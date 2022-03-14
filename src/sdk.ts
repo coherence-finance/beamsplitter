@@ -457,7 +457,7 @@ export class CoherenceBeamsplitterSDK {
           beamsplitterTransferAta,
           this.provider.wallet.publicKey,
           [],
-          new u64(approvedAmount.toBuffer())
+          new u64(approvedAmount.toArrayLike(Buffer))
         )
       );
 
