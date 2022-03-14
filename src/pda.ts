@@ -11,10 +11,40 @@ export const generateBeamsplitterAddress = (): Promise<[PublicKey, number]> => {
 };
 
 export const generatePrismEtfAddress = (
-  mint: PublicKey
+  mint: PublicKey,
+  beamsplitter: PublicKey
 ): Promise<[PublicKey, number]> => {
   return PublicKey.findProgramAddress(
-    [utils.bytes.utf8.encode("PrismEtf"), mint.toBuffer()],
+    [
+      utils.bytes.utf8.encode("PrismEtf"),
+      mint.toBuffer(),
+      beamsplitter.toBuffer(),
+    ],
+    PROGRAM_ID
+  );
+};
+
+export const generateOrderStateAddress = (
+  mint: PublicKey,
+  beamsplitter: PublicKey,
+  orderer: PublicKey
+): Promise<[PublicKey, number]> => {
+  return PublicKey.findProgramAddress(
+    [
+      utils.bytes.utf8.encode("OrderState"),
+      mint.toBuffer(),
+      orderer.toBuffer(),
+      beamsplitter.toBuffer(),
+    ],
+    PROGRAM_ID
+  );
+};
+
+export const generateWeightedTokensAddress = (
+  creator: PublicKey
+): Promise<[PublicKey, number]> => {
+  return PublicKey.findProgramAddress(
+    [utils.bytes.utf8.encode("WeightedTokens"), creator.toBuffer()],
     PROGRAM_ID
   );
 };

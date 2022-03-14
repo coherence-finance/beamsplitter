@@ -16,10 +16,10 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-pyth-client = { version = "0.3.0", features = ["no-entrypoint"] }
-anchor-lang = "0.19.0"
-anchor-spl = "0.19.0"
+anchor-lang = "0.20.0"
+anchor-spl = { version = "0.20.0", features = ["dex"] }
 solana-program = "1.9.5"
+bigdecimal = "0.3.0"
+rust_decimal = "1.21"
 borsh = { version = "0.9.2", features = ["const-generics"] }
 spl-token = { version = "3.2.0", features = ["no-entrypoint"] }
-serum_dex = { git = "https://github.com/coherence-finance/serum-dex", version = "0.5.4", features = ["no-entrypoint"] }
