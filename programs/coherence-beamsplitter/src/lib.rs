@@ -8,7 +8,7 @@ use context::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("7LoSbSi8SrLPXfmefiWd6e75Nqbpdnm44owCb2eK2pfN");
+declare_id!("8DqYYy74EJ6rEhX9aWjuTcfBi37mVviR65thPEqVqkrS");
 
 // The default share of transferred assets split between beamsplitter and
 //const DEFAULT_CONSTRUCT_BPS: u16 = 45;
