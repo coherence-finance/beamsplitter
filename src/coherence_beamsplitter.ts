@@ -286,7 +286,9 @@ export type CoherenceBeamsplitter = {
       "args": [
         {
           "name": "orderType",
-          "type": "bool"
+          "type": {
+            "defined": "OrderType"
+          }
         },
         {
           "name": "amount",
@@ -597,8 +599,10 @@ export type CoherenceBeamsplitter = {
             "type": "publicKey"
           },
           {
-            "name": "isConstruction",
-            "type": "bool"
+            "name": "orderType",
+            "type": {
+              "defined": "OrderType"
+            }
           },
           {
             "name": "status",
@@ -1073,7 +1077,9 @@ export const IDL: CoherenceBeamsplitter = {
       "args": [
         {
           "name": "orderType",
-          "type": "bool"
+          "type": {
+            "defined": "OrderType"
+          }
         },
         {
           "name": "amount",
@@ -1384,8 +1390,10 @@ export const IDL: CoherenceBeamsplitter = {
             "type": "publicKey"
           },
           {
-            "name": "isConstruction",
-            "type": "bool"
+            "name": "orderType",
+            "type": {
+              "defined": "OrderType"
+            }
           },
           {
             "name": "status",

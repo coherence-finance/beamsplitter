@@ -35,14 +35,18 @@ export const TRANSFERRED_TOKENS_SIZE = 20 + 8; // Bytes
 export const WEIGHTED_TOKENS_CAPACITY = 10;
 
 export enum OrderType {
-  CONSTRUCTION,
-  DECONSTRUCTION,
+  CONSTRUCTION = "construction",
+  DECONSTRUCTION = "deconstruction",
 }
 
 export type EnumLike = { name: never };
 
 export const enumLikeToString = (enumLike: unknown | EnumLike) =>
   Object.keys(enumLike as EnumLike)[0]?.toLocaleLowerCase() as string;
+
+export const stringToEnumLike = (name: string) => {
+  return { [name]: {} };
+};
 
 export type RequiredMarketAccounts = {
   marketAccount: PublicKey;

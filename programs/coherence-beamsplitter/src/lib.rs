@@ -142,7 +142,11 @@ pub mod coherence_beamsplitter {
     2. Set order_state.type = <order_type>
     3. if order_state.type == DECONSTRUCTION, burn <amount> of tokens
     */
-    pub fn start_order(ctx: Context<StartOrder>, order_type: bool, amount: u64) -> ProgramResult {
+    pub fn start_order(
+        ctx: Context<StartOrder>,
+        order_type: OrderType,
+        amount: u64,
+    ) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
         let prism_etf = &ctx.accounts.prism_etf;
 
@@ -159,14 +163,14 @@ pub mod coherence_beamsplitter {
         }
 
         order_state.amount = amount;
-        order_state.is_construction = order_type;
+        order_state.order_type = order_type;
         order_state.status = OrderStatus::PENDING;
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
         transferred_tokens.index = weighted_tokens.index;
 
-        if order_state.is_construction {
+        if order_state.order_type == OrderType::CONSTRUCTION {
             return Ok(());
         }
 
@@ -213,7 +217,7 @@ pub mod coherence_beamsplitter {
             return Err(ProgramError::InvalidArgument.into());
         }
 
-        if !order_state.is_construction {
+        if order_state.order_type != OrderType::CONSTRUCTION {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -307,7 +311,7 @@ pub mod coherence_beamsplitter {
             return Err(ProgramError::InvalidArgument.into());
         }
 
-        if order_state.is_construction {
+        if order_state.order_type != OrderType::DECONSTRUCTION {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -401,7 +405,7 @@ pub mod coherence_beamsplitter {
             *transferred_token = false;
         }
 
-        if order_state.is_construction {
+        if order_state.order_type == OrderType::CONSTRUCTION {
             let mint_accounts = MintTo {
                 mint: ctx.accounts.prism_etf_mint.to_account_info(),
                 to: ctx.accounts.orderer_etf_ata.to_account_info(),

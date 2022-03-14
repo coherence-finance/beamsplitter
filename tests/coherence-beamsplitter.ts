@@ -28,6 +28,7 @@ import {
   generateBeamsplitterAddress,
   generateOrderStateAddress,
   generatePrismEtfAddress,
+  OrderType,
   PRISM_ETF_DECIMALS,
   WEIGHTED_TOKENS_CAPACITY,
 } from "../src";
@@ -436,7 +437,7 @@ describe("coherence-beamsplitter", () => {
       const startOrder = await sdk.startOrder({
         beamsplitter,
         prismEtfMint,
-        isConstruction: true,
+        type: OrderType.CONSTRUCTION,
         amount: AMOUNT_TO_CONSTRUCT,
         transferredTokens: _transferredTokens,
       });
@@ -459,7 +460,9 @@ describe("coherence-beamsplitter", () => {
 
       assert(orderState?.amount.eq(new BN(AMOUNT_TO_CONSTRUCT)));
       expect(enumLikeToString(orderState?.status)).to.be.equal("pending");
-      expect(orderState?.isConstruction).to.be.equal(true);
+      expect(enumLikeToString(orderState?.orderType)).to.be.equal(
+        "construction"
+      );
 
       const cohere = await sdk.cohere({
         beamsplitter,
@@ -606,7 +609,7 @@ describe("coherence-beamsplitter", () => {
       const startOrder = await sdk.startOrder({
         beamsplitter,
         prismEtfMint,
-        isConstruction: false,
+        type: OrderType.DECONSTRUCTION,
         amount: AMOUNT_TO_DECONSTRUCT,
         transferredTokens: transferredTokensAcct,
       });
@@ -622,7 +625,9 @@ describe("coherence-beamsplitter", () => {
 
       assert(orderState?.amount.eq(new BN(AMOUNT_TO_DECONSTRUCT)));
       expect(enumLikeToString(orderState?.status)).to.be.equal("pending");
-      expect(orderState?.isConstruction).to.be.equal(false);
+      expect(enumLikeToString(orderState?.orderType)).to.be.equal(
+        "deconstruction"
+      );
 
       const decohere = await sdk.decohere({
         beamsplitter,

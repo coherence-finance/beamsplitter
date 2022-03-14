@@ -41,7 +41,7 @@ pub struct OrderState {
     /// [WeightedToken] array
     pub transferred_tokens: Pubkey,
     /// If true, the order is CONSTRUCTION type, otherwise DECONSTRUCTION
-    pub is_construction: bool, // TODO use enum
+    pub order_type: OrderType, // TODO use enum
     /// If true, the order is PENDING (you cannot call start_order and vice versa)
     pub status: OrderStatus, // TODO use enum
     // The amount being CONSTRUCTed or DECONSTRUCTed

@@ -27,12 +27,17 @@ import type {
   BeamsplitterData,
   BeamsplitterProgram,
   OrderStateData,
+  OrderType,
   PrismEtfData,
   TransferredTokensData,
   WeightedToken,
   WeightedTokensData,
 } from "./types";
-import { TRANSFERRED_TOKENS_SIZE, WEIGHTED_TOKENS_SIZE } from "./types";
+import {
+  stringToEnumLike,
+  TRANSFERRED_TOKENS_SIZE,
+  WEIGHTED_TOKENS_SIZE,
+} from "./types";
 
 // How many weighted tokens are chunked together per tx
 const PUSH_TX_CHUNK_SIZE = 24;
@@ -304,13 +309,13 @@ export class CoherenceBeamsplitterSDK {
   async startOrder({
     beamsplitter,
     prismEtfMint,
-    isConstruction,
+    type,
     amount,
     transferredTokens,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
-    isConstruction: boolean;
+    type: OrderType;
     transferredTokens: PublicKey;
     amount: BN;
   }): Promise<TransactionEnvelope> {
@@ -347,7 +352,7 @@ export class CoherenceBeamsplitterSDK {
     );
 
     return initOrderStateEnvelope.addInstructions(
-      this.program.instruction.startOrder(isConstruction, amount, {
+      this.program.instruction.startOrder(stringToEnumLike(type), amount, {
         accounts: {
           prismEtf: prismEtfPda,
           prismEtfMint,
