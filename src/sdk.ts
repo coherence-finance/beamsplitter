@@ -606,16 +606,7 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
   }): Promise<TransactionEnvelope> {
-    const orderState = await this.fetchOrderStateDataFromSeeds({
-      beamsplitter,
-      prismEtfMint,
-    });
-
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
-
-    if (!orderState) {
-      throw new Error("You must init the orderState first. Call startOrder()");
-    }
 
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
