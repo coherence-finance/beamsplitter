@@ -194,7 +194,7 @@ describe("coherence-beamsplitter", () => {
     for (let i = 0; i < randomNumberTokens; i++) {
       weightedTokens.push({
         mint: new PublicKey(i),
-        weight: i,
+        weight: i + 1,
       });
     }
 
@@ -217,7 +217,7 @@ describe("coherence-beamsplitter", () => {
       assert(
         weightedTokenData?.weightedTokens[i]?.mint.equals(new PublicKey(i))
       );
-      expect(weightedTokenData?.weightedTokens[i]?.weight).to.be.equal(i);
+      expect(weightedTokenData?.weightedTokens[i]?.weight).to.be.equal(i + 1);
     }
 
     const finalizePrismEtfTx = await sdk.finalizePrismEtf({
@@ -245,7 +245,7 @@ describe("coherence-beamsplitter", () => {
     let tokenBATA: PublicKey;
     let weightedTokens: WeightedToken[];
 
-    const decimalsA = 9;
+    const decimalsA = 16;
     const decimalsB = 3;
     const tokenAWeight = 1;
     const tokenBWeight = 10;

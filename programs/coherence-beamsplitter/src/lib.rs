@@ -12,11 +12,11 @@ use state::*;
 declare_id!("7LoSbSi8SrLPXfmefiWd6e75Nqbpdnm44owCb2eK2pfN");
 
 // The default share of transferred assets split between beamsplitter and
-const DEFAULT_CONSTRUCT_BPS: u16 = 45;
-const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
+//const DEFAULT_CONSTRUCT_BPS: u16 = 45;
+//const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
 
 // The default share of each fee given to managers of etf (20%)
-const DEFAULT_MANAGER_BPS: u16 = 2_000;
+//const DEFAULT_MANAGER_BPS: u16 = 2_000;
 
 #[program]
 pub mod coherence_beamsplitter {
@@ -104,6 +104,9 @@ pub mod coherence_beamsplitter {
         }
 
         for (idx, weighted_token) in new_tokens.iter().enumerate() {
+            if weighted_token.weight <= 0 {
+                return Err(ProgramError::InvalidArgument.into());
+            }
             if weighted_tokens.index >= weighted_tokens.capacity {
                 return Err(BeamsplitterErrors::ETFFull.into());
             }
@@ -148,6 +151,10 @@ pub mod coherence_beamsplitter {
         }
 
         if !prism_etf.is_finished {
+            return Err(ProgramError::InvalidArgument.into());
+        }
+
+        if amount <= 0 {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -278,7 +285,7 @@ pub mod coherence_beamsplitter {
     }
 
     /*
-    Decohere an asset from the etf being built. Used in CONSTRUCTION orders
+    Decohere an asset from the etf being built. Used in DECONSTRUCTION orders
 
     Failure cases:
     - prism_etf.weighted_tokens_at != weighted_tokens.key()
