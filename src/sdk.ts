@@ -145,7 +145,7 @@ export class CoherenceBeamsplitterSDK {
   }: {
     beamsplitter: PublicKey;
     prismEtfMint?: PublicKey;
-  }): Promise<[TransactionEnvelope, PublicKey]> {
+  }): Promise<[TransactionEnvelope, PublicKey, PublicKey]> {
     const weightedTokensKP = Keypair.generate();
 
     // Allocate the WeightedTokens Envelope
@@ -197,7 +197,7 @@ export class CoherenceBeamsplitterSDK {
 
     initPrismEtfEnvelope.addInstructions(initPrismEtfTx);
 
-    return [initPrismEtfEnvelope, prismEtfMint];
+    return [initPrismEtfEnvelope, prismEtfMint, weightedTokensKP.publicKey];
   }
 
   // Push tokens into Prism ETF being built
@@ -205,33 +205,17 @@ export class CoherenceBeamsplitterSDK {
     beamsplitter, // Beamsplitter program
     prismEtfMint, // Mint of the corresponding PrismEtf SPL token
     weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
+    weightedTokensAcct, // Key of weighted tokens account (found inside prismETF PDA)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     weightedTokens: WeightedToken[];
+    weightedTokensAcct: PublicKey;
   }): Promise<TransactionEnvelope[]> {
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
     );
-
-    const prismEtfData = await this.fetchPrismEtfData(prismEtf);
-
-    if (!prismEtfData) {
-      throw new Error(
-        "prismEtf PDA derived from prismEtfMint passed does not exist. Use initPrismEtf to initialize the PDA and pass in the resulting mint PublicKey."
-      );
-    }
-
-    if (prismEtfData.isFinished) {
-      throw new Error(
-        "prismEtf.is_finished is true. Etf is already done being designed. Use rebalancing to modify it further."
-      );
-    }
-
-    if (!this.provider.wallet.publicKey.equals(prismEtfData.manager)) {
-      throw new Error("You must be manager of the PrismEtf to modify it.");
-    }
 
     const pushTokenTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokens.length; i += PUSH_TX_CHUNK_SIZE) {
@@ -246,7 +230,7 @@ export class CoherenceBeamsplitterSDK {
               prismEtf,
               prismEtfMint,
               beamsplitter,
-              weightedTokens: prismEtfData.weightedTokens,
+              weightedTokens: weightedTokensAcct,
               manager: this.provider.wallet.publicKey,
               systemProgram: SystemProgram.programId,
             },

@@ -171,9 +171,10 @@ describe("coherence-beamsplitter", () => {
   const randomNumberTokens =
     Math.floor((Math.random() * WEIGHTED_TOKENS_CAPACITY) / 40) + 1;
   it(`Create a Prism ETF with ${randomNumberTokens} asset(s)`, async () => {
-    const [initPrismEtFTx, prismEtfMint] = await sdk.initPrismEtf({
-      beamsplitter,
-    });
+    const [initPrismEtFTx, prismEtfMint, weightedTokensAcct] =
+      await sdk.initPrismEtf({
+        beamsplitter,
+      });
 
     await expectTX(initPrismEtFTx, "Initialize asset with assetToken").to.be
       .fulfilled;
@@ -202,6 +203,7 @@ describe("coherence-beamsplitter", () => {
       beamsplitter,
       weightedTokens,
       prismEtfMint,
+      weightedTokensAcct,
     });
 
     // Have to do pushing in seq (Promise.all is not an option)
@@ -256,9 +258,10 @@ describe("coherence-beamsplitter", () => {
     3. Mint 100 of each token to testSigner.publicKey
     */
     before(async () => {
-      const [initPrismEtFTx, _prismEtfMint] = await sdk.initPrismEtf({
-        beamsplitter,
-      });
+      const [initPrismEtFTx, _prismEtfMint, weightedTokensAcct] =
+        await sdk.initPrismEtf({
+          beamsplitter,
+        });
 
       prismEtfMint = _prismEtfMint;
 
@@ -312,8 +315,9 @@ describe("coherence-beamsplitter", () => {
       ];
       const pushTokensEnvelopes = await sdk.pushTokens({
         beamsplitter,
-        weightedTokens,
         prismEtfMint,
+        weightedTokens,
+        weightedTokensAcct,
       });
 
       // Have to do pushing in seq (Promise.all is not an option)
