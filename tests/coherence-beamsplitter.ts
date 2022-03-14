@@ -242,15 +242,13 @@ describe("coherence-beamsplitter", () => {
   describe("Construct & Deconstruct", () => {
     let prismEtfMint: PublicKey;
     let tokenAATA: PublicKey;
-    let tokenAMint: PublicKey;
     let tokenBATA: PublicKey;
-    let tokenBMint: PublicKey;
     let weightedTokens: WeightedToken[];
 
     const decimalsA = 9;
     const decimalsB = 3;
-    const tokenAWeight = 2 * 10 ** decimalsA;
-    const tokenBWeight = 8 * 10 ** decimalsB;
+    const tokenAWeight = 1;
+    const tokenBWeight = 10;
 
     /*
     1. Setup 2 Token Mints
@@ -290,7 +288,6 @@ describe("coherence-beamsplitter", () => {
         mintAuthority: authority,
       });
 
-      tokenAMint = tokenAKP.publicKey;
       await expectTX(tokenAMintTx).to.be.fulfilled;
 
       const tokenBKP = Keypair.generate();
@@ -301,7 +298,6 @@ describe("coherence-beamsplitter", () => {
         mintAuthority: authority,
       });
 
-      tokenBMint = tokenBKP.publicKey;
       await expectTX(tokenBMintTx).to.be.fulfilled;
 
       weightedTokens = [
