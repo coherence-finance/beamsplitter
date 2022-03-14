@@ -11,7 +11,7 @@ import {
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
-import { Token } from "@solana/spl-token";
+import { Token, u64 } from "@solana/spl-token";
 import type { PublicKey, Signer } from "@solana/web3.js";
 import { Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import BN from "bn.js";
@@ -497,7 +497,7 @@ export class CoherenceBeamsplitterSDK {
           beamsplitterTransferAta,
           this.provider.wallet.publicKey,
           [],
-          approvedAmount.toNumber()
+          new u64(approvedAmount.toBuffer())
         )
       );
 
@@ -577,48 +577,49 @@ export class CoherenceBeamsplitterSDK {
       this.provider.wallet.publicKey
     );
 
+    const weightedTokensActualLength = weightedTokensAcct.index;
     const constructTxChunks: TransactionEnvelope[] = [];
-    for (let i = 0; i < weightedTokens.length; i++) {
-      const contstructEnvelope = new TransactionEnvelope(this.provider, []);
+    for (let i = 0; i < weightedTokensActualLength; i++) {
+      const constructEnvelope = new TransactionEnvelope(this.provider, []);
 
       if (!weightedTokens.at(i)) {
         throw new Error("Outside weighted tokens array range");
       }
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const mintAddress = weightedTokens[i]!.mint;
+      const weightedToken = weightedTokens[i]!;
 
       const {
         address: beamsplitterTransferAta,
         instruction: createBeamsplitterAta,
       } = await getOrCreateATA({
         provider: this.provider,
-        mint: mintAddress,
+        mint: weightedToken.mint,
         owner: beamsplitter,
       });
 
       if (createBeamsplitterAta) {
-        contstructEnvelope.addInstructions(createBeamsplitterAta);
+        constructEnvelope.addInstructions(createBeamsplitterAta);
       }
 
       const { address: ordererTransferAta, instruction: createOrdererAta } =
         await getOrCreateATA({
           provider: this.provider,
-          mint: mintAddress,
+          mint: weightedToken.mint,
         });
 
       if (createOrdererAta) {
-        contstructEnvelope.addInstructions(createOrdererAta);
+        constructEnvelope.addInstructions(createOrdererAta);
       }
 
-      const mintData = await getMintInfo(this.provider, mintAddress);
+      const mintData = await getMintInfo(this.provider, weightedToken.mint);
 
       if (!mintData.mintAuthority) {
         throw new Error("Transfer Token Mint has no authority");
       }
 
       constructTxChunks.push(
-        contstructEnvelope.addInstructions(
+        constructEnvelope.addInstructions(
           this.program.instruction.decohere(i, {
             accounts: {
               prismEtfMint,
@@ -627,8 +628,8 @@ export class CoherenceBeamsplitterSDK {
               weightedTokens: prismEtf.weightedTokens,
               transferredTokens: orderState.transferredTokens,
               orderer: this.provider.wallet.publicKey,
-              transferAuthority: mintData.mintAuthority,
-              transferMint: mintAddress,
+              transferAuthority: beamsplitter,
+              transferMint: weightedToken.mint,
               ordererTransferAta,
               beamsplitterTransferAta,
               beamsplitter,

@@ -166,7 +166,7 @@ pub mod coherence_beamsplitter {
         let mint_accounts = Burn {
             mint: ctx.accounts.prism_etf_mint.to_account_info(),
             to: ctx.accounts.orderer_etf_ata.to_account_info(),
-            authority: ctx.accounts.beamsplitter.to_account_info(),
+            authority: ctx.accounts.orderer.to_account_info(),
         };
 
         let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
@@ -292,6 +292,7 @@ pub mod coherence_beamsplitter {
     1. Transfer tokens from beamsplitter to user
     */
     pub fn decohere(ctx: Context<Cohere>, index: u32) -> ProgramResult {
+        msg!["here"];
         let index_usize = index as usize;
         let order_state = &mut ctx.accounts.order_state;
 

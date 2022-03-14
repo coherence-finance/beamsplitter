@@ -198,7 +198,7 @@ pub struct Cohere<'info> {
     pub orderer: Signer<'info>,
 
     /// The authority on the transfer mint
-    pub transfer_authority: SystemAccount<'info>,
+    pub transfer_authority: AccountInfo<'info>,
 
     /// The mint of the asset being transfered
     pub transfer_mint: Account<'info, Mint>,
@@ -250,7 +250,7 @@ pub struct Decohere<'info> {
     pub orderer: Signer<'info>,
 
     /// The authority on the transfer mint
-    pub transfer_authority: SystemAccount<'info>,
+    pub transfer_authority: AccountInfo<'info>,
 
     /// The mint of the asset being transfered
     pub transfer_mint: Account<'info, Mint>,
