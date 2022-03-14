@@ -548,8 +548,10 @@ export type CoherenceBeamsplitter = {
             "type": "publicKey"
           },
           {
-            "name": "isFinished",
-            "type": "bool"
+            "name": "status",
+            "type": {
+              "defined": "PrismEtfStatus"
+            }
           },
           {
             "name": "bump",
@@ -599,8 +601,10 @@ export type CoherenceBeamsplitter = {
             "type": "bool"
           },
           {
-            "name": "isPending",
-            "type": "bool"
+            "name": "status",
+            "type": {
+              "defined": "OrderStatus"
+            }
           },
           {
             "name": "amount",
@@ -668,6 +672,65 @@ export type CoherenceBeamsplitter = {
           {
             "name": "weight",
             "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PrismEtfStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "UNFINISHED"
+          },
+          {
+            "name": "FINISHED"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "DECONSTRUCTION"
+          },
+          {
+            "name": "CONSTRUCTION"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PENDING"
+          },
+          {
+            "name": "CANCELLED"
+          },
+          {
+            "name": "SUCCEEDED"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalancingOption",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "OFF"
+          },
+          {
+            "name": "MANUAL"
           }
         ]
       }
@@ -1272,8 +1335,10 @@ export const IDL: CoherenceBeamsplitter = {
             "type": "publicKey"
           },
           {
-            "name": "isFinished",
-            "type": "bool"
+            "name": "status",
+            "type": {
+              "defined": "PrismEtfStatus"
+            }
           },
           {
             "name": "bump",
@@ -1323,8 +1388,10 @@ export const IDL: CoherenceBeamsplitter = {
             "type": "bool"
           },
           {
-            "name": "isPending",
-            "type": "bool"
+            "name": "status",
+            "type": {
+              "defined": "OrderStatus"
+            }
           },
           {
             "name": "amount",
@@ -1392,6 +1459,65 @@ export const IDL: CoherenceBeamsplitter = {
           {
             "name": "weight",
             "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PrismEtfStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "UNFINISHED"
+          },
+          {
+            "name": "FINISHED"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "DECONSTRUCTION"
+          },
+          {
+            "name": "CONSTRUCTION"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PENDING"
+          },
+          {
+            "name": "CANCELLED"
+          },
+          {
+            "name": "SUCCEEDED"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RebalancingOption",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "OFF"
+          },
+          {
+            "name": "MANUAL"
           }
         ]
       }

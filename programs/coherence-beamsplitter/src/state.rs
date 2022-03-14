@@ -2,6 +2,8 @@ use std::mem::size_of;
 
 use anchor_lang::prelude::*;
 
+use crate::enums::*;
+
 #[constant]
 pub const _PRISM_ETF_SIZE: usize = size_of::<PrismEtf>();
 #[constant]
@@ -16,7 +18,7 @@ pub struct PrismEtf {
     /// The account containing the [WeightedTokens] of this [PrismEtf]
     pub weighted_tokens: Pubkey,
     /// If true, the ETF can no longer have assets added to it (without rebalancing)
-    pub is_finished: bool,
+    pub status: PrismEtfStatus,
     /// The bump for this PDA account
     pub bump: u8,
 }
@@ -41,7 +43,7 @@ pub struct OrderState {
     /// If true, the order is CONSTRUCTION type, otherwise DECONSTRUCTION
     pub is_construction: bool, // TODO use enum
     /// If true, the order is PENDING (you cannot call start_order and vice versa)
-    pub is_pending: bool, // TODO use enum
+    pub status: OrderStatus, // TODO use enum
     // The amount being CONSTRUCTed or DECONSTRUCTed
     pub amount: u64,
     /// The bump for this PDA account

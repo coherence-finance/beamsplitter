@@ -1,9 +1,11 @@
 pub mod context;
+pub mod enums;
 pub mod errors;
 pub mod state;
 
 use anchor_lang::prelude::*;
 use context::*;
+use enums::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
@@ -69,7 +71,7 @@ pub mod coherence_beamsplitter {
         prism_etf.manager = manager.key();
         prism_etf.bump = bump;
         prism_etf.weighted_tokens = weighted_tokens.key();
-        prism_etf.is_finished = false;
+        prism_etf.status = PrismEtfStatus::UNFINISHED;
 
         // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
         if beamsplitter.owner != authority(&mint.to_account_info())?
@@ -87,7 +89,7 @@ pub mod coherence_beamsplitter {
 
     pub fn finalize_prism_etf(ctx: Context<FinalizePrismEtf>) -> ProgramResult {
         let prism_etf = &mut ctx.accounts.prism_etf;
-        prism_etf.is_finished = true;
+        prism_etf.status = PrismEtfStatus::FINISHED;
 
         Ok(())
     }
@@ -97,7 +99,7 @@ pub mod coherence_beamsplitter {
         let prism_etf = &ctx.accounts.prism_etf;
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_mut()?;
 
-        if prism_etf.is_finished == true {
+        if prism_etf.status != PrismEtfStatus::UNFINISHED {
             return Err(BeamsplitterErrors::IsFinished.into());
         }
 
@@ -121,7 +123,7 @@ pub mod coherence_beamsplitter {
         let order_state = &mut ctx.accounts.order_state;
         order_state.bump = bump;
         order_state.transferred_tokens = ctx.accounts.transferred_tokens.key();
-        order_state.is_pending = false;
+        order_state.status = OrderStatus::SUCCEEDED;
         Ok(())
     }
 
@@ -144,11 +146,11 @@ pub mod coherence_beamsplitter {
         let order_state = &mut ctx.accounts.order_state;
         let prism_etf = &ctx.accounts.prism_etf;
 
-        if order_state.is_pending {
+        if order_state.status == OrderStatus::PENDING {
             return Err(ProgramError::InvalidArgument.into());
         }
 
-        if !prism_etf.is_finished {
+        if prism_etf.status != PrismEtfStatus::FINISHED {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -158,7 +160,7 @@ pub mod coherence_beamsplitter {
 
         order_state.amount = amount;
         order_state.is_construction = order_type;
-        order_state.is_pending = true;
+        order_state.status = OrderStatus::PENDING;
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
@@ -207,7 +209,7 @@ pub mod coherence_beamsplitter {
         let order_state = &mut ctx.accounts.order_state;
         let index_usize = index as usize;
 
-        if !order_state.is_pending {
+        if order_state.status != OrderStatus::PENDING {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -301,7 +303,7 @@ pub mod coherence_beamsplitter {
         let index_usize = index as usize;
         let order_state = &mut ctx.accounts.order_state;
 
-        if !order_state.is_pending {
+        if order_state.status != OrderStatus::PENDING {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -383,7 +385,7 @@ pub mod coherence_beamsplitter {
     pub fn finalize_order(ctx: Context<FinalizeOrder>) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
 
-        if !order_state.is_pending {
+        if order_state.status != OrderStatus::PENDING {
             return Err(ProgramError::InvalidArgument.into());
         }
 
@@ -418,7 +420,7 @@ pub mod coherence_beamsplitter {
             mint_to(mint_ctx, order_state.amount)?;
         }
 
-        order_state.is_pending = false;
+        order_state.status = OrderStatus::SUCCEEDED;
 
         Ok(())
     }

@@ -21,6 +21,7 @@ export type WeightedTokensData = Omit<
   Accounts["weightedTokens"],
   "weightedTokens"
 > & { weightedTokens: WeightedToken[] };
+
 export type OrderStateData = Accounts["orderState"];
 export type TransferredTokensData = Accounts["transferredTokens"];
 export type BeamsplitterProgram = BeamsplitterTypes["Program"];
@@ -32,6 +33,16 @@ export type WeightedToken = Defined["WeightedToken"];
 export const WEIGHTED_TOKENS_SIZE = 368 + 8; // Bytes
 export const TRANSFERRED_TOKENS_SIZE = 20 + 8; // Bytes
 export const WEIGHTED_TOKENS_CAPACITY = 10;
+
+export enum OrderType {
+  CONSTRUCTION,
+  DECONSTRUCTION,
+}
+
+export type EnumLike = { name: never };
+
+export const enumLikeToString = (enumLike: unknown | EnumLike) =>
+  Object.keys(enumLike as EnumLike)[0]?.toLocaleLowerCase() as string;
 
 export type RequiredMarketAccounts = {
   marketAccount: PublicKey;

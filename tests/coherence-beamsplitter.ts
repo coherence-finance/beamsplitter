@@ -24,6 +24,7 @@ import chai, { assert, expect } from "chai";
 import type { WeightedToken } from "../src";
 import {
   CoherenceBeamsplitterSDK,
+  enumLikeToString,
   generateBeamsplitterAddress,
   generateOrderStateAddress,
   generatePrismEtfAddress,
@@ -104,7 +105,7 @@ describe("coherence-beamsplitter", () => {
     }
 
     assert(prismEtf.manager.equals(authority));
-    assert(!prismEtf.isFinished);
+    expect(enumLikeToString(prismEtf.status)).to.be.equal("unfinished");
 
     const [prismEtfPda, bump] = await generatePrismEtfAddress(
       prismEtfMint,
@@ -147,7 +148,7 @@ describe("coherence-beamsplitter", () => {
     }
 
     assert(prismEtf.manager.equals(authority));
-    assert(!prismEtf.isFinished);
+    expect(enumLikeToString(prismEtf.status)).to.be.equal("unfinished");
 
     const finalizePrismEtfTx = await sdk.finalizePrismEtf({
       beamsplitter,
@@ -165,7 +166,7 @@ describe("coherence-beamsplitter", () => {
       assert.fail("Prism Etf was not successfully created");
     }
 
-    assert(prismEtf.isFinished);
+    expect(enumLikeToString(prismEtf.status)).to.be.equal("finished");
   });
 
   const randomNumberTokens =
@@ -189,7 +190,7 @@ describe("coherence-beamsplitter", () => {
     }
 
     assert(prismEtf.manager.equals(authority));
-    assert(!prismEtf.isFinished);
+    expect(enumLikeToString(prismEtf.status)).to.be.equal("unfinished");
 
     const weightedTokens: WeightedToken[] = [];
     for (let i = 0; i < randomNumberTokens; i++) {
@@ -238,7 +239,7 @@ describe("coherence-beamsplitter", () => {
       assert.fail("Prism Etf was not successfully created");
     }
 
-    assert(prismEtf.isFinished);
+    expect(enumLikeToString(prismEtf.status)).to.be.equal("finished");
   });
 
   describe("Construct & Deconstruct", () => {
@@ -282,7 +283,7 @@ describe("coherence-beamsplitter", () => {
       }
 
       assert(prismEtf.manager.equals(authority));
-      assert(!prismEtf.isFinished);
+      expect(enumLikeToString(prismEtf.status)).to.be.equal("unfinished");
 
       const tokenAKP = Keypair.generate();
       const tokenAMintTx = await createInitMintInstructions({
@@ -348,7 +349,7 @@ describe("coherence-beamsplitter", () => {
         assert.fail("Prism Etf was not successfully created");
       }
 
-      assert(prismEtf.isFinished);
+      expect(enumLikeToString(prismEtf.status)).to.be.equal("finished");
 
       const { address: _tokenAATA, instruction: createAATA } =
         await getOrCreateATA({
@@ -429,7 +430,7 @@ describe("coherence-beamsplitter", () => {
       });
 
       expect(orderState?.transferredTokens).to.not.be.undefined;
-      expect(orderState?.isPending).to.be.false;
+      expect(enumLikeToString(orderState?.status)).to.be.equal("succeeded");
       expect(orderState?.bump).to.be.equal(bump);
 
       const startOrder = await sdk.startOrder({
@@ -457,7 +458,7 @@ describe("coherence-beamsplitter", () => {
       });
 
       assert(orderState?.amount.eq(new BN(AMOUNT_TO_CONSTRUCT)));
-      expect(orderState?.isPending).to.be.true;
+      expect(enumLikeToString(orderState?.status)).to.be.equal("pending");
       expect(orderState?.isConstruction).to.be.equal(true);
 
       const cohere = await sdk.cohere({
@@ -547,7 +548,7 @@ describe("coherence-beamsplitter", () => {
         prismEtfMint,
       });
 
-      expect(orderState?.isPending).to.be.false;
+      expect(enumLikeToString(orderState?.status)).to.be.equal("succeeded");
 
       if (!orderState?.transferredTokens) {
         return new Error("Transferred Tokens undefined");
@@ -591,7 +592,7 @@ describe("coherence-beamsplitter", () => {
       });
 
       expect(orderState?.transferredTokens).to.not.be.undefined;
-      expect(orderState?.isPending).to.be.false;
+      expect(enumLikeToString(orderState?.status)).to.be.equal("succeeded");
       expect(orderState?.bump).to.be.equal(bump);
 
       const etfATAAddress = await getATAAddress({
@@ -620,7 +621,7 @@ describe("coherence-beamsplitter", () => {
       });
 
       assert(orderState?.amount.eq(new BN(AMOUNT_TO_DECONSTRUCT)));
-      expect(orderState?.isPending).to.be.true;
+      expect(enumLikeToString(orderState?.status)).to.be.equal("pending");
       expect(orderState?.isConstruction).to.be.equal(false);
 
       const decohere = await sdk.decohere({
@@ -705,7 +706,7 @@ describe("coherence-beamsplitter", () => {
         prismEtfMint,
       });
 
-      expect(orderState?.isPending).to.be.false;
+      expect(enumLikeToString(orderState?.status)).to.be.equal("succeeded");
 
       if (!orderState?.transferredTokens) {
         return new Error("Transferred Tokens undefined");
