@@ -21,6 +21,16 @@ pub struct PrismEtf {
     pub status: PrismEtfStatus,
     /// The bump for this PDA account
     pub bump: u8,
+    /// Basis points used for construction fee
+    pub construction_bps: u16,
+    /// Basis points used for deconstruction fee
+    pub deconstruction_bps: u16,
+    /// Basis points used for manager's cut
+    pub manager_cut: u16,
+    /// Rebalancing option dictates the managers ability to rebalance the account
+    pub rebalancing_mode: RebalancingMode,
+    /// How often the autorebalancerr uns
+    pub autorebalancing_schedule: AutorebalancingSchedule,
 }
 
 #[account(zero_copy)]
@@ -75,4 +85,12 @@ pub struct Beamsplitter {
     pub owner: Pubkey,
     /// Bump seed. Stored for find_program_address on-chain performance
     pub bump: u8,
+    /// Default basis points used for construction fee
+    pub default_construction_bps: u16,
+    /// Default basis points used for deconstruction fee
+    pub default_deconstruction_bps: u16,
+    /// Default basis points used for manager's cut
+    pub default_manager_cut: u16,
+    /// The account with rights to autorebalance prism etfs with non NEVER schedule
+    pub autorebalancer: Pubkey,
 }

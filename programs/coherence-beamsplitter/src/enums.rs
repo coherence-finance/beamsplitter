@@ -40,13 +40,24 @@ impl Default for OrderStatus {
 }
 
 #[derive(Debug, Copy, Clone, AnchorDeserialize, AnchorSerialize, PartialEq, Eq)]
-pub enum RebalancingOption {
+pub enum RebalancingMode {
     OFF,
     MANUAL,
 }
 
-impl Default for RebalancingOption {
+impl Default for RebalancingMode {
     fn default() -> Self {
-        RebalancingOption::OFF
+        RebalancingMode::OFF
+    }
+}
+
+#[derive(Debug, Copy, Clone, AnchorDeserialize, AnchorSerialize, PartialEq, Eq)]
+pub enum AutorebalancingSchedule{
+    NEVER,
+}
+
+impl Default for AutorebalancingSchedule {
+    fn default() -> Self {
+        AutorebalancingSchedule::NEVER
     }
 }

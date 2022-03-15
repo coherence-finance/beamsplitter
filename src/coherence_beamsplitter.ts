@@ -558,6 +558,30 @@ export type CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "constructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "deconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "managerCut",
+            "type": "u16"
+          },
+          {
+            "name": "rebalancingMode",
+            "type": {
+              "defined": "RebalancingMode"
+            }
+          },
+          {
+            "name": "autorebalancingSchedule",
+            "type": {
+              "defined": "AutorebalancingSchedule"
+            }
           }
         ]
       }
@@ -658,6 +682,22 @@ export type CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "defaultConstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultDeconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultManagerCut",
+            "type": "u16"
+          },
+          {
+            "name": "autorebalancer",
+            "type": "publicKey"
           }
         ]
       }
@@ -726,7 +766,7 @@ export type CoherenceBeamsplitter = {
       }
     },
     {
-      "name": "RebalancingOption",
+      "name": "RebalancingMode",
       "type": {
         "kind": "enum",
         "variants": [
@@ -735,6 +775,17 @@ export type CoherenceBeamsplitter = {
           },
           {
             "name": "MANUAL"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AutorebalancingSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
           }
         ]
       }
@@ -1349,6 +1400,30 @@ export const IDL: CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "constructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "deconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "managerCut",
+            "type": "u16"
+          },
+          {
+            "name": "rebalancingMode",
+            "type": {
+              "defined": "RebalancingMode"
+            }
+          },
+          {
+            "name": "autorebalancingSchedule",
+            "type": {
+              "defined": "AutorebalancingSchedule"
+            }
           }
         ]
       }
@@ -1449,6 +1524,22 @@ export const IDL: CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "defaultConstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultDeconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultManagerCut",
+            "type": "u16"
+          },
+          {
+            "name": "autorebalancer",
+            "type": "publicKey"
           }
         ]
       }
@@ -1517,7 +1608,7 @@ export const IDL: CoherenceBeamsplitter = {
       }
     },
     {
-      "name": "RebalancingOption",
+      "name": "RebalancingMode",
       "type": {
         "kind": "enum",
         "variants": [
@@ -1526,6 +1617,17 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "MANUAL"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AutorebalancingSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
           }
         ]
       }

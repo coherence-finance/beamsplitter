@@ -12,11 +12,11 @@ use state::*;
 declare_id!("A29uL2xu7njxWSYSpsgYyWivAJ5DmmVC48hH6dnbJBq9");
 
 // The default share of transferred assets split between beamsplitter and
-//const DEFAULT_CONSTRUCT_BPS: u16 = 45;
-//const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
+const DEFAULT_CONSTRUCT_BPS: u16 = 45;
+const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
 
 // The default share of each fee given to managers of etf (20%)
-//const DEFAULT_MANAGER_BPS: u16 = 2_000;
+const DEFAULT_MANAGER_BPS: u16 = 2_000;
 
 #[program]
 pub mod coherence_beamsplitter {
@@ -37,6 +37,9 @@ pub mod coherence_beamsplitter {
         let beamsplitter = &mut ctx.accounts.beamsplitter;
         beamsplitter.bump = bump;
         beamsplitter.owner = ctx.accounts.owner.key();
+        beamsplitter.default_construction_bps = DEFAULT_CONSTRUCT_BPS;
+        beamsplitter.default_deconstruction_bps = DEFAULT_DECONSTRUCT_BPS;
+        beamsplitter.default_manager_cut = DEFAULT_MANAGER_BPS;
 
         Ok(())
     }
@@ -72,6 +75,9 @@ pub mod coherence_beamsplitter {
         prism_etf.bump = bump;
         prism_etf.weighted_tokens = weighted_tokens.key();
         prism_etf.status = PrismEtfStatus::UNFINISHED;
+        prism_etf.construction_bps = beamsplitter.default_construction_bps;
+        prism_etf.deconstruction_bps = beamsplitter.default_deconstruction_bps;
+        prism_etf.manager_cut = beamsplitter.default_manager_cut;
 
         // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
         if beamsplitter.owner != authority(&mint.to_account_info())?
