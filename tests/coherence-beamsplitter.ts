@@ -750,5 +750,126 @@ describe("coherence-beamsplitter", () => {
         expect(transferredTokensArr[i]).to.be.false;
       }
     });
+
+    it(`Test fees`, async () => {
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
+
+      const etfATAAddress = await getATAAddress({
+        mint: prismEtfMint,
+        owner: authority,
+      });
+
+      const etfBalanceBeforeOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const newOwner = Keypair.generate();
+      const newManager = Keypair.generate();
+
+      const { address: ownerAta, instruction: createOwnerATA } =
+        await getOrCreateATA({
+          provider,
+          mint: prismEtfMint,
+          owner: newOwner.publicKey,
+        });
+
+      if (createOwnerATA) {
+        await expectTX(new TransactionEnvelope(provider, [createOwnerATA])).to
+          .be.fulfilled;
+      }
+
+      const { address: managerAta, instruction: createManagerATA } =
+        await getOrCreateATA({
+          provider,
+          mint: prismEtfMint,
+          owner: newManager.publicKey,
+        });
+
+      if (createManagerATA) {
+        await expectTX(new TransactionEnvelope(provider, [createManagerATA])).to
+          .be.fulfilled;
+      }
+
+      const etfBalanceBeforeOwner = (await getTokenAccount(provider, ownerAta))
+        .amount;
+
+      const etfBalanceBeforeManager = (
+        await getTokenAccount(provider, managerAta)
+      ).amount;
+
+      const setOwner = sdk.setOwner({
+        beamsplitter,
+        newOwner: newOwner.publicKey,
+      });
+
+      await expectTX(setOwner).to.be.fulfilled;
+
+      const setManager = sdk.setManager({
+        beamsplitter,
+        prismEtfMint,
+        newManager: newManager.publicKey,
+      });
+
+      await expectTX(setManager).to.be.fulfilled;
+
+      const startOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.CONSTRUCTION,
+        amount: AMOUNT_TO_CONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      await expectTX(startOrder).to.be.fulfilled;
+
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        orderStateAmount: AMOUNT_TO_CONSTRUCT,
+      });
+
+      await Promise.all(
+        cohere.map((cohereChunk) => expectTX(cohereChunk).to.be.fulfilled)
+      );
+
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+
+      const finalizeOrder = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+
+      await expectTX(finalizeOrder).to.be.fulfilled;
+
+      const etfBalanceAfterOwner = (await getTokenAccount(provider, ownerAta))
+        .amount;
+
+      const etfBalanceAfterManager = (
+        await getTokenAccount(provider, managerAta)
+      ).amount;
+
+      const etfBalanceAfterOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const actualOrdererDiff = etfBalanceAfterOrderer.sub(
+        etfBalanceBeforeOrderer
+      );
+      const actualOwnerDiff = etfBalanceAfterOwner.sub(etfBalanceBeforeOwner);
+      const actualManagerDiff = etfBalanceAfterManager.sub(
+        etfBalanceBeforeManager
+      );
+    });
   });
 });

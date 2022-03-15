@@ -13,13 +13,17 @@ use state::*;
 declare_id!("A29uL2xu7njxWSYSpsgYyWivAJ5DmmVC48hH6dnbJBq9");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
+#[constant]
 const DEFAULT_CONSTRUCT_BPS: u16 = 45;
+#[constant]
 const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
 
 // The default share of each fee given to managers of etf (20%)
+#[constant]
 const DEFAULT_MANAGER_BPS: u16 = 2_000;
 
 // BPS (standard basis point decimals)
+#[constant]
 const BASIS_POINT_DECIMALS: u8 = 4;
 
 #[program]
@@ -316,7 +320,6 @@ pub mod coherence_beamsplitter {
     1. Transfer tokens from beamsplitter to user
     */
     pub fn decohere(ctx: Context<Cohere>, index: u16) -> ProgramResult {
-        msg!["here"];
         let index_usize = index as usize;
         let order_state = &mut ctx.accounts.order_state;
 

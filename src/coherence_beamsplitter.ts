@@ -3,6 +3,26 @@ export type CoherenceBeamsplitter = {
   "name": "coherence_beamsplitter",
   "constants": [
     {
+      "name": "DEFAULT_CONSTRUCT_BPS",
+      "type": "u16",
+      "value": "45"
+    },
+    {
+      "name": "DEFAULT_DECONSTRUCT_BPS",
+      "type": "u16",
+      "value": "45"
+    },
+    {
+      "name": "DEFAULT_MANAGER_BPS",
+      "type": "u16",
+      "value": "2_000"
+    },
+    {
+      "name": "BASIS_POINT_DECIMALS",
+      "type": "u8",
+      "value": "4"
+    },
+    {
       "name": "_PRISM_ETF_SIZE",
       "type": {
         "defined": "usize"
@@ -1072,6 +1092,26 @@ export const IDL: CoherenceBeamsplitter = {
   "version": "0.1.0",
   "name": "coherence_beamsplitter",
   "constants": [
+    {
+      "name": "DEFAULT_CONSTRUCT_BPS",
+      "type": "u16",
+      "value": "45"
+    },
+    {
+      "name": "DEFAULT_DECONSTRUCT_BPS",
+      "type": "u16",
+      "value": "45"
+    },
+    {
+      "name": "DEFAULT_MANAGER_BPS",
+      "type": "u16",
+      "value": "2_000"
+    },
+    {
+      "name": "BASIS_POINT_DECIMALS",
+      "type": "u8",
+      "value": "4"
+    },
     {
       "name": "_PRISM_ETF_SIZE",
       "type": {

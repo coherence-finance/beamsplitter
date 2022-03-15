@@ -701,6 +701,50 @@ export class CoherenceBeamsplitterSDK {
     );
   }
 
+  setOwner({
+    beamsplitter,
+    newOwner,
+  }: {
+    beamsplitter: PublicKey;
+    newOwner: PublicKey;
+  }): TransactionEnvelope {
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.setOwner({
+        accounts: {
+          owner: this.provider.wallet.publicKey,
+          newOwner,
+          beamsplitter,
+        },
+      }),
+    ]);
+  }
+
+  async setManager({
+    beamsplitter,
+    prismEtfMint,
+    newManager,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+    newManager: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.setManager({
+        accounts: {
+          prismEtfMint: prismEtfMint,
+          prismEtf,
+          manager: this.provider.wallet.publicKey,
+          newManager,
+          beamsplitter,
+        },
+      }),
+    ]);
+  }
+
   async fetchOrderStateDataFromSeeds({
     beamsplitter,
     prismEtfMint,

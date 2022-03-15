@@ -307,12 +307,12 @@ pub struct FinalizeOrder<'info> {
 
     pub manager: AccountInfo<'info>,
 
-    #[account(associated_token::mint = prism_etf_mint, associated_token::authority = manager, mut)]
+    #[account(init_if_needed, associated_token::mint = prism_etf_mint, associated_token::authority = manager, payer = orderer)]
     pub manager_etf_ata: Box<Account<'info, TokenAccount>>,
 
     pub owner: AccountInfo<'info>,
 
-    #[account(associated_token::mint = prism_etf_mint, associated_token::authority = owner, mut)]
+    #[account(init_if_needed, associated_token::mint = prism_etf_mint, associated_token::authority = owner, payer = orderer)]
     pub owner_etf_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
