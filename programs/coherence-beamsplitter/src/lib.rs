@@ -440,8 +440,6 @@ pub mod coherence_beamsplitter {
             let mut manager_portion =
                 Decimal::from(ctx.accounts.prism_etf.manager_cut).mul(fee_portion);
 
-            msg!["{}", &manager_portion.to_string()[..]];
-
             match manager_portion.set_scale((2 * BASIS_POINT_DECIMALS).into()) {
                 Err(_error) => return Err(ProgramError::InvalidArgument.into()),
                 _ => (),
