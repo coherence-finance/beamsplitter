@@ -215,13 +215,13 @@ describe("coherence-beamsplitter", () => {
     const weightedTokenData = await sdk.fetchWeightedTokens(
       prismEtf.weightedTokens
     );
+
     expect(weightedTokenData?.index).to.be.equal(randomNumberTokens);
 
     for (let i = 0; i < randomNumberTokens; i++) {
       assert(
         weightedTokenData?.weightedTokens[i]?.mint.equals(new PublicKey(i))
       );
-      console.log(weightedTokenData?.weightedTokens[i]?.weight.toString());
       assert(weightedTokenData?.weightedTokens[i]?.weight.eq(new BN(i + 1)));
     }
 

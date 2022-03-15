@@ -1,3 +1,4 @@
+#![allow(unaligned_references)]
 pub mod context;
 pub mod enums;
 pub mod errors;
@@ -123,8 +124,6 @@ pub mod coherence_beamsplitter {
                 return Err(BeamsplitterErrors::ETFFull.into());
             }
             let etf_idx = weighted_tokens.index as usize;
-            msg!["{}", weighted_token.weight];
-            panic!();
             weighted_tokens.weighted_tokens[idx + etf_idx] = weighted_token.clone();
         }
 

@@ -33,6 +33,7 @@ pub struct PrismEtf {
     pub autorebalancing_schedule: AutorebalancingSchedule,
 }
 
+#[repr(packed)]
 #[account(zero_copy)]
 #[derive(Debug)]
 pub struct WeightedTokens {
