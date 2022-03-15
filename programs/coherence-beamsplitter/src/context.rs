@@ -333,3 +333,151 @@ pub struct FinalizeOrder<'info> {
     /// The [System] program.
     pub system_program: Program<'info, System>,
 }
+
+#[derive(Accounts)]
+pub struct SetOwner<'info> {
+    pub new_owner: AccountInfo<'info>,
+
+    pub owner: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+        has_one = owner,
+        mut
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}
+
+#[derive(Accounts)]
+pub struct SetDefaultManagerCut<'info> {
+    pub owner: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+        has_one = owner,
+        mut
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}
+
+#[derive(Accounts)]
+pub struct SetDefaultConstruction<'info> {
+    pub owner: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+        has_one = owner,
+        mut
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}
+
+#[derive(Accounts)]
+pub struct SetDefaultDeconstruction<'info> {
+    pub owner: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+        has_one = owner,
+        mut
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}
+
+#[derive(Accounts)]
+pub struct SetManager<'info> {
+    pub prism_etf_mint: Account<'info, Mint>,
+
+    /// The Prism ETF [Account] that this instruction uses
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = manager, mut)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+
+    pub new_manager: AccountInfo<'info>,
+
+    pub manager: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}
+
+#[derive(Accounts)]
+pub struct SetManagerCut<'info> {
+    pub prism_etf_mint: Account<'info, Mint>,
+
+    /// The Prism ETF [Account] that this instruction uses
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = manager, mut)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+
+    pub manager: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}
+
+#[derive(Accounts)]
+pub struct SetConstruction<'info> {
+    pub prism_etf_mint: Account<'info, Mint>,
+
+    /// The Prism ETF [Account] that this instruction uses
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+
+    pub owner: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}
+
+#[derive(Accounts)]
+pub struct SetDeconstruction<'info> {
+    pub prism_etf_mint: Account<'info, Mint>,
+
+    /// The Prism ETF [Account] that this instruction uses
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+
+    pub owner: Signer<'info>,
+
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+}

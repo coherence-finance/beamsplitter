@@ -526,4 +526,62 @@ pub mod coherence_beamsplitter {
 
         Ok(())
     }
+
+    pub fn set_owner(ctx: Context<SetOwner>) -> ProgramResult {
+        ctx.accounts.beamsplitter.owner = ctx.accounts.new_owner.key();
+        Ok(())
+    }
+
+    pub fn set_default_manager_cut(
+        ctx: Context<SetDefaultManagerCut>,
+        new_default_manager_cut: u16,
+    ) -> ProgramResult {
+        ctx.accounts.beamsplitter.default_manager_cut = new_default_manager_cut;
+        Ok(())
+    }
+
+    pub fn set_default_construction_bps(
+        ctx: Context<SetDefaultConstruction>,
+        new_construction_bps: u16,
+    ) -> ProgramResult {
+        ctx.accounts.beamsplitter.default_construction_bps = new_construction_bps;
+        Ok(())
+    }
+
+    pub fn set_default_deconstruction_bps(
+        ctx: Context<SetDefaultDeconstruction>,
+        new_deconstruction_bps: u16,
+    ) -> ProgramResult {
+        ctx.accounts.beamsplitter.default_deconstruction_bps = new_deconstruction_bps;
+        Ok(())
+    }
+
+    pub fn set_manager(ctx: Context<SetManager>) -> ProgramResult {
+        ctx.accounts.prism_etf.manager = ctx.accounts.new_manager.key();
+        Ok(())
+    }
+
+    pub fn set_manager_cut(
+        ctx: Context<SetManagerCut>,
+        new_default_manager_cut: u16,
+    ) -> ProgramResult {
+        ctx.accounts.prism_etf.manager_cut = new_default_manager_cut;
+        Ok(())
+    }
+
+    pub fn set_construction_bps(
+        ctx: Context<SetConstruction>,
+        new_construction_bps: u16,
+    ) -> ProgramResult {
+        ctx.accounts.prism_etf.construction_bps = new_construction_bps;
+        Ok(())
+    }
+
+    pub fn set_deconstruction_bps(
+        ctx: Context<SetDeconstruction>,
+        new_deconstruction_bps: u16,
+    ) -> ProgramResult {
+        ctx.accounts.prism_etf.deconstruction_bps = new_deconstruction_bps;
+        Ok(())
+    }
 }
