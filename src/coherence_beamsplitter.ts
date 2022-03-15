@@ -507,6 +507,26 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "managerEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ownerEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "beamsplitter",
           "isMut": false,
           "isSigner": false
@@ -1345,6 +1365,26 @@ export const IDL: CoherenceBeamsplitter = {
         },
         {
           "name": "ordererEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "managerEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ownerEtfAta",
           "isMut": true,
           "isSigner": false
         },

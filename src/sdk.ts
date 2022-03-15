@@ -606,10 +606,12 @@ export class CoherenceBeamsplitterSDK {
     beamsplitter,
     prismEtfMint,
     transferredTokens,
+    manager,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
+    manager: PublicKey;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
 
@@ -622,6 +624,36 @@ export class CoherenceBeamsplitterSDK {
       throw new Error(
         "You must create the prismEtf first. Call initPrismEtf()"
       );
+    }
+
+    const beamsplitterData = await this.fetchBeamsplitterDataFromSeeds();
+
+    if (!beamsplitterData) {
+      throw new Error(
+        "You must create the beamsplitter first. Call initialize()"
+      );
+    }
+
+    const { address: ownerEtfAta, instruction: createOwnerAtaTx } =
+      await getOrCreateATA({
+        provider: this.provider,
+        mint: prismEtfMint,
+        owner: beamsplitterData.owner,
+      });
+
+    if (createOwnerAtaTx) {
+      initOrderStateEnvelope.addInstructions(createOwnerAtaTx);
+    }
+
+    const { address: managerEtfAta, instruction: createManagerEtfAtaTx } =
+      await getOrCreateATA({
+        provider: this.provider,
+        mint: prismEtfMint,
+        owner: manager,
+      });
+
+    if (createManagerEtfAtaTx) {
+      initOrderStateEnvelope.addInstructions(createManagerEtfAtaTx);
     }
 
     const { address: transferredTokensAta, instruction: createATATx } =
@@ -654,6 +686,10 @@ export class CoherenceBeamsplitterSDK {
           transferredTokens,
           orderer: this.provider.wallet.publicKey,
           ordererEtfAta: transferredTokensAta,
+          owner: beamsplitterData.owner,
+          ownerEtfAta,
+          manager,
+          managerEtfAta,
           beamsplitter,
           rent: SYSVAR_RENT_PUBKEY,
           weightedTokens: prismEtf.weightedTokens,
@@ -690,6 +726,14 @@ export class CoherenceBeamsplitterSDK {
   ): Promise<BeamsplitterData | null> {
     return (await this.program.account.beamsplitter.fetchNullable(
       key
+    )) as BeamsplitterData;
+  }
+
+  async fetchBeamsplitterDataFromSeeds(): Promise<BeamsplitterData | null> {
+    return (await this.program.account.beamsplitter.fetchNullable(
+      (
+        await generateBeamsplitterAddress()
+      )[0]
     )) as BeamsplitterData;
   }
 

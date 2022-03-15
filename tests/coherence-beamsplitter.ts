@@ -531,10 +531,19 @@ describe("coherence-beamsplitter", () => {
         expect(transferredTokensArr[i]).to.be.true;
       }
 
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
         transferredTokens: _transferredTokens,
+        manager,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;
@@ -691,10 +700,19 @@ describe("coherence-beamsplitter", () => {
         expect(transferredTokensArr[i]).to.be.true;
       }
 
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
         transferredTokens: transferredTokensAcct,
+        manager,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;

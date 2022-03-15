@@ -11,16 +11,22 @@ use state::*;
 
 declare_id!("A29uL2xu7njxWSYSpsgYyWivAJ5DmmVC48hH6dnbJBq9");
 
-// The default share of transferred assets split between beamsplitter and
+// The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
 const DEFAULT_CONSTRUCT_BPS: u16 = 45;
 const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
 
 // The default share of each fee given to managers of etf (20%)
 const DEFAULT_MANAGER_BPS: u16 = 2_000;
 
+// BPS (standard basis point decimals)
+const BASIS_POINT_DECIMALS: u8 = 4;
+
 #[program]
 pub mod coherence_beamsplitter {
-    use std::{mem::size_of, ops::MulAssign};
+    use std::{
+        mem::size_of,
+        ops::{Mul, MulAssign, SubAssign},
+    };
 
     use anchor_spl::token::{
         accessor::{amount, authority},
@@ -412,7 +418,48 @@ pub mod coherence_beamsplitter {
         }
 
         if order_state.order_type == OrderType::CONSTRUCTION {
-            let mint_accounts = MintTo {
+            let amount = order_state.amount;
+            let mut mint_amount = Decimal::from(amount);
+
+            // The amount of tokens for manager and program owner
+            let mut fee_portion =
+                Decimal::from(ctx.accounts.prism_etf.construction_bps).mul(mint_amount);
+
+            // Need to adjust scale after multiplying
+            match fee_portion.set_scale(BASIS_POINT_DECIMALS.into()) {
+                Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+                _ => (),
+            }
+
+            // Owner gets at least 1 minimum unit of etf
+            if fee_portion <= Decimal::from(0u8) {
+                fee_portion = Decimal::from(2u8);
+            }
+
+            // The amount just for manager
+            let mut manager_portion =
+                Decimal::from(ctx.accounts.prism_etf.manager_cut).mul(fee_portion);
+
+            msg!["{}", &manager_portion.to_string()[..]];
+
+            match manager_portion.set_scale((2 * BASIS_POINT_DECIMALS).into()) {
+                Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+                _ => (),
+            }
+
+            // Manager gets at least 1 minimum unit of etf
+            if manager_portion <= Decimal::from(0u8) {
+                fee_portion = Decimal::from(1u8);
+            }
+
+            // Subtract out the construction fee from orderer amount
+            mint_amount.sub_assign(fee_portion);
+
+            // Subtract out the manager portion from fee portion
+            fee_portion.sub_assign(manager_portion);
+
+            // Mint tokens to the orderer
+            let mint_accounts_orderer = MintTo {
                 mint: ctx.accounts.prism_etf_mint.to_account_info(),
                 to: ctx.accounts.orderer_etf_ata.to_account_info(),
                 authority: ctx.accounts.beamsplitter.to_account_info(),
@@ -421,13 +468,60 @@ pub mod coherence_beamsplitter {
             let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
             let signer_seeds = &[&seeds[..]];
 
-            let mint_ctx = CpiContext::new_with_signer(
+            let mint_ctx_orderer = CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
-                mint_accounts,
+                mint_accounts_orderer,
                 signer_seeds,
             );
 
-            mint_to(mint_ctx, order_state.amount)?;
+            mint_to(
+                mint_ctx_orderer,
+                mint_amount.to_u64().ok_or(ProgramError::InvalidArgument)?,
+            )?;
+
+            // Mint tokens to Program owner
+            let mint_accounts_owner = MintTo {
+                mint: ctx.accounts.prism_etf_mint.to_account_info(),
+                to: ctx.accounts.owner_etf_ata.to_account_info(),
+                authority: ctx.accounts.beamsplitter.to_account_info(),
+            };
+
+            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+            let signer_seeds = &[&seeds[..]];
+
+            let mint_ctx_owner = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                mint_accounts_owner,
+                signer_seeds,
+            );
+
+            mint_to(
+                mint_ctx_owner,
+                fee_portion.to_u64().ok_or(ProgramError::InvalidArgument)?,
+            )?;
+
+            // Mint tokens to Manager of ETF
+            let mint_accounts_manager = MintTo {
+                mint: ctx.accounts.prism_etf_mint.to_account_info(),
+                to: ctx.accounts.manager_etf_ata.to_account_info(),
+                authority: ctx.accounts.beamsplitter.to_account_info(),
+            };
+
+            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+            let signer_seeds = &[&seeds[..]];
+
+            let mint_ctx_manager = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                mint_accounts_manager,
+                signer_seeds,
+            );
+
+            mint_to(
+                mint_ctx_manager,
+                manager_portion
+                    .to_u64()
+                    .ok_or(ProgramError::InvalidArgument)?,
+            )?;
         }
 
         order_state.status = OrderStatus::SUCCEEDED;

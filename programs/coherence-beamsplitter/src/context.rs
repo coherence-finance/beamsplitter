@@ -287,7 +287,7 @@ pub struct FinalizeOrder<'info> {
     pub prism_etf_mint: Account<'info, Mint>,
 
     /// The Prism ETF [Account] that this instruction uses
-    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = manager)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
     #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut)]
@@ -305,12 +305,23 @@ pub struct FinalizeOrder<'info> {
     #[account(associated_token::mint = prism_etf_mint, associated_token::authority = orderer, mut)]
     pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
 
+    pub manager: AccountInfo<'info>,
+
+    #[account(associated_token::mint = prism_etf_mint, associated_token::authority = manager, mut)]
+    pub manager_etf_ata: Box<Account<'info, TokenAccount>>,
+
+    pub owner: AccountInfo<'info>,
+
+    #[account(associated_token::mint = prism_etf_mint, associated_token::authority = owner, mut)]
+    pub owner_etf_ata: Box<Account<'info, TokenAccount>>,
+
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(
         seeds = [
             b"Beamsplitter".as_ref(),
         ],
         bump = beamsplitter.bump,
+        has_one = owner,
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
