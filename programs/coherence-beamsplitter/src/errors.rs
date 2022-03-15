@@ -22,4 +22,18 @@ pub enum BeamsplitterErrors {
     IsFinished,
     #[msg("Attempted to finalize but etf is still pending (some assets not transferred)")]
     StillPending,
+    #[msg("Incorrect Order Status")]
+    IncorrectOrderStatus,
+    #[msg("Incorrect Order Type")]
+    IncorrectOrderType,
+    #[msg("Not enough approved.")]
+    NotEnoughApproved,
+    #[msg("Index passed bound")]
+    IndexPassedBound,
+    #[msg("Wrong asset mint. Mint keys did not match. Try changing index passed.")]
+    WrongIndexMint,
+    #[msg("Scaling failed or overflowed.")]
+    ScaleFailure,
+    #[msg("Decimal to u64 conversion failed or overflowed.")]
+    U64Failure,
 }

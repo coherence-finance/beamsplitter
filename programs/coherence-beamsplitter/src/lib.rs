@@ -231,11 +231,11 @@ pub mod coherence_beamsplitter {
         let index_usize = index as usize;
 
         if order_state.status != OrderStatus::PENDING {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
         }
 
         if order_state.order_type != OrderType::CONSTRUCTION {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::IncorrectOrderType.into());
         }
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
@@ -246,12 +246,12 @@ pub mod coherence_beamsplitter {
         }
 
         if index >= weighted_tokens.index {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::IndexPassedBound.into());
         }
 
         // The index passed must correspond to the transfer_mint
         if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::WrongIndexMint.into());
         }
 
         // The weighted token of asset being transferred
@@ -268,12 +268,12 @@ pub mod coherence_beamsplitter {
 
         // We need to account for the decimals of the input
         match required_amount.set_scale(prism_etf_decimals.into()) {
-            Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+            Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
             _ => (),
         }
 
         if amount < required_amount {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::NotEnoughApproved.into());
         }
 
         let transfer_accounts = Transfer {
@@ -293,7 +293,7 @@ pub mod coherence_beamsplitter {
         // Converts to u64, cut's off decimals,
         let mut required_64 = required_amount
             .to_u64()
-            .ok_or(ProgramError::InvalidArgument)?;
+            .ok_or(BeamsplitterErrors::U64Failure)?;
 
         // This rounds up to 1 if the value was extremely small (prevent free cohere)
         if required_64 <= 0 {

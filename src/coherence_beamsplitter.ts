@@ -1084,6 +1084,41 @@ export type CoherenceBeamsplitter = {
       "code": 6008,
       "name": "StillPending",
       "msg": "Attempted to finalize but etf is still pending (some assets not transferred)"
+    },
+    {
+      "code": 6009,
+      "name": "IncorrectOrderStatus",
+      "msg": "Incorrect Order Status"
+    },
+    {
+      "code": 6010,
+      "name": "IncorrectOrderType",
+      "msg": "Incorrect Order Type"
+    },
+    {
+      "code": 6011,
+      "name": "NotEnoughApproved",
+      "msg": "Not enough approved."
+    },
+    {
+      "code": 6012,
+      "name": "IndexPassedBound",
+      "msg": "Index passed bound"
+    },
+    {
+      "code": 6013,
+      "name": "WrongIndexMint",
+      "msg": "Wrong asset mint. Mint keys did not match. Try changing index passed."
+    },
+    {
+      "code": 6014,
+      "name": "ScaleFailure",
+      "msg": "Scaling failed or overflowed."
+    },
+    {
+      "code": 6015,
+      "name": "U64Failure",
+      "msg": "Decimal to u64 conversion failed or overflowed."
     }
   ]
 };
@@ -2174,6 +2209,41 @@ export const IDL: CoherenceBeamsplitter = {
       "code": 6008,
       "name": "StillPending",
       "msg": "Attempted to finalize but etf is still pending (some assets not transferred)"
+    },
+    {
+      "code": 6009,
+      "name": "IncorrectOrderStatus",
+      "msg": "Incorrect Order Status"
+    },
+    {
+      "code": 6010,
+      "name": "IncorrectOrderType",
+      "msg": "Incorrect Order Type"
+    },
+    {
+      "code": 6011,
+      "name": "NotEnoughApproved",
+      "msg": "Not enough approved."
+    },
+    {
+      "code": 6012,
+      "name": "IndexPassedBound",
+      "msg": "Index passed bound"
+    },
+    {
+      "code": 6013,
+      "name": "WrongIndexMint",
+      "msg": "Wrong asset mint. Mint keys did not match. Try changing index passed."
+    },
+    {
+      "code": 6014,
+      "name": "ScaleFailure",
+      "msg": "Scaling failed or overflowed."
+    },
+    {
+      "code": 6015,
+      "name": "U64Failure",
+      "msg": "Decimal to u64 conversion failed or overflowed."
     }
   ]
 };
