@@ -378,7 +378,7 @@ export type CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -464,7 +464,7 @@ export type CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -553,6 +553,214 @@ export type CoherenceBeamsplitter = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "setOwner",
+      "accounts": [
+        {
+          "name": "newOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setDefaultManagerCut",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultConstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultDeconstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setManager",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "newManager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setManagerCut",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setConstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDeconstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -613,11 +821,11 @@ export type CoherenceBeamsplitter = {
         "fields": [
           {
             "name": "index",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "weightedTokens",
@@ -672,11 +880,11 @@ export type CoherenceBeamsplitter = {
         "fields": [
           {
             "name": "index",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "transferredTokens",
@@ -735,7 +943,7 @@ export type CoherenceBeamsplitter = {
           },
           {
             "name": "weight",
-            "type": "u32"
+            "type": "u64"
           }
         ]
       }
@@ -1240,7 +1448,7 @@ export const IDL: CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -1326,7 +1534,7 @@ export const IDL: CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -1415,6 +1623,214 @@ export const IDL: CoherenceBeamsplitter = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "setOwner",
+      "accounts": [
+        {
+          "name": "newOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setDefaultManagerCut",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultConstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultDeconstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setManager",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "newManager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setManagerCut",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setConstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDeconstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1475,11 +1891,11 @@ export const IDL: CoherenceBeamsplitter = {
         "fields": [
           {
             "name": "index",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "weightedTokens",
@@ -1534,11 +1950,11 @@ export const IDL: CoherenceBeamsplitter = {
         "fields": [
           {
             "name": "index",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "transferredTokens",
@@ -1597,7 +2013,7 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "weight",
-            "type": "u32"
+            "type": "u64"
           }
         ]
       }

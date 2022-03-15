@@ -56,7 +56,7 @@ pub mod coherence_beamsplitter {
             &size_of::<WeightedTokens>().to_string()[..]
         ];
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_init()?;
-        weighted_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
+        weighted_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u16;
         Ok(())
     }
 
@@ -66,7 +66,7 @@ pub mod coherence_beamsplitter {
             &size_of::<TransferredTokens>().to_string()[..]
         ];
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_init()?;
-        transferred_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u32;
+        transferred_tokens.capacity = state::MAX_WEIGHTED_TOKENS as u16;
         Ok(())
     }
 
@@ -123,10 +123,12 @@ pub mod coherence_beamsplitter {
                 return Err(BeamsplitterErrors::ETFFull.into());
             }
             let etf_idx = weighted_tokens.index as usize;
+            msg!["{}", weighted_token.weight];
+            panic!();
             weighted_tokens.weighted_tokens[idx + etf_idx] = weighted_token.clone();
         }
 
-        weighted_tokens.index += new_tokens.len() as u32;
+        weighted_tokens.index += new_tokens.len() as u16;
 
         Ok(())
     }
@@ -221,7 +223,7 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer amount of required tokens to Beamspltitter from user ata accounts
     */
-    pub fn cohere(ctx: Context<Cohere>, index: u32) -> ProgramResult {
+    pub fn cohere(ctx: Context<Cohere>, index: u16) -> ProgramResult {
         let order_state = &mut ctx.accounts.order_state;
         let index_usize = index as usize;
 
@@ -314,7 +316,7 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer tokens from beamsplitter to user
     */
-    pub fn decohere(ctx: Context<Cohere>, index: u32) -> ProgramResult {
+    pub fn decohere(ctx: Context<Cohere>, index: u16) -> ProgramResult {
         msg!["here"];
         let index_usize = index as usize;
         let order_state = &mut ctx.accounts.order_state;

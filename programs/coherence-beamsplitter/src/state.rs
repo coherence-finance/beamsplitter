@@ -37,9 +37,9 @@ pub struct PrismEtf {
 #[derive(Debug)]
 pub struct WeightedTokens {
     /// The index of array
-    pub index: u32,
+    pub index: u16,
     /// Max capacity of the array
-    pub capacity: u32,
+    pub capacity: u16,
     /// [WeightedToken] array
     pub weighted_tokens: [WeightedToken; 10], // TODO find better name
 }
@@ -64,9 +64,9 @@ pub struct OrderState {
 #[derive(Debug)]
 pub struct TransferredTokens {
     /// The index of array
-    pub index: u32,
+    pub index: u16,
     /// Max capacity of the array
-    pub capacity: u32,
+    pub capacity: u16,
     /// Each bool is true if the corresponding weight_token was transferred succesfully in the order
     pub transferred_tokens: [bool; 10], // TODO find better name
 }
@@ -75,7 +75,7 @@ pub struct TransferredTokens {
 #[derive(Debug, Default, AnchorDeserialize, AnchorSerialize)]
 pub struct WeightedToken {
     pub mint: Pubkey,
-    pub weight: u32,
+    pub weight: u64,
 }
 
 #[account]

@@ -197,7 +197,7 @@ describe("coherence-beamsplitter", () => {
     for (let i = 0; i < randomNumberTokens; i++) {
       weightedTokens.push({
         mint: new PublicKey(i),
-        weight: i + 1,
+        weight: new BN(i + 1),
       });
     }
 
@@ -221,7 +221,8 @@ describe("coherence-beamsplitter", () => {
       assert(
         weightedTokenData?.weightedTokens[i]?.mint.equals(new PublicKey(i))
       );
-      expect(weightedTokenData?.weightedTokens[i]?.weight).to.be.equal(i + 1);
+      console.log(weightedTokenData?.weightedTokens[i]?.weight.toString());
+      assert(weightedTokenData?.weightedTokens[i]?.weight.eq(new BN(i + 1)));
     }
 
     const finalizePrismEtfTx = await sdk.finalizePrismEtf({
@@ -252,8 +253,8 @@ describe("coherence-beamsplitter", () => {
 
     const decimalsA = 16;
     const decimalsB = 3;
-    const tokenAWeight = 1;
-    const tokenBWeight = 10;
+    const tokenAWeight = new BN(1);
+    const tokenBWeight = new BN(10);
 
     /*
     1. Setup 2 Token Mints
