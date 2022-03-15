@@ -14,9 +14,9 @@ declare_id!("A29uL2xu7njxWSYSpsgYyWivAJ5DmmVC48hH6dnbJBq9");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
 #[constant]
-const DEFAULT_CONSTRUCT_BPS: u16 = 45;
+const DEFAULT_CONSTRUCT_BPS: u16 = 90;
 #[constant]
-const DEFAULT_DECONSTRUCT_BPS: u16 = 45;
+const DEFAULT_DECONSTRUCT_BPS: u16 = 0;
 
 // The default share of each fee given to managers of etf (20%)
 #[constant]
@@ -436,7 +436,7 @@ pub mod coherence_beamsplitter {
             }
 
             // Owner gets at least 1 minimum unit of etf
-            if fee_portion <= Decimal::from(0u8) {
+            if fee_portion < Decimal::from(2u8) {
                 fee_portion = Decimal::from(2u8);
             }
 
@@ -450,7 +450,7 @@ pub mod coherence_beamsplitter {
             }
 
             // Manager gets at least 1 minimum unit of etf
-            if manager_portion <= Decimal::from(0u8) {
+            if manager_portion < Decimal::from(1u8) {
                 fee_portion = Decimal::from(1u8);
             }
 

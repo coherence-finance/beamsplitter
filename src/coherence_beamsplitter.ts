@@ -5,12 +5,12 @@ export type CoherenceBeamsplitter = {
     {
       "name": "DEFAULT_CONSTRUCT_BPS",
       "type": "u16",
-      "value": "45"
+      "value": "90"
     },
     {
       "name": "DEFAULT_DECONSTRUCT_BPS",
       "type": "u16",
-      "value": "45"
+      "value": "0"
     },
     {
       "name": "DEFAULT_MANAGER_BPS",
@@ -1095,12 +1095,12 @@ export const IDL: CoherenceBeamsplitter = {
     {
       "name": "DEFAULT_CONSTRUCT_BPS",
       "type": "u16",
-      "value": "45"
+      "value": "90"
     },
     {
       "name": "DEFAULT_DECONSTRUCT_BPS",
       "type": "u16",
-      "value": "45"
+      "value": "0"
     },
     {
       "name": "DEFAULT_MANAGER_BPS",

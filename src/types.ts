@@ -2,6 +2,7 @@ import type { AnchorTypes } from "@saberhq/anchor-contrib";
 import type { PublicKey } from "@solana/web3.js";
 
 import type { CoherenceBeamsplitter } from "./coherence_beamsplitter";
+//import CoherenceBeamsplitterIDL from "./coherence_beamsplitter.json";
 
 export type BeamsplitterTypes = AnchorTypes<
   CoherenceBeamsplitter,
@@ -33,6 +34,15 @@ export type WeightedToken = Defined["WeightedToken"];
 export const WEIGHTED_TOKENS_SIZE = 404 + 8; // Bytes
 export const TRANSFERRED_TOKENS_SIZE = 14 + 8; // Bytes
 export const WEIGHTED_TOKENS_CAPACITY = 10;
+
+/*export const constants = CoherenceBeamsplitterIDL.constants.reduce(
+  (acc, next) => {
+    return {
+      ...acc,
+      [next.name]: parseInt(next.value),
+    };
+  }
+);*/
 
 export enum OrderType {
   CONSTRUCTION = "construction",

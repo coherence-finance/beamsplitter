@@ -251,10 +251,10 @@ describe("coherence-beamsplitter", () => {
     let transferredTokensAcct: PublicKey;
     let weightedTokens: WeightedToken[];
 
-    const decimalsA = 16;
-    const decimalsB = 3;
-    const tokenAWeight = new BN(1);
-    const tokenBWeight = new BN(10);
+    const decimalsA = 4;
+    const decimalsB = 11;
+    const tokenAWeight = new BN(3);
+    const tokenBWeight = new BN(7);
 
     /*
     1. Setup 2 Token Mints
@@ -751,7 +751,8 @@ describe("coherence-beamsplitter", () => {
       }
     });
 
-    it(`Test fees`, async () => {
+    it(`Ensure fee distribution is correct`, async () => {
+
       const _scalar =
         10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
       const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
@@ -806,6 +807,9 @@ describe("coherence-beamsplitter", () => {
 
       await expectTX(setOwner).to.be.fulfilled;
 
+      const beamsplitterData = await sdk.fetchBeamsplitterData(beamsplitter);
+      assert(beamsplitterData?.owner.equals(newOwner.publicKey));
+
       const setManager = sdk.setManager({
         beamsplitter,
         prismEtfMint,
@@ -813,6 +817,17 @@ describe("coherence-beamsplitter", () => {
       });
 
       await expectTX(setManager).to.be.fulfilled;
+
+      const prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      if (!prismEtf) {
+        assert.fail("Prism Etf was not successfully created");
+      }
+
+      assert(prismEtf?.manager.equals(newManager.publicKey));
 
       const startOrder = await sdk.startOrder({
         beamsplitter,
@@ -863,6 +878,18 @@ describe("coherence-beamsplitter", () => {
         await getTokenAccount(provider, etfATAAddress)
       ).amount;
 
+      const feePortion = AMOUNT_TO_CONSTRUCT.mul(
+        new BN(prismEtf.constructionBps)
+      ).div(new BN(10 ** 4));
+
+      const expectedOrdererDiff = AMOUNT_TO_CONSTRUCT.sub(feePortion);
+
+      const expectedManagerDiff = feePortion
+        .mul(new BN(prismEtf.managerCut))
+        .div(new BN(10 ** 4));
+
+      const expectedOwnerDiff = feePortion.sub(expectedManagerDiff);
+
       const actualOrdererDiff = etfBalanceAfterOrderer.sub(
         etfBalanceBeforeOrderer
       );
@@ -870,6 +897,10 @@ describe("coherence-beamsplitter", () => {
       const actualManagerDiff = etfBalanceAfterManager.sub(
         etfBalanceBeforeManager
       );
+
+      assert(expectedOrdererDiff.eq(actualOrdererDiff));
+      assert(expectedOwnerDiff.eq(actualOwnerDiff));
+      assert(expectedManagerDiff.eq(actualManagerDiff));
     });
   });
 });
