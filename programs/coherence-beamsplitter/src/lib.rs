@@ -33,10 +33,7 @@ pub mod coherence_beamsplitter {
         ops::{Mul, MulAssign, SubAssign},
     };
 
-    use anchor_spl::token::{
-        accessor::{amount, authority},
-        burn, mint_to, transfer, Burn, MintTo, Transfer,
-    };
+    use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
 
     use rust_decimal::{prelude::ToPrimitive, Decimal};
     const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
@@ -90,12 +87,16 @@ pub mod coherence_beamsplitter {
         prism_etf.deconstruction_bps = beamsplitter.default_deconstruction_bps;
         prism_etf.manager_cut = beamsplitter.default_manager_cut;
 
-        // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
-        if beamsplitter.key().eq(&authority(&mint.to_account_info())?) {
+        if beamsplitter.key() != mint.mint_authority.unwrap() {
             return Err(BeamsplitterErrors::NotMintAuthority.into());
         }
 
-        if amount(&mint.to_account_info())? != 0 {
+        // If freeze authority exists and it's not Beamsplitter
+        if beamsplitter.key() != mint.freeze_authority.unwrap_or(beamsplitter.key()) {
+            return Err(BeamsplitterErrors::NotFreezeAuthority.into());
+        }
+
+        if mint.supply != 0 {
             return Err(BeamsplitterErrors::NonZeroSupply.into());
         }
 

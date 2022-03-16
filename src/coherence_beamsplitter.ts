@@ -1064,7 +1064,7 @@ export type CoherenceBeamsplitter = {
     {
       "code": 6000,
       "name": "NotMintAuthority",
-      "msg": "Attempted to register prism etf but Beamsplitter was not authority over passed token AND you are not Beamsplitter owner"
+      "msg": "Attempted to register prism etf but Beamsplitter was not mint authority over passed token mint"
     },
     {
       "code": 6001,
@@ -1155,6 +1155,11 @@ export type CoherenceBeamsplitter = {
       "code": 6018,
       "name": "ZeroWeight",
       "msg": "Attempted to set a weight at 0"
+    },
+    {
+      "code": 6019,
+      "name": "NotFreezeAuthority",
+      "msg": "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
     }
   ]
 };
@@ -2225,7 +2230,7 @@ export const IDL: CoherenceBeamsplitter = {
     {
       "code": 6000,
       "name": "NotMintAuthority",
-      "msg": "Attempted to register prism etf but Beamsplitter was not authority over passed token AND you are not Beamsplitter owner"
+      "msg": "Attempted to register prism etf but Beamsplitter was not mint authority over passed token mint"
     },
     {
       "code": 6001,
@@ -2316,6 +2321,11 @@ export const IDL: CoherenceBeamsplitter = {
       "code": 6018,
       "name": "ZeroWeight",
       "msg": "Attempted to set a weight at 0"
+    },
+    {
+      "code": 6019,
+      "name": "NotFreezeAuthority",
+      "msg": "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
     }
   ]
 };

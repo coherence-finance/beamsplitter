@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 #[error]
 pub enum BeamsplitterErrors {
     #[msg(
-        "Attempted to register prism etf but Beamsplitter was not authority over passed token mint"
+        "Attempted to register prism etf but Beamsplitter was not mint authority over passed token mint"
     )]
     NotMintAuthority, // 6000 - 0x1770
     #[msg("Attempted to register prism etf but intial token supply was NOT 0.")]
@@ -44,4 +44,8 @@ pub enum BeamsplitterErrors {
     ZeroOrder, // 6016 - 0x1780
     #[msg("Attempted to set a weight at 0")]
     ZeroWeight, // 6017 - 0x1781
+    #[msg(
+        "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
+    )]
+    NotFreezeAuthority, // 6000 - 0x1770
 }
