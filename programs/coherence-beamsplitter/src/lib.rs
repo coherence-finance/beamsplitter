@@ -91,7 +91,7 @@ pub mod coherence_beamsplitter {
         prism_etf.manager_cut = beamsplitter.default_manager_cut;
 
         // If Beamsplitter does not have authority over token and signer of TX is not Beamsplitter owner
-        if beamsplitter.owner != authority(&mint.to_account_info())?
+        if beamsplitter.key() != authority(&mint.to_account_info())?
             && manager.key() != beamsplitter.owner
         {
             return Err(BeamsplitterErrors::NotMintAuthority.into());

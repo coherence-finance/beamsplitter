@@ -215,7 +215,6 @@ describe("coherence-beamsplitter", () => {
     const weightedTokenData = await sdk.fetchWeightedTokens(
       prismEtf.weightedTokens
     );
-    expect(weightedTokenData?.index).to.be.equal(randomNumberTokens);
 
     expect(weightedTokenData?.index).to.be.equal(randomNumberTokens);
 
@@ -753,7 +752,6 @@ describe("coherence-beamsplitter", () => {
     });
 
     it(`Ensure fee distribution is correct`, async () => {
-
       const _scalar =
         10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
       const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
