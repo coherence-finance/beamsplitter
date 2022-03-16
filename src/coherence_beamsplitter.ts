@@ -820,6 +820,10 @@ export type CoherenceBeamsplitter = {
             "type": "u16"
           },
           {
+            "name": "managerFee",
+            "type": "u16"
+          },
+          {
             "name": "rebalancingMode",
             "type": {
               "defined": "RebalancingMode"
@@ -829,6 +833,12 @@ export type CoherenceBeamsplitter = {
             "name": "autorebalancingSchedule",
             "type": {
               "defined": "AutorebalancingSchedule"
+            }
+          },
+          {
+            "name": "managerSchedule",
+            "type": {
+              "defined": "ManagerSchedule"
             }
           }
         ]
@@ -1029,6 +1039,17 @@ export type CoherenceBeamsplitter = {
     },
     {
       "name": "AutorebalancingSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ManagerSchedule",
       "type": {
         "kind": "enum",
         "variants": [
@@ -1945,6 +1966,10 @@ export const IDL: CoherenceBeamsplitter = {
             "type": "u16"
           },
           {
+            "name": "managerFee",
+            "type": "u16"
+          },
+          {
             "name": "rebalancingMode",
             "type": {
               "defined": "RebalancingMode"
@@ -1954,6 +1979,12 @@ export const IDL: CoherenceBeamsplitter = {
             "name": "autorebalancingSchedule",
             "type": {
               "defined": "AutorebalancingSchedule"
+            }
+          },
+          {
+            "name": "managerSchedule",
+            "type": {
+              "defined": "ManagerSchedule"
             }
           }
         ]
@@ -2154,6 +2185,17 @@ export const IDL: CoherenceBeamsplitter = {
     },
     {
       "name": "AutorebalancingSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ManagerSchedule",
       "type": {
         "kind": "enum",
         "variants": [

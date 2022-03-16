@@ -27,10 +27,14 @@ pub struct PrismEtf {
     pub deconstruction_bps: u16,
     /// Basis points used for manager's cut
     pub manager_cut: u16,
+    /// Basis points used for recurring management fee
+    pub manager_fee: u16,
     /// Rebalancing option dictates the managers ability to rebalance the account
     pub rebalancing_mode: RebalancingMode,
-    /// How often the autorebalancerr uns
+    /// How often the autorebalancer runs
     pub autorebalancing_schedule: AutorebalancingSchedule,
+    /// How often the manager collects fee
+    pub manager_schedule: ManagerSchedule,
 }
 
 #[repr(packed)]

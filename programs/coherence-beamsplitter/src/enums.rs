@@ -52,12 +52,23 @@ impl Default for RebalancingMode {
 }
 
 #[derive(Debug, Copy, Clone, AnchorDeserialize, AnchorSerialize, PartialEq, Eq)]
-pub enum AutorebalancingSchedule{
+pub enum AutorebalancingSchedule {
     NEVER,
 }
 
 impl Default for AutorebalancingSchedule {
     fn default() -> Self {
         AutorebalancingSchedule::NEVER
+    }
+}
+
+#[derive(Debug, Copy, Clone, AnchorDeserialize, AnchorSerialize, PartialEq, Eq)]
+pub enum ManagerSchedule {
+    NEVER,
+}
+
+impl Default for ManagerSchedule {
+    fn default() -> Self {
+        ManagerSchedule::NEVER
     }
 }
