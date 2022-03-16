@@ -1140,6 +1140,21 @@ export type CoherenceBeamsplitter = {
       "code": 6015,
       "name": "U64Failure",
       "msg": "Decimal to u64 conversion failed or overflowed."
+    },
+    {
+      "code": 6016,
+      "name": "PrismEtfNotFinished",
+      "msg": "Prism Etf was not done being designed when you tried to start an order."
+    },
+    {
+      "code": 6017,
+      "name": "ZeroOrder",
+      "msg": "Attempted to start an order of 0"
+    },
+    {
+      "code": 6018,
+      "name": "ZeroWeight",
+      "msg": "Attempted to set a weight at 0"
     }
   ]
 };
@@ -2286,6 +2301,21 @@ export const IDL: CoherenceBeamsplitter = {
       "code": 6015,
       "name": "U64Failure",
       "msg": "Decimal to u64 conversion failed or overflowed."
+    },
+    {
+      "code": 6016,
+      "name": "PrismEtfNotFinished",
+      "msg": "Prism Etf was not done being designed when you tried to start an order."
+    },
+    {
+      "code": 6017,
+      "name": "ZeroOrder",
+      "msg": "Attempted to start an order of 0"
+    },
+    {
+      "code": 6018,
+      "name": "ZeroWeight",
+      "msg": "Attempted to set a weight at 0"
     }
   ]
 };

@@ -120,7 +120,7 @@ pub mod coherence_beamsplitter {
 
         for (idx, weighted_token) in new_tokens.iter().enumerate() {
             if weighted_token.weight <= 0 {
-                return Err(ProgramError::InvalidArgument.into());
+                return Err(BeamsplitterErrors::ZeroWeight.into());
             }
             if weighted_tokens.index >= weighted_tokens.capacity {
                 return Err(BeamsplitterErrors::ETFFull.into());
@@ -166,15 +166,15 @@ pub mod coherence_beamsplitter {
         let prism_etf = &ctx.accounts.prism_etf;
 
         if order_state.status == OrderStatus::PENDING {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
         }
 
         if prism_etf.status != PrismEtfStatus::FINISHED {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::PrismEtfNotFinished.into());
         }
 
         if amount <= 0 {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::ZeroOrder.into());
         }
 
         order_state.amount = amount;
@@ -185,6 +185,7 @@ pub mod coherence_beamsplitter {
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
         transferred_tokens.index = weighted_tokens.index;
 
+        // Burning only necessary for DECONSTRUCT
         if order_state.order_type == OrderType::CONSTRUCTION {
             return Ok(());
         }
@@ -204,7 +205,7 @@ pub mod coherence_beamsplitter {
             signer_seeds,
         );
 
-        let burn_amount = amount.to_u64().ok_or(ProgramError::InvalidArgument)?;
+        let burn_amount = amount.to_u64().ok_or(BeamsplitterErrors::U64Failure)?;
 
         burn(burn_ctx, burn_amount)?;
         Ok(())
@@ -322,7 +323,7 @@ pub mod coherence_beamsplitter {
         let order_state = &mut ctx.accounts.order_state;
 
         if order_state.status != OrderStatus::PENDING {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
         }
 
         if order_state.order_type != OrderType::DECONSTRUCTION {
@@ -332,17 +333,17 @@ pub mod coherence_beamsplitter {
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
+        // Already decohered
         if transferred_tokens.transferred_tokens[index_usize] {
-            return Err(ProgramError::InvalidArgument.into());
+            return Ok(());
         }
 
-        if index >= weighted_tokens.capacity {
-            return Err(ProgramError::InvalidArgument.into());
+        if index >= weighted_tokens.index {
+            return Err(BeamsplitterErrors::IndexPassedBound.into());
         }
 
-        // The index passed must correspond to the
         if weighted_tokens.weighted_tokens[index_usize].mint != ctx.accounts.transfer_mint.key() {
-            return Err(ProgramError::InvalidArgument.into());
+            return Err(BeamsplitterErrors::WrongIndexMint.into());
         }
 
         let transfer_accounts = Transfer {
@@ -372,7 +373,7 @@ pub mod coherence_beamsplitter {
 
         // We need to account for the decimals of the input
         match required_amount.set_scale(prism_etf_decimals.into()) {
-            Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+            Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
             _ => (),
         }
 
@@ -380,7 +381,7 @@ pub mod coherence_beamsplitter {
             transfer_ctx,
             required_amount
                 .to_u64()
-                .ok_or(ProgramError::InvalidArgument)?,
+                .ok_or(BeamsplitterErrors::U64Failure)?,
         )?;
 
         Ok(())
@@ -429,7 +430,7 @@ pub mod coherence_beamsplitter {
 
             // Need to adjust scale after multiplying
             match fee_portion.set_scale(BASIS_POINT_DECIMALS.into()) {
-                Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+                Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
                 _ => (),
             }
 
@@ -443,7 +444,7 @@ pub mod coherence_beamsplitter {
                 Decimal::from(ctx.accounts.prism_etf.manager_cut).mul(fee_portion);
 
             match manager_portion.set_scale((2 * BASIS_POINT_DECIMALS).into()) {
-                Err(_error) => return Err(ProgramError::InvalidArgument.into()),
+                Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
                 _ => (),
             }
 
@@ -476,7 +477,7 @@ pub mod coherence_beamsplitter {
 
             mint_to(
                 mint_ctx_orderer,
-                mint_amount.to_u64().ok_or(ProgramError::InvalidArgument)?,
+                mint_amount.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
             )?;
 
             // Mint tokens to Program owner
@@ -497,7 +498,7 @@ pub mod coherence_beamsplitter {
 
             mint_to(
                 mint_ctx_owner,
-                fee_portion.to_u64().ok_or(ProgramError::InvalidArgument)?,
+                fee_portion.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
             )?;
 
             // Mint tokens to Manager of ETF
@@ -520,7 +521,7 @@ pub mod coherence_beamsplitter {
                 mint_ctx_manager,
                 manager_portion
                     .to_u64()
-                    .ok_or(ProgramError::InvalidArgument)?,
+                    .ok_or(BeamsplitterErrors::U64Failure)?,
             )?;
         }
 
