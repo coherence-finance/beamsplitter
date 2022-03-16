@@ -312,12 +312,14 @@ export class CoherenceBeamsplitterSDK {
     type,
     amount,
     transferredTokens,
+    shouldCreateAtas = true,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     type: OrderType;
     transferredTokens: PublicKey;
     amount: BN;
+    shouldCreateAtas: boolean;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
 
@@ -336,7 +338,7 @@ export class CoherenceBeamsplitterSDK {
         mint: prismEtfMint,
       });
 
-    if (createATATx) {
+    if (createATATx && shouldCreateAtas) {
       initOrderStateEnvelope.addInstructions(createATATx);
     }
 
@@ -376,11 +378,13 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint,
     transferredTokens,
     orderStateAmount,
+    shouldCreateAtas = true, // If false, the instruction doesn't setup Ata's for you (careful with this, it may fail if you don't do it)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
     orderStateAmount: BN;
+    shouldCreateAtas: boolean;
   }): Promise<TransactionEnvelope[]> {
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -433,7 +437,7 @@ export class CoherenceBeamsplitterSDK {
         owner: beamsplitter,
       });
 
-      if (createBeamsplitterAta) {
+      if (createBeamsplitterAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createBeamsplitterAta);
       }
 
@@ -443,7 +447,7 @@ export class CoherenceBeamsplitterSDK {
           mint: weightedToken.mint,
         });
 
-      if (createOrdererAta) {
+      if (createOrdererAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createOrdererAta);
       }
 
@@ -498,10 +502,12 @@ export class CoherenceBeamsplitterSDK {
     beamsplitter,
     prismEtfMint,
     transferredTokens,
+    shouldCreateAtas = true, // If false, the instruction doesn't setup Ata's for you (careful with this, it may fail if you don't do it)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
+    shouldCreateAtas: boolean;
   }): Promise<TransactionEnvelope[]> {
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -554,7 +560,7 @@ export class CoherenceBeamsplitterSDK {
         owner: beamsplitter,
       });
 
-      if (createBeamsplitterAta) {
+      if (createBeamsplitterAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createBeamsplitterAta);
       }
 
@@ -564,7 +570,7 @@ export class CoherenceBeamsplitterSDK {
           mint: weightedToken.mint,
         });
 
-      if (createOrdererAta) {
+      if (createOrdererAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createOrdererAta);
       }
 
@@ -607,11 +613,13 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint,
     transferredTokens,
     manager,
+    shouldCreateAtas = true, // If false, the instruction doesn't setup Ata's for you (careful with this, it may fail if you don't do it)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
     manager: PublicKey;
+    shouldCreateAtas: boolean;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
 
@@ -641,7 +649,7 @@ export class CoherenceBeamsplitterSDK {
         owner: beamsplitterData.owner,
       });
 
-    if (createOwnerAtaTx) {
+    if (createOwnerAtaTx && shouldCreateAtas) {
       initOrderStateEnvelope.addInstructions(createOwnerAtaTx);
     }
 
@@ -662,7 +670,7 @@ export class CoherenceBeamsplitterSDK {
         mint: prismEtfMint,
       });
 
-    if (createATATx) {
+    if (createATATx && shouldCreateAtas) {
       initOrderStateEnvelope.addInstructions(createATATx);
     }
 
