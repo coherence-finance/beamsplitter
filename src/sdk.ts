@@ -27,13 +27,13 @@ import type {
   BeamsplitterData,
   BeamsplitterProgram,
   OrderStateData,
-  OrderType,
   PrismEtfData,
   TransferredTokensData,
   WeightedToken,
-  WeightedTokensData,
-} from "./types";
+  WeightedTokensData} from "./types";
 import {
+  enumLikeToString,
+  OrderType,
   stringToEnumLike,
   TRANSFERRED_TOKENS_SIZE,
   WEIGHTED_TOKENS_SIZE,
@@ -319,7 +319,7 @@ export class CoherenceBeamsplitterSDK {
     type: OrderType;
     transferredTokens: PublicKey;
     amount: BN;
-    shouldCreateAtas: boolean;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
 
@@ -384,7 +384,7 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
     orderStateAmount: BN;
-    shouldCreateAtas: boolean;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope[]> {
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -507,7 +507,7 @@ export class CoherenceBeamsplitterSDK {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
-    shouldCreateAtas: boolean;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope[]> {
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -619,7 +619,7 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
     manager: PublicKey;
-    shouldCreateAtas: boolean;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
 
@@ -707,6 +707,71 @@ export class CoherenceBeamsplitterSDK {
         },
       })
     );
+  }
+
+  // Cancel pending order
+  async cancel({
+    beamsplitter,
+    prismEtfMint,
+    shouldFinalize = true, // Will also finalize the order after cancelling
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+    shouldFinalize?: boolean;
+  }): Promise<TransactionEnvelope[]> {
+    const orderStateData = await this.fetchOrderStateDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+      orderer: this.provider.wallet.publicKey,
+    });
+
+    if (!orderStateData) {
+      throw new Error(
+        "Order state must be intialized"
+      );
+    }
+
+    if (!orderStateData.transferredTokens) {
+      throw new Error(
+        "Transferred Tokens does not exist"
+      );
+    }
+
+    const transferredTokens = (await this.fetchTransferredTokens(orderStateData?.transferredTokens))?.transferredTokens;
+
+    if (!transferredTokens) {
+      throw new Error(
+        "Transferred Tokens array does not exist"
+      );
+    }
+
+    let txParams = { prismEtfMint, beamsplitter, transferredTokens: orderStateData.transferredTokens, orderStateAmount: orderStateData.amount };
+    let orderType = enumLikeToString(orderStateData?.orderType);
+    let intermediateTxChunks: TransactionEnvelope[] = await (orderType === OrderType.CONSTRUCTION ? this.decohere(txParams) : this.cohere(txParams));
+
+    // Filter out any uncompleted cohere's / decohere's (this do not need to be cancelled)
+    const cancelTxChunks = ((intermediateTxChunks).filter((_chunk, idx) => ((orderType === OrderType.CONSTRUCTION && transferredTokens[idx])) || (orderType === OrderType.DECONSTRUCTION && !transferredTokens[idx])));
+
+    if (shouldFinalize) {
+      const prismETFData = await this.fetchPrismEtfDataFromSeeds({beamsplitter, prismEtfMint});
+        
+      if (!prismETFData) {
+        throw new Error(
+          "Could not find prismEtf."
+        );
+      }
+
+      cancelTxChunks.push(
+        await this.finalizeOrder({
+          beamsplitter,
+          prismEtfMint,
+          manager: prismETFData?.manager,
+          transferredTokens: orderStateData.transferredTokens,
+        })
+      )
+    }
+
+    return cancelTxChunks;
   }
 
   setOwner({

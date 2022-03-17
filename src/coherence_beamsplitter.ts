@@ -513,7 +513,7 @@ export type CoherenceBeamsplitter = {
         },
         {
           "name": "transferredTokens",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1679,7 +1679,7 @@ export const IDL: CoherenceBeamsplitter = {
         },
         {
           "name": "transferredTokens",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {

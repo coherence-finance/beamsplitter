@@ -186,9 +186,23 @@ pub mod coherence_beamsplitter {
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
         transferred_tokens.index = weighted_tokens.index;
 
-        // Burning only necessary for DECONSTRUCT
+        let transferred_tokens_index = transferred_tokens.index as usize;
         if order_state.order_type == OrderType::CONSTRUCTION {
+            // Set all all switches to NOT transferred
+            for transferred_token in
+                transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+            {
+                *transferred_token = false;
+            }
+            // We can exit here, burning not required for CONSTRUCT
             return Ok(());
+        } else {
+            // Set all all switches to transferred
+            for transferred_token in
+                transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+            {
+                *transferred_token = true;
+            }
         }
 
         let mint_accounts = Burn {
@@ -232,10 +246,6 @@ pub mod coherence_beamsplitter {
 
         if order_state.status != OrderStatus::PENDING {
             return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
-        }
-
-        if order_state.order_type != OrderType::CONSTRUCTION {
-            return Err(BeamsplitterErrors::IncorrectOrderType.into());
         }
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
@@ -327,15 +337,11 @@ pub mod coherence_beamsplitter {
             return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
         }
 
-        if order_state.order_type != OrderType::DECONSTRUCTION {
-            return Err(ProgramError::InvalidArgument.into());
-        }
-
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
 
         // Already decohered
-        if transferred_tokens.transferred_tokens[index_usize] {
+        if !transferred_tokens.transferred_tokens[index_usize] {
             return Ok(());
         }
 
@@ -363,7 +369,7 @@ pub mod coherence_beamsplitter {
         );
 
         // Mark this token as successfully transferred
-        transferred_tokens.transferred_tokens[index_usize] = true;
+        transferred_tokens.transferred_tokens[index_usize] = false;
 
         let weighted_token = &weighted_tokens.weighted_tokens[index_usize];
         let required_amount = &mut Decimal::from(order_state.amount);
@@ -409,122 +415,133 @@ pub mod coherence_beamsplitter {
             return Err(ProgramError::InvalidArgument.into());
         }
 
-        let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
+        let transferred_tokens = &ctx.accounts.transferred_tokens.load()?;
         let transferred_tokens_index = transferred_tokens.index as usize;
 
+        // If all transferred tokens are false (0) than we can finalize knowing all assets were removed (or never added)
+        if !transferred_tokens.transferred_tokens[0] {
+            for transferred_token in
+                transferred_tokens.transferred_tokens[..transferred_tokens_index].iter()
+            {
+                if *transferred_token {
+                    return Err(BeamsplitterErrors::StillPending.into());
+                }
+            }
+            order_state.status = OrderStatus::SUCCEEDED;
+            return Ok(());
+        }
+
+        // Otherwise we need to make sure all were transferred to Beamsplitter (or were never removed)
         for transferred_token in
-            transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+            transferred_tokens.transferred_tokens[..transferred_tokens_index].iter()
         {
             if !*transferred_token {
                 return Err(BeamsplitterErrors::StillPending.into());
             }
-            *transferred_token = false;
         }
 
-        if order_state.order_type == OrderType::CONSTRUCTION {
-            let amount = order_state.amount;
-            let mut mint_amount = Decimal::from(amount);
+        let amount = order_state.amount;
+        let mut mint_amount = Decimal::from(amount);
 
-            // The amount of tokens for manager and program owner
-            let mut fee_portion =
-                Decimal::from(ctx.accounts.prism_etf.construction_bps).mul(mint_amount);
+        // The amount of tokens for manager and program owner
+        let mut fee_portion =
+            Decimal::from(ctx.accounts.prism_etf.construction_bps).mul(mint_amount);
 
-            // Need to adjust scale after multiplying
-            match fee_portion.set_scale(BASIS_POINT_DECIMALS.into()) {
-                Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
-                _ => (),
-            }
-
-            // Owner gets at least 1 minimum unit of etf
-            if fee_portion < Decimal::from(2u8) {
-                fee_portion = Decimal::from(2u8);
-            }
-
-            // The amount just for manager
-            let mut manager_portion =
-                Decimal::from(ctx.accounts.prism_etf.manager_cut).mul(fee_portion);
-
-            match manager_portion.set_scale((2 * BASIS_POINT_DECIMALS).into()) {
-                Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
-                _ => (),
-            }
-
-            // Manager gets at least 1 minimum unit of etf
-            if manager_portion < Decimal::from(1u8) {
-                fee_portion = Decimal::from(1u8);
-            }
-
-            // Subtract out the construction fee from orderer amount
-            mint_amount.sub_assign(fee_portion);
-
-            // Subtract out the manager portion from fee portion
-            fee_portion.sub_assign(manager_portion);
-
-            // Mint tokens to the orderer
-            let mint_accounts_orderer = MintTo {
-                mint: ctx.accounts.prism_etf_mint.to_account_info(),
-                to: ctx.accounts.orderer_etf_ata.to_account_info(),
-                authority: ctx.accounts.beamsplitter.to_account_info(),
-            };
-
-            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
-            let signer_seeds = &[&seeds[..]];
-
-            let mint_ctx_orderer = CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                mint_accounts_orderer,
-                signer_seeds,
-            );
-
-            mint_to(
-                mint_ctx_orderer,
-                mint_amount.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
-            )?;
-
-            // Mint tokens to Program owner
-            let mint_accounts_owner = MintTo {
-                mint: ctx.accounts.prism_etf_mint.to_account_info(),
-                to: ctx.accounts.owner_etf_ata.to_account_info(),
-                authority: ctx.accounts.beamsplitter.to_account_info(),
-            };
-
-            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
-            let signer_seeds = &[&seeds[..]];
-
-            let mint_ctx_owner = CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                mint_accounts_owner,
-                signer_seeds,
-            );
-
-            mint_to(
-                mint_ctx_owner,
-                fee_portion.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
-            )?;
-
-            // Mint tokens to Manager of ETF
-            let mint_accounts_manager = MintTo {
-                mint: ctx.accounts.prism_etf_mint.to_account_info(),
-                to: ctx.accounts.manager_etf_ata.to_account_info(),
-                authority: ctx.accounts.beamsplitter.to_account_info(),
-            };
-
-            let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
-            let signer_seeds = &[&seeds[..]];
-
-            let mint_ctx_manager = CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                mint_accounts_manager,
-                signer_seeds,
-            );
-
-            mint_to(
-                mint_ctx_manager,
-                manager_portion
-                    .to_u64()
-                    .ok_or(BeamsplitterErrors::U64Failure)?,
-            )?;
+        // Need to adjust scale after multiplying
+        match fee_portion.set_scale(BASIS_POINT_DECIMALS.into()) {
+            Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
+            _ => (),
         }
+
+        // Owner gets at least 1 minimum unit of etf
+        if fee_portion < Decimal::from(2u8) {
+            fee_portion = Decimal::from(2u8);
+        }
+
+        // The amount just for manager
+        let mut manager_portion =
+            Decimal::from(ctx.accounts.prism_etf.manager_cut).mul(fee_portion);
+
+        match manager_portion.set_scale((2 * BASIS_POINT_DECIMALS).into()) {
+            Err(_error) => return Err(BeamsplitterErrors::ScaleFailure.into()),
+            _ => (),
+        }
+
+        // Manager gets at least 1 minimum unit of etf
+        if manager_portion < Decimal::from(1u8) {
+            fee_portion = Decimal::from(1u8);
+        }
+
+        // Subtract out the construction fee from orderer amount
+        mint_amount.sub_assign(fee_portion);
+
+        // Subtract out the manager portion from fee portion
+        fee_portion.sub_assign(manager_portion);
+
+        // Mint tokens to the orderer
+        let mint_accounts_orderer = MintTo {
+            mint: ctx.accounts.prism_etf_mint.to_account_info(),
+            to: ctx.accounts.orderer_etf_ata.to_account_info(),
+            authority: ctx.accounts.beamsplitter.to_account_info(),
+        };
+
+        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let signer_seeds = &[&seeds[..]];
+
+        let mint_ctx_orderer = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            mint_accounts_orderer,
+            signer_seeds,
+        );
+
+        mint_to(
+            mint_ctx_orderer,
+            mint_amount.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
+        )?;
+
+        // Mint tokens to Program owner
+        let mint_accounts_owner = MintTo {
+            mint: ctx.accounts.prism_etf_mint.to_account_info(),
+            to: ctx.accounts.owner_etf_ata.to_account_info(),
+            authority: ctx.accounts.beamsplitter.to_account_info(),
+        };
+
+        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let signer_seeds = &[&seeds[..]];
+
+        let mint_ctx_owner = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            mint_accounts_owner,
+            signer_seeds,
+        );
+
+        mint_to(
+            mint_ctx_owner,
+            fee_portion.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
+        )?;
+
+        // Mint tokens to Manager of ETF
+        let mint_accounts_manager = MintTo {
+            mint: ctx.accounts.prism_etf_mint.to_account_info(),
+            to: ctx.accounts.manager_etf_ata.to_account_info(),
+            authority: ctx.accounts.beamsplitter.to_account_info(),
+        };
+
+        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let signer_seeds = &[&seeds[..]];
+
+        let mint_ctx_manager = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            mint_accounts_manager,
+            signer_seeds,
+        );
+
+        mint_to(
+            mint_ctx_manager,
+            manager_portion
+                .to_u64()
+                .ok_or(BeamsplitterErrors::U64Failure)?,
+        )?;
 
         order_state.status = OrderStatus::SUCCEEDED;
 

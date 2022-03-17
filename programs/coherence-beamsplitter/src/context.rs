@@ -295,7 +295,6 @@ pub struct FinalizeOrder<'info> {
 
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
 
-    #[account(mut)]
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
