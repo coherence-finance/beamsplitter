@@ -744,13 +744,12 @@ export class CoherenceBeamsplitterSDK {
       prismEtfMint,
       beamsplitter,
       transferredTokens: orderStateData.transferredTokens,
-      orderStateAmount: orderStateData.amount,
     };
     const orderType = enumLikeToString(orderStateData?.orderType);
     const intermediateTxChunks: TransactionEnvelope[] = await (orderType ===
     OrderType.CONSTRUCTION
       ? this.decohere(txParams)
-      : this.cohere(txParams));
+      : this.cohere({ ...txParams, orderStateAmount: orderStateData.amount }));
 
     // Filter out any uncompleted cohere's / decohere's (this do not need to be cancelled)
     return intermediateTxChunks.filter(

@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import "chai-bn";
+
 import { Provider, setProvider } from "@project-serum/anchor";
 import { makeSaberProvider } from "@saberhq/anchor-contrib";
 import { chaiSolana, expectTX } from "@saberhq/chai-solana";
@@ -598,6 +600,144 @@ describe("coherence-beamsplitter", () => {
       for (let i = 0; i < transferredTokens.index; i++) {
         expect(transferredTokensArr[i]).to.be.true;
       }
+    });
+
+    it(`Cancel DECONSTRUCT order`, async () => {
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_DECONSTRUCT = new BN(1).mul(new BN(_scalar));
+
+      const prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      if (!prismEtf) {
+        assert.fail("Prism Etf was not successfully created");
+      }
+
+      // ==== CONSTRUCT TOKENS (Prerequisite) ====
+
+      const prestartOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.CONSTRUCTION,
+        amount: AMOUNT_TO_DECONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      await expectTX(prestartOrder).to.be.fulfilled;
+
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        orderStateAmount: AMOUNT_TO_DECONSTRUCT,
+      });
+
+      await Promise.all(
+        cohere.map((cohereChunk) => expectTX(cohereChunk).to.be.fulfilled)
+      );
+
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+
+      const finalizeOrderPre = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+
+      await expectTX(finalizeOrderPre).to.be.fulfilled;
+
+      // ==== START =====
+
+      const tokenBBalBefore = (await getTokenAccount(provider, tokenBATA))
+        .amount;
+
+      const etfATAAddress = await getATAAddress({
+        mint: prismEtfMint,
+        owner: authority,
+      });
+
+      const etfBalanceBeforeOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const startOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.DECONSTRUCTION,
+        amount: AMOUNT_TO_DECONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      await expectTX(startOrder).to.be.fulfilled;
+
+      // ==== DECOHERE =====
+
+      const decohere = await sdk.decohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      if (!decohere[1]) {
+        assert.fail("Cohere 0 does not exist");
+      }
+
+      await expectTX(decohere[1]).to.be.fulfilled;
+
+      // ==== CANCEL =====
+
+      const cancel = await sdk.cancel({ beamsplitter, prismEtfMint });
+      await Promise.all(cancel.map((chunk) => expectTX(chunk).to.be.fulfilled));
+
+      // ==== FINALIZE =====
+
+      const finalizeOrder = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+
+      await expectTX(finalizeOrder).to.be.fulfilled;
+
+      // ==== CHECK ETF BALANCE DIFF =====
+
+      const expectedOrdererDiff = new BN(0);
+
+      const etfBalanceAfterOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const actualOrdererDiff = etfBalanceAfterOrderer.sub(
+        etfBalanceBeforeOrderer
+      );
+
+      assert(expectedOrdererDiff.eq(actualOrdererDiff));
+
+      // ==== CHECK TOKEN B BALANCE DIFF =====
+
+      const tokenBBalAfter = (await getTokenAccount(provider, tokenBATA))
+        .amount;
+
+      const actualTokenBBalDiff = tokenBBalAfter.sub(new BN(tokenBBalBefore));
+
+      if (!weightedTokens[1]?.weight) {
+        return new Error("weight B undefined");
+      }
+
+      const expectedBDiff = new BN(0);
+
+      assert(actualTokenBBalDiff.eq(expectedBDiff));
     });
 
     it(`Deconstruct two asset Prism ETF`, async () => {
