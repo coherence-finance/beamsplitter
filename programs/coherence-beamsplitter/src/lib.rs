@@ -10,7 +10,7 @@ use enums::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("9kLnxpAcJiL1gXVypWMsygWkRgMeCeYYc8PRDKEo4ozM");
+declare_id!("HoFBL9J5kp655xmXhg48riQRqeuqtST1goEdwmexkz3");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
 #[constant]

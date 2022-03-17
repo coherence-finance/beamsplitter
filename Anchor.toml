@@ -1,11 +1,11 @@
 [programs.localnet]
-coherence_beamsplitter = "9kLnxpAcJiL1gXVypWMsygWkRgMeCeYYc8PRDKEo4ozM"
+coherence_beamsplitter = "HoFBL9J5kp655xmXhg48riQRqeuqtST1goEdwmexkz3"
 
 [programs.devnet]
-coherence_beamsplitter = "9kLnxpAcJiL1gXVypWMsygWkRgMeCeYYc8PRDKEo4ozM"
+coherence_beamsplitter = "HoFBL9J5kp655xmXhg48riQRqeuqtST1goEdwmexkz3"
 
 [programs.mainnet]
-coherence_beamsplitter = "9kLnxpAcJiL1gXVypWMsygWkRgMeCeYYc8PRDKEo4ozM"
+coherence_beamsplitter = "HoFBL9J5kp655xmXhg48riQRqeuqtST1goEdwmexkz3"
 
 [registry]
 url = "https://anchor.projectserum.com"
