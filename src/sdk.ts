@@ -7,6 +7,7 @@ import {
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
+  getATAAddress,
   getMintInfo,
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
@@ -653,15 +654,10 @@ export class CoherenceBeamsplitterSDK {
       initOrderStateEnvelope.addInstructions(createManagerEtfAtaTx);
     }
 
-    const { address: transferredTokensAta, instruction: createATATx } =
-      await getOrCreateATA({
-        provider: this.provider,
-        mint: prismEtfMint,
-      });
-
-    if (createATATx && shouldCreateAtas) {
-      initOrderStateEnvelope.addInstructions(createATATx);
-    }
+    const transferredTokensAta = await getATAAddress({
+      mint: prismEtfMint,
+      owner: this.provider.wallet.publicKey,
+    });
 
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
