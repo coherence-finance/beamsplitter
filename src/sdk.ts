@@ -650,7 +650,7 @@ export class CoherenceBeamsplitterSDK {
         owner: manager,
       });
 
-    if (createManagerEtfAtaTx) {
+    if (createManagerEtfAtaTx && manager !== this.provider.wallet.publicKey) {
       initOrderStateEnvelope.addInstructions(createManagerEtfAtaTx);
     }
 
