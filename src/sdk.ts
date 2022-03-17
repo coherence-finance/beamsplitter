@@ -452,12 +452,6 @@ export class CoherenceBeamsplitterSDK {
         constructEnvelope.addInstructions(createOrdererAta);
       }
 
-      const mintData = await getMintInfo(this.provider, weightedToken.mint);
-
-      if (!mintData.mintAuthority) {
-        throw new Error("Transfer Token Mint has no authority");
-      }
-
       const approvedAmount = orderStateAmount.mul(new BN(weightedToken.weight));
 
       constructEnvelope.addInstructions(
@@ -573,12 +567,6 @@ export class CoherenceBeamsplitterSDK {
 
       if (createOrdererAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createOrdererAta);
-      }
-
-      const mintData = await getMintInfo(this.provider, weightedToken.mint);
-
-      if (!mintData.mintAuthority) {
-        throw new Error("Transfer Token Mint has no authority");
       }
 
       constructTxChunks.push(
