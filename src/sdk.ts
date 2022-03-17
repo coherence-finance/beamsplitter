@@ -639,7 +639,11 @@ export class CoherenceBeamsplitterSDK {
         owner: beamsplitterData.owner,
       });
 
-    if (createOwnerAtaTx && shouldCreateAtas) {
+    if (
+      createOwnerAtaTx &&
+      shouldCreateAtas &&
+      beamsplitterData.owner !== this.provider.wallet.publicKey
+    ) {
       initOrderStateEnvelope.addInstructions(createOwnerAtaTx);
     }
 
@@ -650,7 +654,11 @@ export class CoherenceBeamsplitterSDK {
         owner: manager,
       });
 
-    if (createManagerEtfAtaTx && manager !== this.provider.wallet.publicKey) {
+    if (
+      createManagerEtfAtaTx &&
+      shouldCreateAtas &&
+      manager !== this.provider.wallet.publicKey
+    ) {
       initOrderStateEnvelope.addInstructions(createManagerEtfAtaTx);
     }
 
