@@ -21,6 +21,8 @@ pub struct PrismEtf {
     pub status: PrismEtfStatus,
     /// The bump for this PDA account
     pub bump: u8,
+    /// How many shared order states have been intialized for this ETF
+    pub total_shared_order_states: u16,
     /// Basis points used for construction fee
     pub construction_bps: u16,
     /// Basis points used for deconstruction fee
@@ -42,7 +44,7 @@ pub struct PrismEtf {
 #[derive(Debug)]
 pub struct WeightedTokens {
     /// The index of array
-    pub index: u16,
+    pub length: u16,
     /// Max capacity of the array
     pub capacity: u16,
     /// [WeightedToken] array
@@ -69,7 +71,7 @@ pub struct OrderState {
 #[derive(Debug)]
 pub struct TransferredTokens {
     /// The index of array
-    pub index: u16,
+    pub length: u16,
     /// Max capacity of the array
     pub capacity: u16,
     /// Each bool is true if the corresponding weight_token was transferred succesfully in the order

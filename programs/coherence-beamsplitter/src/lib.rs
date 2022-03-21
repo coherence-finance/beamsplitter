@@ -123,14 +123,14 @@ pub mod coherence_beamsplitter {
             if weighted_token.weight <= 0 {
                 return Err(BeamsplitterErrors::ZeroWeight.into());
             }
-            if weighted_tokens.index >= weighted_tokens.capacity {
+            if weighted_tokens.length >= weighted_tokens.capacity {
                 return Err(BeamsplitterErrors::ETFFull.into());
             }
-            let etf_idx = weighted_tokens.index as usize;
+            let etf_idx = weighted_tokens.length as usize;
             weighted_tokens.weighted_tokens[idx + etf_idx] = weighted_token.clone();
         }
 
-        weighted_tokens.index += new_tokens.len() as u16;
+        weighted_tokens.length += new_tokens.len() as u16;
 
         Ok(())
     }
@@ -184,13 +184,13 @@ pub mod coherence_beamsplitter {
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
-        transferred_tokens.index = weighted_tokens.index;
+        transferred_tokens.length = weighted_tokens.length;
 
-        let transferred_tokens_index = transferred_tokens.index as usize;
+        let transferred_tokens_length = transferred_tokens.length as usize;
         if order_state.order_type == OrderType::CONSTRUCTION {
             // Set all all switches to NOT transferred
             for transferred_token in
-                transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+                transferred_tokens.transferred_tokens[..transferred_tokens_length].iter_mut()
             {
                 *transferred_token = false;
             }
@@ -199,7 +199,7 @@ pub mod coherence_beamsplitter {
         } else {
             // Set all all switches to transferred
             for transferred_token in
-                transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+                transferred_tokens.transferred_tokens[..transferred_tokens_length].iter_mut()
             {
                 *transferred_token = true;
             }
@@ -255,7 +255,7 @@ pub mod coherence_beamsplitter {
             return Ok(());
         }
 
-        if index >= weighted_tokens.index {
+        if index >= weighted_tokens.length {
             return Err(BeamsplitterErrors::IndexPassedBound.into());
         }
 
@@ -345,7 +345,7 @@ pub mod coherence_beamsplitter {
             return Ok(());
         }
 
-        if index >= weighted_tokens.index {
+        if index >= weighted_tokens.length {
             return Err(BeamsplitterErrors::IndexPassedBound.into());
         }
 
@@ -416,7 +416,7 @@ pub mod coherence_beamsplitter {
         }
 
         let transferred_tokens = &ctx.accounts.transferred_tokens.load()?;
-        let transferred_tokens_index = transferred_tokens.index as usize;
+        let transferred_tokens_index = transferred_tokens.length as usize;
 
         // If all transferred tokens are false (0) than we can finalize knowing all assets were removed (or never added)
         if !transferred_tokens.transferred_tokens[0] {

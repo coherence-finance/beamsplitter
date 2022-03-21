@@ -218,7 +218,7 @@ describe("coherence-beamsplitter", () => {
       prismEtf.weightedTokens
     );
 
-    expect(weightedTokenData?.index).to.be.equal(randomNumberTokens);
+    expect(weightedTokenData?.length).to.be.equal(randomNumberTokens);
 
     for (let i = 0; i < randomNumberTokens; i++) {
       assert(
@@ -250,6 +250,7 @@ describe("coherence-beamsplitter", () => {
     let prismEtfMint: PublicKey;
     let tokenAATA: PublicKey;
     let tokenBATA: PublicKey;
+    let tokenBMint: PublicKey;
     let transferredTokensAcct: PublicKey;
     let weightedTokens: WeightedToken[];
 
@@ -307,6 +308,8 @@ describe("coherence-beamsplitter", () => {
         mintAuthority: authority,
       });
 
+      tokenBMint = tokenBKP.publicKey;
+
       await expectTX(tokenBMintTx).to.be.fulfilled;
 
       weightedTokens = [
@@ -335,7 +338,7 @@ describe("coherence-beamsplitter", () => {
         prismEtf.weightedTokens
       );
 
-      expect(weightedTokenData?.index).to.be.equal(2);
+      expect(weightedTokenData?.length).to.be.equal(2);
 
       const finalizePrismEtfTx = await sdk.finalizePrismEtf({
         beamsplitter,
@@ -461,7 +464,7 @@ describe("coherence-beamsplitter", () => {
 
       let transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.false;
       }
 
@@ -548,7 +551,7 @@ describe("coherence-beamsplitter", () => {
 
       transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.true;
       }
 
@@ -597,10 +600,79 @@ describe("coherence-beamsplitter", () => {
 
       transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.true;
       }
     });
+
+    /*it(`Validate amounts`, async () => {
+      console.log("here");
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
+
+      console.log("here2");
+      const startOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.DECONSTRUCTION,
+        amount: AMOUNT_TO_CONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+      console.log("here3");
+      await expectTX(startOrder).to.be.fulfilled;
+
+      const [prismETF] = await generatePrismEtfAddress(
+        prismEtfMint,
+        beamsplitter
+      );
+
+      console.log("here4");
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        orderStateAmount: AMOUNT_TO_CONSTRUCT,
+      });
+
+      await Promise.all(
+        cohere.map((cohereChunk) => expectTX(cohereChunk).to.be.fulfilled)
+      );
+
+      console.log("here5");
+      const beamsplitterBAta = await getATAAddress({
+        mint: tokenBATA,
+        owner: beamsplitter,
+      });
+      console.log("here6");
+      const tokenBBalBefore = (
+        await getTokenAccount(provider, beamsplitterBAta)
+      ).amount;
+      console.log("here7");
+      const tokenBBalAfter = (await getTokenAccount(provider, beamsplitterBAta))
+        .amount;
+      console.log(tokenBBalBefore.toString());
+      //console.log(tokenBBalAfter.toString());
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+      console.log("here8");
+      const finalizeOrderPre = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+      console.log("here");
+      await expectTX(finalizeOrderPre).to.be.fulfilled;
+
+      //console.log(tokenBBalBefore.toString());
+      //console.log(tokenBBalAfter.toString());
+    });*/
 
     it(`Cancel DECONSTRUCT order`, async () => {
       const _scalar =
@@ -798,7 +870,7 @@ describe("coherence-beamsplitter", () => {
 
       let transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.true;
       }
 
@@ -873,7 +945,7 @@ describe("coherence-beamsplitter", () => {
 
       transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.false;
       }
 
@@ -922,7 +994,7 @@ describe("coherence-beamsplitter", () => {
 
       transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.false;
       }
     });
