@@ -418,7 +418,7 @@ export class CoherenceBeamsplitterSDK {
       this.provider.wallet.publicKey
     );
 
-    const weightedTokensActualLength = weightedTokensAcct.index;
+    const weightedTokensActualLength = weightedTokensAcct.length;
     const constructTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokensActualLength; i++) {
       const constructEnvelope = new TransactionEnvelope(this.provider, []);
@@ -535,7 +535,7 @@ export class CoherenceBeamsplitterSDK {
       this.provider.wallet.publicKey
     );
 
-    const weightedTokensActualLength = weightedTokensAcct.index;
+    const weightedTokensActualLength = weightedTokensAcct.length;
     const constructTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokensActualLength; i++) {
       const constructEnvelope = new TransactionEnvelope(this.provider, []);
