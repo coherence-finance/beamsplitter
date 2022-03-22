@@ -958,6 +958,10 @@ export type CoherenceBeamsplitter = {
             "type": "u16"
           },
           {
+            "name": "defaultManagerFee",
+            "type": "u16"
+          },
+          {
             "name": "autorebalancer",
             "type": "publicKey"
           }
@@ -2125,6 +2129,10 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "defaultManagerCut",
+            "type": "u16"
+          },
+          {
+            "name": "defaultManagerFee",
             "type": "u16"
           },
           {

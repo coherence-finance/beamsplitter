@@ -43,11 +43,16 @@ pub mod coherence_beamsplitter {
     /// Initializes the Beamsplitter program state
     pub fn initialize(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
         let beamsplitter = &mut ctx.accounts.beamsplitter;
-        beamsplitter.bump = bump;
-        beamsplitter.owner = ctx.accounts.owner.key();
-        beamsplitter.default_construction_bps = DEFAULT_CONSTRUCT_BPS;
-        beamsplitter.default_deconstruction_bps = DEFAULT_DECONSTRUCT_BPS;
-        beamsplitter.default_manager_cut = DEFAULT_MANAGER_BPS;
+
+        **beamsplitter = Beamsplitter {
+            owner: ctx.accounts.owner.key(),
+            bump,
+            default_construction_bps: DEFAULT_CONSTRUCT_BPS,
+            default_deconstruction_bps: DEFAULT_DECONSTRUCT_BPS,
+            default_manager_cut: DEFAULT_MANAGER_BPS,
+            default_manager_fee: 0,
+            autorebalancer: ctx.accounts.owner.key(),
+        };
 
         Ok(())
     }
@@ -79,13 +84,20 @@ pub mod coherence_beamsplitter {
         let mint = &ctx.accounts.prism_etf_mint;
         let manager = &ctx.accounts.manager;
 
-        prism_etf.manager = manager.key();
-        prism_etf.bump = bump;
-        prism_etf.weighted_tokens = weighted_tokens.key();
-        prism_etf.status = PrismEtfStatus::UNFINISHED;
-        prism_etf.construction_bps = beamsplitter.default_construction_bps;
-        prism_etf.deconstruction_bps = beamsplitter.default_deconstruction_bps;
-        prism_etf.manager_cut = beamsplitter.default_manager_cut;
+        **prism_etf = PrismEtf {
+            manager: manager.key(),
+            weighted_tokens: weighted_tokens.key(),
+            status: PrismEtfStatus::UNFINISHED,
+            bump,
+            total_shared_order_states: 0,
+            construction_bps: beamsplitter.default_construction_bps,
+            deconstruction_bps: beamsplitter.default_deconstruction_bps,
+            manager_cut: beamsplitter.default_manager_cut,
+            manager_fee: beamsplitter.default_manager_fee,
+            rebalancing_mode: RebalancingMode::OFF,
+            autorebalancing_schedule: AutorebalancingSchedule::NEVER,
+            manager_schedule: ManagerSchedule::NEVER,
+        };
 
         if beamsplitter.key() != mint.mint_authority.unwrap() {
             return Err(BeamsplitterErrors::NotMintAuthority.into());

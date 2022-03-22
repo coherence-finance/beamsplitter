@@ -98,6 +98,8 @@ pub struct Beamsplitter {
     pub default_deconstruction_bps: u16,
     /// Default basis points used for manager's cut
     pub default_manager_cut: u16,
+    /// Default basis points used for manager's recurring fee
+    pub default_manager_fee: u16,
     /// The account with rights to autorebalance prism etfs with non NEVER schedule
     pub autorebalancer: Pubkey,
 }
