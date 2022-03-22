@@ -560,6 +560,17 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
+    pub fn close_prism_etf(ctx: Context<ClosePrismEtf>) -> ProgramResult {
+        if ctx.accounts.prism_etf_mint.supply != 0 {
+            return Err(BeamsplitterErrors::NonZeroSupply.into());
+        }
+        Ok(())
+    }
+
+    pub fn close_order_state(_ctx: Context<ClosePrismEtf>) -> ProgramResult {
+        Ok(())
+    }
+
     pub fn set_owner(ctx: Context<SetOwner>) -> ProgramResult {
         ctx.accounts.beamsplitter.owner = ctx.accounts.new_owner.key();
         Ok(())

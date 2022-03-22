@@ -751,6 +751,43 @@ export class CoherenceBeamsplitterSDK {
     );
   }
 
+  async closePrismEtf({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+    const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+    if (!prismEtfData) {
+      throw new Error("PrismEtf not intialized");
+    }
+
+    if (!prismEtfData.weightedTokens) {
+      throw new Error("Weighted tokens not set");
+    }
+
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.closePrismEtf({
+        accounts: {
+          manager: this.provider.wallet.publicKey,
+          prismEtf,
+          weightedTokens: prismEtfData.weightedTokens,
+          prismEtfMint,
+          beamsplitter,
+          systemProgram: SystemProgram.programId,
+        },
+      }),
+    ]);
+  }
+
   setOwner({
     beamsplitter,
     newOwner,

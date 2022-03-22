@@ -173,7 +173,7 @@ describe("coherence-beamsplitter", () => {
   });
 
   const randomNumberTokens =
-    Math.floor((Math.random() * WEIGHTED_TOKENS_CAPACITY) / 40) + 1;
+    Math.floor(Math.random() * WEIGHTED_TOKENS_CAPACITY) + 1;
   it(`Create a Prism ETF with ${randomNumberTokens} asset(s)`, async () => {
     const [initPrismEtFTx, prismEtfMint, weightedTokensAcct] =
       await sdk.initPrismEtf({
@@ -1255,6 +1255,64 @@ describe("coherence-beamsplitter", () => {
       const expectedBDiff = new BN(0);
 
       assert(actualTokenBBalDiff.eq(expectedBDiff));
+    });
+
+    it(`Close PrismEtf`, async () => {
+      const preSolBal = (await provider.getAccountInfo(authority))?.accountInfo
+        .lamports;
+
+      const [initPrismEtf, testMint, testWeightedTokens] =
+        await sdk.initPrismEtf({ beamsplitter });
+      await expectTX(initPrismEtf).to.be.fulfilled;
+
+      const pushTokens = await sdk.pushTokens({
+        beamsplitter,
+        prismEtfMint: testMint,
+        weightedTokensAcct: testWeightedTokens,
+        weightedTokens: [
+          {
+            mint: new PublicKey(0),
+            weight: new BN(1),
+          },
+        ],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await expectTX(pushTokens[0]!).to.be.fulfilled;
+      const finalizePrismEtf = await sdk.finalizePrismEtf({
+        beamsplitter,
+        prismEtfMint: testMint,
+      });
+      await expectTX(finalizePrismEtf).to.be.fulfilled;
+
+      const closePrismEtf = await sdk.closePrismEtf({
+        prismEtfMint: testMint,
+        beamsplitter,
+      });
+
+      await expectTX(closePrismEtf).to.be.fulfilled;
+
+      const afterSolBal = (await provider.getAccountInfo(authority))
+        ?.accountInfo.lamports;
+
+      const weightedTokensData = await sdk.fetchWeightedTokens(
+        testWeightedTokens
+      );
+
+      const prismEtfTestData = await sdk.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint: testMint,
+      });
+
+      if (!preSolBal) {
+        throw new Error();
+      }
+
+      if (!afterSolBal) {
+        throw new Error();
+      }
+      expect(afterSolBal).to.be.not.eq(preSolBal);
+      expect(prismEtfTestData).to.be.null;
+      expect(weightedTokensData).to.be.null;
     });
   });
 });
