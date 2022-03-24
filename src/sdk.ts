@@ -453,7 +453,10 @@ export class CoherenceBeamsplitterSDK {
         constructEnvelope.addInstructions(createOrdererAta);
       }
 
-      const approvedAmount = orderStateAmount.mul(new BN(weightedToken.weight));
+      const prismTokenMintData = await getMintInfo(this.provider, prismEtfMint);
+      const approvedAmount = orderStateAmount
+        .div(new BN(10 ** prismTokenMintData.decimals))
+        .mul(new BN(weightedToken.weight));
 
       constructEnvelope.addInstructions(
         Token.createApproveInstruction(
