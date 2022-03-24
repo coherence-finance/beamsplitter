@@ -27,25 +27,25 @@ pub enum BeamsplitterErrors {
     #[msg("Incorrect Order Status")]
     IncorrectOrderStatus, // 6009 - 0x1779
     #[msg("Incorrect Order Type")]
-    IncorrectOrderType, // 6009 - 0x1779
+    IncorrectOrderType, // 6010 - 0x177a
     #[msg("Not enough approved.")]
-    NotEnoughApproved, // 6010 - 0x177a
+    NotEnoughApproved, // 6011 - 0x177b
     #[msg("Index passed bound")]
-    IndexPassedBound, // 6011 - 0x177b
+    IndexPassedBound, // 6012 - 0x177c
     #[msg("Wrong asset mint. Mint keys did not match. Try changing index passed.")]
-    WrongIndexMint, // 6012 - 0x177c
+    WrongIndexMint, // 6013 - 0x177d
     #[msg("Scaling failed or overflowed.")]
-    ScaleFailure, // 6013 - 0x177d
+    ScaleFailure, // 6014 - 0x177e
     #[msg("Decimal to u64 conversion failed or overflowed.")]
-    U64Failure, // 6014 - 0x177e
+    U64Failure, // 6015 - 0x177f
     #[msg("Prism Etf was not done being designed when you tried to start an order.")]
-    PrismEtfNotFinished, // 6015 - 0x177f
+    PrismEtfNotFinished, // 6016 - 0x1780
     #[msg("Attempted to start an order of 0")]
-    ZeroOrder, // 6016 - 0x1780
+    ZeroOrder, // 6017 - 0x1781
     #[msg("Attempted to set a weight at 0")]
-    ZeroWeight, // 6017 - 0x1781
+    ZeroWeight, // 6018 - 0x1782
     #[msg(
         "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
     )]
-    NotFreezeAuthority, // 6000 - 0x1770
+    NotFreezeAuthority, // 6019 - 0x1783
 }
