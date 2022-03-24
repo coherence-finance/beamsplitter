@@ -10,7 +10,7 @@ use enums::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("HoFBL9J5kp655xmXhg48riQRqeuqtST1goEdwmexkz3");
+declare_id!("3YSnuSezKXietqodLHtyZCGBptunb47gu1XA56vLDQLe");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
 #[constant]
@@ -52,6 +52,7 @@ pub mod coherence_beamsplitter {
             default_manager_cut: DEFAULT_MANAGER_BPS,
             default_manager_fee: 0,
             autorebalancer: ctx.accounts.owner.key(),
+            referral_cut: 0,
         };
 
         Ok(())
@@ -97,6 +98,7 @@ pub mod coherence_beamsplitter {
             rebalancing_mode: RebalancingMode::OFF,
             autorebalancing_schedule: AutorebalancingSchedule::NEVER,
             manager_schedule: ManagerSchedule::NEVER,
+            referer: manager.key(),
         };
 
         if beamsplitter.key() != mint.mint_authority.unwrap() {

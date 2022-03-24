@@ -21,6 +21,8 @@ pub struct PrismEtf {
     pub status: PrismEtfStatus,
     /// The bump for this PDA account
     pub bump: u8,
+    /// The referrer of this Prism ETF
+    pub referer: Pubkey,
     /// How many shared order states have been intialized for this ETF
     pub total_shared_order_states: u16,
     /// Basis points used for construction fee
@@ -100,6 +102,8 @@ pub struct Beamsplitter {
     pub default_manager_cut: u16,
     /// Default basis points used for manager's recurring fee
     pub default_manager_fee: u16,
+    /// The cut for referrer + referree
+    pub referral_cut: u16,
     /// The account with rights to autorebalance prism etfs with non NEVER schedule
     pub autorebalancer: Pubkey,
 }

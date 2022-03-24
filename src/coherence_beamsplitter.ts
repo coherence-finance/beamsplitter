@@ -880,6 +880,10 @@ export type CoherenceBeamsplitter = {
             "type": "u8"
           },
           {
+            "name": "referer",
+            "type": "publicKey"
+          },
+          {
             "name": "totalSharedOrderStates",
             "type": "u16"
           },
@@ -1031,6 +1035,10 @@ export type CoherenceBeamsplitter = {
           },
           {
             "name": "defaultManagerFee",
+            "type": "u16"
+          },
+          {
+            "name": "referralCut",
             "type": "u16"
           },
           {
@@ -2126,6 +2134,10 @@ export const IDL: CoherenceBeamsplitter = {
             "type": "u8"
           },
           {
+            "name": "referer",
+            "type": "publicKey"
+          },
+          {
             "name": "totalSharedOrderStates",
             "type": "u16"
           },
@@ -2277,6 +2289,10 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "defaultManagerFee",
+            "type": "u16"
+          },
+          {
+            "name": "referralCut",
             "type": "u16"
           },
           {
