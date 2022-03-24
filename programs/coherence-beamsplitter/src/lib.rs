@@ -10,7 +10,7 @@ use enums::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("HoFBL9J5kp655xmXhg48riQRqeuqtST1goEdwmexkz3");
+declare_id!("3YSnuSezKXietqodLHtyZCGBptunb47gu1XA56vLDQLe");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
 #[constant]
@@ -43,11 +43,17 @@ pub mod coherence_beamsplitter {
     /// Initializes the Beamsplitter program state
     pub fn initialize(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
         let beamsplitter = &mut ctx.accounts.beamsplitter;
-        beamsplitter.bump = bump;
-        beamsplitter.owner = ctx.accounts.owner.key();
-        beamsplitter.default_construction_bps = DEFAULT_CONSTRUCT_BPS;
-        beamsplitter.default_deconstruction_bps = DEFAULT_DECONSTRUCT_BPS;
-        beamsplitter.default_manager_cut = DEFAULT_MANAGER_BPS;
+
+        **beamsplitter = Beamsplitter {
+            owner: ctx.accounts.owner.key(),
+            bump,
+            default_construction_bps: DEFAULT_CONSTRUCT_BPS,
+            default_deconstruction_bps: DEFAULT_DECONSTRUCT_BPS,
+            default_manager_cut: DEFAULT_MANAGER_BPS,
+            default_manager_fee: 0,
+            autorebalancer: ctx.accounts.owner.key(),
+            referral_cut: 0,
+        };
 
         Ok(())
     }
@@ -79,13 +85,21 @@ pub mod coherence_beamsplitter {
         let mint = &ctx.accounts.prism_etf_mint;
         let manager = &ctx.accounts.manager;
 
-        prism_etf.manager = manager.key();
-        prism_etf.bump = bump;
-        prism_etf.weighted_tokens = weighted_tokens.key();
-        prism_etf.status = PrismEtfStatus::UNFINISHED;
-        prism_etf.construction_bps = beamsplitter.default_construction_bps;
-        prism_etf.deconstruction_bps = beamsplitter.default_deconstruction_bps;
-        prism_etf.manager_cut = beamsplitter.default_manager_cut;
+        **prism_etf = PrismEtf {
+            manager: manager.key(),
+            weighted_tokens: weighted_tokens.key(),
+            status: PrismEtfStatus::UNFINISHED,
+            bump,
+            total_shared_order_states: 0,
+            construction_bps: beamsplitter.default_construction_bps,
+            deconstruction_bps: beamsplitter.default_deconstruction_bps,
+            manager_cut: beamsplitter.default_manager_cut,
+            manager_fee: beamsplitter.default_manager_fee,
+            rebalancing_mode: RebalancingMode::OFF,
+            autorebalancing_schedule: AutorebalancingSchedule::NEVER,
+            manager_schedule: ManagerSchedule::NEVER,
+            referer: manager.key(),
+        };
 
         if beamsplitter.key() != mint.mint_authority.unwrap() {
             return Err(BeamsplitterErrors::NotMintAuthority.into());
@@ -123,14 +137,14 @@ pub mod coherence_beamsplitter {
             if weighted_token.weight <= 0 {
                 return Err(BeamsplitterErrors::ZeroWeight.into());
             }
-            if weighted_tokens.index >= weighted_tokens.capacity {
+            if weighted_tokens.length >= weighted_tokens.capacity {
                 return Err(BeamsplitterErrors::ETFFull.into());
             }
-            let etf_idx = weighted_tokens.index as usize;
+            let etf_idx = weighted_tokens.length as usize;
             weighted_tokens.weighted_tokens[idx + etf_idx] = weighted_token.clone();
         }
 
-        weighted_tokens.index += new_tokens.len() as u16;
+        weighted_tokens.length += new_tokens.len() as u16;
 
         Ok(())
     }
@@ -184,13 +198,13 @@ pub mod coherence_beamsplitter {
 
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let transferred_tokens = &mut ctx.accounts.transferred_tokens.load_mut()?;
-        transferred_tokens.index = weighted_tokens.index;
+        transferred_tokens.length = weighted_tokens.length;
 
-        let transferred_tokens_index = transferred_tokens.index as usize;
+        let transferred_tokens_length = transferred_tokens.length as usize;
         if order_state.order_type == OrderType::CONSTRUCTION {
             // Set all all switches to NOT transferred
             for transferred_token in
-                transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+                transferred_tokens.transferred_tokens[..transferred_tokens_length].iter_mut()
             {
                 *transferred_token = false;
             }
@@ -199,7 +213,7 @@ pub mod coherence_beamsplitter {
         } else {
             // Set all all switches to transferred
             for transferred_token in
-                transferred_tokens.transferred_tokens[..transferred_tokens_index].iter_mut()
+                transferred_tokens.transferred_tokens[..transferred_tokens_length].iter_mut()
             {
                 *transferred_token = true;
             }
@@ -255,7 +269,7 @@ pub mod coherence_beamsplitter {
             return Ok(());
         }
 
-        if index >= weighted_tokens.index {
+        if index >= weighted_tokens.length {
             return Err(BeamsplitterErrors::IndexPassedBound.into());
         }
 
@@ -345,7 +359,7 @@ pub mod coherence_beamsplitter {
             return Ok(());
         }
 
-        if index >= weighted_tokens.index {
+        if index >= weighted_tokens.length {
             return Err(BeamsplitterErrors::IndexPassedBound.into());
         }
 
@@ -416,7 +430,7 @@ pub mod coherence_beamsplitter {
         }
 
         let transferred_tokens = &ctx.accounts.transferred_tokens.load()?;
-        let transferred_tokens_index = transferred_tokens.index as usize;
+        let transferred_tokens_index = transferred_tokens.length as usize;
 
         // If all transferred tokens are false (0) than we can finalize knowing all assets were removed (or never added)
         if !transferred_tokens.transferred_tokens[0] {
@@ -545,6 +559,17 @@ pub mod coherence_beamsplitter {
 
         order_state.status = OrderStatus::SUCCEEDED;
 
+        Ok(())
+    }
+
+    pub fn close_prism_etf(ctx: Context<ClosePrismEtf>) -> ProgramResult {
+        if ctx.accounts.prism_etf_mint.supply != 0 {
+            return Err(BeamsplitterErrors::NonZeroSupply.into());
+        }
+        Ok(())
+    }
+
+    pub fn close_order_state(_ctx: Context<ClosePrismEtf>) -> ProgramResult {
         Ok(())
     }
 

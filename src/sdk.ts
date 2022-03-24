@@ -418,7 +418,7 @@ export class CoherenceBeamsplitterSDK {
       this.provider.wallet.publicKey
     );
 
-    const weightedTokensActualLength = weightedTokensAcct.index;
+    const weightedTokensActualLength = weightedTokensAcct.length;
     const constructTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokensActualLength; i++) {
       const constructEnvelope = new TransactionEnvelope(this.provider, []);
@@ -535,7 +535,7 @@ export class CoherenceBeamsplitterSDK {
       this.provider.wallet.publicKey
     );
 
-    const weightedTokensActualLength = weightedTokensAcct.index;
+    const weightedTokensActualLength = weightedTokensAcct.length;
     const constructTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokensActualLength; i++) {
       const constructEnvelope = new TransactionEnvelope(this.provider, []);
@@ -749,6 +749,43 @@ export class CoherenceBeamsplitterSDK {
         (orderType === OrderType.CONSTRUCTION && transferredTokens[idx]) ||
         (orderType === OrderType.DECONSTRUCTION && !transferredTokens[idx])
     );
+  }
+
+  async closePrismEtf({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+    const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+    if (!prismEtfData) {
+      throw new Error("PrismEtf not intialized");
+    }
+
+    if (!prismEtfData.weightedTokens) {
+      throw new Error("Weighted tokens not set");
+    }
+
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.closePrismEtf({
+        accounts: {
+          manager: this.provider.wallet.publicKey,
+          prismEtf,
+          weightedTokens: prismEtfData.weightedTokens,
+          prismEtfMint,
+          beamsplitter,
+          systemProgram: SystemProgram.programId,
+        },
+      }),
+    ]);
   }
 
   setOwner({
