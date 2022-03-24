@@ -193,9 +193,6 @@ pub struct Cohere<'info> {
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
     pub orderer: Signer<'info>,
 
-    /// The authority on the transfer mint
-    pub transfer_authority: AccountInfo<'info>,
-
     // ========================= Mint's =========================
     pub prism_etf_mint: Account<'info, Mint>,
 
@@ -208,7 +205,7 @@ pub struct Cohere<'info> {
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
-    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = beamsplitter, payer = orderer)]
+    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = prism_etf, payer = orderer)]
     pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     // ========================= PDA's =========================
@@ -249,9 +246,6 @@ pub struct Decohere<'info> {
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
     pub orderer: Signer<'info>,
 
-    /// The authority of the given orderer_transfer_ata
-    pub transfer_authority: AccountInfo<'info>,
-
     // ========================= Mint's =========================
     /// The mint of the asset being transferred
     pub transfer_mint: Account<'info, Mint>,
@@ -264,7 +258,7 @@ pub struct Decohere<'info> {
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
-    #[account(associated_token::mint = transfer_mint, associated_token::authority = beamsplitter, mut)]
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = prism_etf, mut)]
     pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     // ========================= PDA's =========================

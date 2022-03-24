@@ -36,7 +36,8 @@ pub mod coherence_beamsplitter {
     use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
 
     use rust_decimal::{prelude::ToPrimitive, Decimal};
-    const PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
+    const BEAMSPLITTER_PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
+    const PRISM_ETF_PDA_SEED: &[u8] = b"PrismEtf" as &[u8];
 
     use super::*;
 
@@ -225,7 +226,7 @@ pub mod coherence_beamsplitter {
             authority: ctx.accounts.orderer.to_account_info(),
         };
 
-        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let seeds = &[BEAMSPLITTER_PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
         let signer_seeds = &[&seeds[..]];
 
         let burn_ctx = CpiContext::new_with_signer(
@@ -302,7 +303,7 @@ pub mod coherence_beamsplitter {
 
         let transfer_accounts = Transfer {
             to: ctx.accounts.beamsplitter_transfer_ata.to_account_info(),
-            authority: ctx.accounts.transfer_authority.to_account_info(),
+            authority: ctx.accounts.orderer.to_account_info(),
             from: ctx.accounts.orderer_transfer_ata.to_account_info(),
         };
 
@@ -369,11 +370,16 @@ pub mod coherence_beamsplitter {
 
         let transfer_accounts = Transfer {
             to: ctx.accounts.orderer_transfer_ata.to_account_info(),
-            authority: ctx.accounts.transfer_authority.to_account_info(),
+            authority: ctx.accounts.prism_etf.to_account_info(),
             from: ctx.accounts.beamsplitter_transfer_ata.to_account_info(),
         };
 
-        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let seeds = &[
+            PRISM_ETF_PDA_SEED,
+            &ctx.accounts.prism_etf_mint.key().to_bytes(),
+            &ctx.accounts.beamsplitter.key().to_bytes(),
+            &[ctx.accounts.beamsplitter.bump],
+        ];
         let signer_seeds = &[&seeds[..]];
 
         let transfer_ctx = CpiContext::new_with_signer(
@@ -499,7 +505,7 @@ pub mod coherence_beamsplitter {
             authority: ctx.accounts.beamsplitter.to_account_info(),
         };
 
-        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let seeds = &[BEAMSPLITTER_PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
         let signer_seeds = &[&seeds[..]];
 
         let mint_ctx_orderer = CpiContext::new_with_signer(
@@ -520,7 +526,7 @@ pub mod coherence_beamsplitter {
             authority: ctx.accounts.beamsplitter.to_account_info(),
         };
 
-        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let seeds = &[BEAMSPLITTER_PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
         let signer_seeds = &[&seeds[..]];
 
         let mint_ctx_owner = CpiContext::new_with_signer(
@@ -541,7 +547,7 @@ pub mod coherence_beamsplitter {
             authority: ctx.accounts.beamsplitter.to_account_info(),
         };
 
-        let seeds = &[PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
+        let seeds = &[BEAMSPLITTER_PDA_SEED, &[ctx.accounts.beamsplitter.bump]];
         let signer_seeds = &[&seeds[..]];
 
         let mint_ctx_manager = CpiContext::new_with_signer(

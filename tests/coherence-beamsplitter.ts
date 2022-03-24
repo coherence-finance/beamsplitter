@@ -751,7 +751,6 @@ describe("coherence-beamsplitter", () => {
       });
 
       await expectTX(startOrder).to.be.fulfilled;
-
       // ==== DECOHERE =====
 
       const decohere = await sdk.decohere({

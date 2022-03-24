@@ -431,12 +431,12 @@ export class CoherenceBeamsplitterSDK {
       const weightedToken = weightedTokens[i]!;
 
       const {
-        address: beamsplitterTransferAta,
+        address: prismEtfTransferAta,
         instruction: createBeamsplitterAta,
       } = await getOrCreateATA({
         provider: this.provider,
         mint: weightedToken.mint,
-        owner: beamsplitter,
+        owner: prismEtfPda,
       });
 
       if (createBeamsplitterAta && shouldCreateAtas) {
@@ -453,13 +453,16 @@ export class CoherenceBeamsplitterSDK {
         constructEnvelope.addInstructions(createOrdererAta);
       }
 
-      const approvedAmount = orderStateAmount.mul(new BN(weightedToken.weight));
+      const prismTokenMintData = await getMintInfo(this.provider, prismEtfMint);
+      const approvedAmount = orderStateAmount
+        .div(new BN(10 ** prismTokenMintData.decimals))
+        .mul(new BN(weightedToken.weight));
 
       constructEnvelope.addInstructions(
         Token.createApproveInstruction(
           TOKEN_PROGRAM_ID,
           ordererTransferAta,
-          beamsplitterTransferAta,
+          prismEtfTransferAta,
           this.provider.wallet.publicKey,
           [],
           new u64(approvedAmount.toArrayLike(Buffer))
@@ -476,10 +479,9 @@ export class CoherenceBeamsplitterSDK {
               weightedTokens: prismEtf.weightedTokens,
               transferredTokens,
               orderer: this.provider.wallet.publicKey,
-              transferAuthority: this.provider.wallet.publicKey,
               transferMint: weightedToken.mint,
               ordererTransferAta,
-              beamsplitterTransferAta,
+              beamsplitterTransferAta: prismEtfTransferAta,
               beamsplitter,
               rent: SYSVAR_RENT_PUBKEY,
               associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -548,12 +550,12 @@ export class CoherenceBeamsplitterSDK {
       const weightedToken = weightedTokens[i]!;
 
       const {
-        address: beamsplitterTransferAta,
+        address: prismEtfTransferAta,
         instruction: createBeamsplitterAta,
       } = await getOrCreateATA({
         provider: this.provider,
         mint: weightedToken.mint,
-        owner: beamsplitter,
+        owner: prismEtfPda,
       });
 
       if (createBeamsplitterAta && shouldCreateAtas) {
@@ -580,10 +582,9 @@ export class CoherenceBeamsplitterSDK {
               weightedTokens: prismEtf.weightedTokens,
               transferredTokens,
               orderer: this.provider.wallet.publicKey,
-              transferAuthority: beamsplitter,
               transferMint: weightedToken.mint,
               ordererTransferAta,
-              beamsplitterTransferAta,
+              beamsplitterTransferAta: prismEtfTransferAta,
               beamsplitter,
               rent: SYSVAR_RENT_PUBKEY,
               associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
