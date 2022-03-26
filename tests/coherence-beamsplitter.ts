@@ -254,9 +254,9 @@ describe("coherence-beamsplitter", () => {
     let transferredTokensAcct: PublicKey;
     let weightedTokens: WeightedToken[];
 
-    const decimalsA = 4;
+    const decimalsA = 6;
     const decimalsB = 11;
-    const tokenAWeight = new BN(3);
+    const tokenAWeight = new BN(3246753);
     const tokenBWeight = new BN(7);
 
     /*
@@ -408,7 +408,7 @@ describe("coherence-beamsplitter", () => {
     it(`Construct two asset Prism ETF`, async () => {
       const _scalar =
         10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
-      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
+      const AMOUNT_TO_CONSTRUCT = new BN(1800266);
 
       const tokenABalBefore = (await getTokenAccount(provider, tokenAATA))
         .amount;
@@ -512,7 +512,9 @@ describe("coherence-beamsplitter", () => {
 
       let expectedADiff = AMOUNT_TO_CONSTRUCT.mul(
         new BN(weightedTokens[0]?.weight)
-      ).div(new BN(scalarA));
+      )
+        .div(new BN(scalarA))
+        .add(new BN(1));
 
       expectedADiff = expectedADiff.lte(new BN(0)) ? new BN(1) : expectedADiff;
 
@@ -531,7 +533,9 @@ describe("coherence-beamsplitter", () => {
 
       let expectedBDiff = AMOUNT_TO_CONSTRUCT.mul(
         new BN(weightedTokens[1]?.weight)
-      ).div(new BN(scalarB));
+      )
+        .div(new BN(scalarB))
+        .add(new BN(1));
 
       expectedBDiff = expectedBDiff.lte(new BN(0)) ? new BN(1) : expectedBDiff;
 
@@ -806,7 +810,7 @@ describe("coherence-beamsplitter", () => {
         return new Error("weight B undefined");
       }
 
-      const expectedBDiff = new BN(0);
+      const expectedBDiff = new BN(-1);
 
       assert(actualTokenBBalDiff.eq(expectedBDiff));
     });
@@ -1251,7 +1255,7 @@ describe("coherence-beamsplitter", () => {
         return new Error("weight B undefined");
       }
 
-      const expectedBDiff = new BN(0);
+      const expectedBDiff = new BN(-1);
 
       assert(actualTokenBBalDiff.eq(expectedBDiff));
     });
