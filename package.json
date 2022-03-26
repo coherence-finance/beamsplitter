@@ -1,6 +1,6 @@
 {
-  "name": "@coherence-fin/sdk",
-  "version": "0.0.13",
+  "name": "@coherence-finance/sdk",
+  "version": "0.0.21",
   "description": "SDK for Beamsplitter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -21,18 +21,21 @@
     "prepare": "husky install",
     "typecheck": "tsc",
     "copy-idl": "cp ./target/types/coherence_beamsplitter.ts src/",
-    "test": "anchor build && yarn copy-idl && anchor test --skip-build"
+    "test": "anchor build && yarn copy-idl && anchor test --skip-build",
+    "key": "solana-keygen pubkey ./target/deploy/coherence_beamsplitter-keypair.json"
   },
   "dependencies": {
-    "@saberhq/tsconfig": "^1.12.36"
+    "@saberhq/tsconfig": "^1.12.36",
+    "chai-as-promised": "^7.1.1",
+    "chai-bn": "^0.3.1"
   },
   "devDependencies": {
-    "@project-serum/anchor": "^0.19.1-beta.1",
+    "@project-serum/anchor": "^0.22.1",
     "@project-serum/common": "^0.0.1-beta.3",
     "@project-serum/serum": "^0.13.61",
     "@rushstack/eslint-patch": "^1.1.0",
     "@saberhq/anchor-contrib": "^1.12.50",
-    "@saberhq/chai-solana": "^1.12.9",
+    "@saberhq/chai-solana": "^1.12.52",
     "@saberhq/eslint-config": "^1.12.9",
     "@saberhq/solana": "^0.7.9",
     "@saberhq/solana-contrib": "^1.12.50",
@@ -41,8 +44,6 @@
     "@solana/web3.js": "^1.36.0",
     "@types/bn.js": "^5.1.0",
     "@types/mocha": "^9.0.0",
-    "bn.js": "^5.2.0",
-    "chai": "^4.3.4",
     "eslint": "^8.6.0",
     "eslint-import-resolver-node": "^0.3.6",
     "eslint-plugin-import": "^2.25.4",
@@ -59,8 +60,7 @@
     "@saberhq/anchor-contrib": "^1.12.50",
     "@saberhq/solana-contrib": "^1.12.50",
     "@saberhq/token-utils": "^1.12.50",
-    "@solana/web3.js": "^1.36.0",
-    "bn.js": "^5.2.0"
+    "@solana/web3.js": "^1.36.0"
   },
   "lint-staged": {
     "*.js": "eslint --cache --fix",

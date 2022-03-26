@@ -7,6 +7,7 @@ import {
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createInitMintInstructions,
+  getATAAddress,
   getMintInfo,
   getOrCreateATA,
   TOKEN_PROGRAM_ID,
@@ -27,13 +28,14 @@ import type {
   BeamsplitterData,
   BeamsplitterProgram,
   OrderStateData,
-  OrderType,
   PrismEtfData,
   TransferredTokensData,
   WeightedToken,
   WeightedTokensData,
 } from "./types";
 import {
+  enumLikeToString,
+  OrderType,
   stringToEnumLike,
   TRANSFERRED_TOKENS_SIZE,
   WEIGHTED_TOKENS_SIZE,
@@ -312,12 +314,14 @@ export class CoherenceBeamsplitterSDK {
     type,
     amount,
     transferredTokens,
+    shouldCreateAtas = true,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     type: OrderType;
     transferredTokens: PublicKey;
     amount: BN;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
 
@@ -336,7 +340,7 @@ export class CoherenceBeamsplitterSDK {
         mint: prismEtfMint,
       });
 
-    if (createATATx) {
+    if (createATATx && shouldCreateAtas) {
       initOrderStateEnvelope.addInstructions(createATATx);
     }
 
@@ -376,11 +380,13 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint,
     transferredTokens,
     orderStateAmount,
+    shouldCreateAtas = true, // If false, the instruction doesn't setup Ata's for you (careful with this, it may fail if you don't do it)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
     orderStateAmount: BN;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope[]> {
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -412,7 +418,7 @@ export class CoherenceBeamsplitterSDK {
       this.provider.wallet.publicKey
     );
 
-    const weightedTokensActualLength = weightedTokensAcct.index;
+    const weightedTokensActualLength = weightedTokensAcct.length;
     const constructTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokensActualLength; i++) {
       const constructEnvelope = new TransactionEnvelope(this.provider, []);
@@ -425,15 +431,15 @@ export class CoherenceBeamsplitterSDK {
       const weightedToken = weightedTokens[i]!;
 
       const {
-        address: beamsplitterTransferAta,
+        address: prismEtfTransferAta,
         instruction: createBeamsplitterAta,
       } = await getOrCreateATA({
         provider: this.provider,
         mint: weightedToken.mint,
-        owner: beamsplitter,
+        owner: prismEtfPda,
       });
 
-      if (createBeamsplitterAta) {
+      if (createBeamsplitterAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createBeamsplitterAta);
       }
 
@@ -443,23 +449,20 @@ export class CoherenceBeamsplitterSDK {
           mint: weightedToken.mint,
         });
 
-      if (createOrdererAta) {
+      if (createOrdererAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createOrdererAta);
       }
 
-      const mintData = await getMintInfo(this.provider, weightedToken.mint);
-
-      if (!mintData.mintAuthority) {
-        throw new Error("Transfer Token Mint has no authority");
-      }
-
-      const approvedAmount = orderStateAmount.mul(new BN(weightedToken.weight));
+      const prismTokenMintData = await getMintInfo(this.provider, prismEtfMint);
+      const approvedAmount = orderStateAmount
+        .div(new BN(10 ** prismTokenMintData.decimals))
+        .mul(new BN(weightedToken.weight));
 
       constructEnvelope.addInstructions(
         Token.createApproveInstruction(
           TOKEN_PROGRAM_ID,
           ordererTransferAta,
-          beamsplitterTransferAta,
+          prismEtfTransferAta,
           this.provider.wallet.publicKey,
           [],
           new u64(approvedAmount.toArrayLike(Buffer))
@@ -476,10 +479,9 @@ export class CoherenceBeamsplitterSDK {
               weightedTokens: prismEtf.weightedTokens,
               transferredTokens,
               orderer: this.provider.wallet.publicKey,
-              transferAuthority: this.provider.wallet.publicKey,
               transferMint: weightedToken.mint,
               ordererTransferAta,
-              beamsplitterTransferAta,
+              beamsplitterTransferAta: prismEtfTransferAta,
               beamsplitter,
               rent: SYSVAR_RENT_PUBKEY,
               associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -498,10 +500,12 @@ export class CoherenceBeamsplitterSDK {
     beamsplitter,
     prismEtfMint,
     transferredTokens,
+    shouldCreateAtas = true, // If false, the instruction doesn't setup Ata's for you (careful with this, it may fail if you don't do it)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope[]> {
     const prismEtf = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
@@ -533,7 +537,7 @@ export class CoherenceBeamsplitterSDK {
       this.provider.wallet.publicKey
     );
 
-    const weightedTokensActualLength = weightedTokensAcct.index;
+    const weightedTokensActualLength = weightedTokensAcct.length;
     const constructTxChunks: TransactionEnvelope[] = [];
     for (let i = 0; i < weightedTokensActualLength; i++) {
       const constructEnvelope = new TransactionEnvelope(this.provider, []);
@@ -546,15 +550,15 @@ export class CoherenceBeamsplitterSDK {
       const weightedToken = weightedTokens[i]!;
 
       const {
-        address: beamsplitterTransferAta,
+        address: prismEtfTransferAta,
         instruction: createBeamsplitterAta,
       } = await getOrCreateATA({
         provider: this.provider,
         mint: weightedToken.mint,
-        owner: beamsplitter,
+        owner: prismEtfPda,
       });
 
-      if (createBeamsplitterAta) {
+      if (createBeamsplitterAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createBeamsplitterAta);
       }
 
@@ -564,14 +568,8 @@ export class CoherenceBeamsplitterSDK {
           mint: weightedToken.mint,
         });
 
-      if (createOrdererAta) {
+      if (createOrdererAta && shouldCreateAtas) {
         constructEnvelope.addInstructions(createOrdererAta);
-      }
-
-      const mintData = await getMintInfo(this.provider, weightedToken.mint);
-
-      if (!mintData.mintAuthority) {
-        throw new Error("Transfer Token Mint has no authority");
       }
 
       constructTxChunks.push(
@@ -584,10 +582,9 @@ export class CoherenceBeamsplitterSDK {
               weightedTokens: prismEtf.weightedTokens,
               transferredTokens,
               orderer: this.provider.wallet.publicKey,
-              transferAuthority: beamsplitter,
               transferMint: weightedToken.mint,
               ordererTransferAta,
-              beamsplitterTransferAta,
+              beamsplitterTransferAta: prismEtfTransferAta,
               beamsplitter,
               rent: SYSVAR_RENT_PUBKEY,
               associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -606,10 +603,14 @@ export class CoherenceBeamsplitterSDK {
     beamsplitter,
     prismEtfMint,
     transferredTokens,
+    manager,
+    shouldCreateAtas = true, // If false, the instruction doesn't setup Ata's for you (careful with this, it may fail if you don't do it)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     transferredTokens: PublicKey;
+    manager: PublicKey;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope> {
     const initOrderStateEnvelope = new TransactionEnvelope(this.provider, []);
 
@@ -624,15 +625,48 @@ export class CoherenceBeamsplitterSDK {
       );
     }
 
-    const { address: transferredTokensAta, instruction: createATATx } =
+    const beamsplitterData = await this.fetchBeamsplitterDataFromSeeds();
+
+    if (!beamsplitterData) {
+      throw new Error(
+        "You must create the beamsplitter first. Call initialize()"
+      );
+    }
+
+    const { address: ownerEtfAta, instruction: createOwnerAtaTx } =
       await getOrCreateATA({
         provider: this.provider,
         mint: prismEtfMint,
+        owner: beamsplitterData.owner,
       });
 
-    if (createATATx) {
-      initOrderStateEnvelope.addInstructions(createATATx);
+    if (
+      createOwnerAtaTx &&
+      shouldCreateAtas &&
+      beamsplitterData.owner !== this.provider.wallet.publicKey
+    ) {
+      initOrderStateEnvelope.addInstructions(createOwnerAtaTx);
     }
+
+    const { address: managerEtfAta, instruction: createManagerEtfAtaTx } =
+      await getOrCreateATA({
+        provider: this.provider,
+        mint: prismEtfMint,
+        owner: manager,
+      });
+
+    if (
+      createManagerEtfAtaTx &&
+      shouldCreateAtas &&
+      manager !== this.provider.wallet.publicKey
+    ) {
+      initOrderStateEnvelope.addInstructions(createManagerEtfAtaTx);
+    }
+
+    const transferredTokensAta = await getATAAddress({
+      mint: prismEtfMint,
+      owner: this.provider.wallet.publicKey,
+    });
 
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
@@ -654,6 +688,10 @@ export class CoherenceBeamsplitterSDK {
           transferredTokens,
           orderer: this.provider.wallet.publicKey,
           ordererEtfAta: transferredTokensAta,
+          owner: beamsplitterData.owner,
+          ownerEtfAta,
+          manager,
+          managerEtfAta,
           beamsplitter,
           rent: SYSVAR_RENT_PUBKEY,
           weightedTokens: prismEtf.weightedTokens,
@@ -663,6 +701,136 @@ export class CoherenceBeamsplitterSDK {
         },
       })
     );
+  }
+
+  // Cancel pending order
+  async cancel({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope[]> {
+    const orderStateData = await this.fetchOrderStateDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+      orderer: this.provider.wallet.publicKey,
+    });
+
+    if (!orderStateData) {
+      throw new Error("Order state must be intialized");
+    }
+
+    if (!orderStateData.transferredTokens) {
+      throw new Error("Transferred Tokens does not exist");
+    }
+
+    const transferredTokens = (
+      await this.fetchTransferredTokens(orderStateData?.transferredTokens)
+    )?.transferredTokens;
+
+    if (!transferredTokens) {
+      throw new Error("Transferred Tokens array does not exist");
+    }
+
+    const txParams = {
+      prismEtfMint,
+      beamsplitter,
+      transferredTokens: orderStateData.transferredTokens,
+    };
+    const orderType = enumLikeToString(orderStateData?.orderType);
+    const intermediateTxChunks: TransactionEnvelope[] = await (orderType ===
+    OrderType.CONSTRUCTION
+      ? this.decohere(txParams)
+      : this.cohere({ ...txParams, orderStateAmount: orderStateData.amount }));
+
+    // Filter out any uncompleted cohere's / decohere's (this do not need to be cancelled)
+    return intermediateTxChunks.filter(
+      (_chunk, idx) =>
+        (orderType === OrderType.CONSTRUCTION && transferredTokens[idx]) ||
+        (orderType === OrderType.DECONSTRUCTION && !transferredTokens[idx])
+    );
+  }
+
+  async closePrismEtf({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+    const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+    if (!prismEtfData) {
+      throw new Error("PrismEtf not intialized");
+    }
+
+    if (!prismEtfData.weightedTokens) {
+      throw new Error("Weighted tokens not set");
+    }
+
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.closePrismEtf({
+        accounts: {
+          manager: this.provider.wallet.publicKey,
+          prismEtf,
+          weightedTokens: prismEtfData.weightedTokens,
+          prismEtfMint,
+          beamsplitter,
+          systemProgram: SystemProgram.programId,
+        },
+      }),
+    ]);
+  }
+
+  setOwner({
+    beamsplitter,
+    newOwner,
+  }: {
+    beamsplitter: PublicKey;
+    newOwner: PublicKey;
+  }): TransactionEnvelope {
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.setOwner({
+        accounts: {
+          owner: this.provider.wallet.publicKey,
+          newOwner,
+          beamsplitter,
+        },
+      }),
+    ]);
+  }
+
+  async setManager({
+    beamsplitter,
+    prismEtfMint,
+    newManager,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+    newManager: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const [prismEtf] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.setManager({
+        accounts: {
+          prismEtfMint: prismEtfMint,
+          prismEtf,
+          manager: this.provider.wallet.publicKey,
+          newManager,
+          beamsplitter,
+        },
+      }),
+    ]);
   }
 
   async fetchOrderStateDataFromSeeds({
@@ -690,6 +858,14 @@ export class CoherenceBeamsplitterSDK {
   ): Promise<BeamsplitterData | null> {
     return (await this.program.account.beamsplitter.fetchNullable(
       key
+    )) as BeamsplitterData;
+  }
+
+  async fetchBeamsplitterDataFromSeeds(): Promise<BeamsplitterData | null> {
+    return (await this.program.account.beamsplitter.fetchNullable(
+      (
+        await generateBeamsplitterAddress()
+      )[0]
     )) as BeamsplitterData;
   }
 

@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import "chai-bn";
+
 import { Provider, setProvider } from "@project-serum/anchor";
 import { makeSaberProvider } from "@saberhq/anchor-contrib";
 import { chaiSolana, expectTX } from "@saberhq/chai-solana";
@@ -171,7 +173,7 @@ describe("coherence-beamsplitter", () => {
   });
 
   const randomNumberTokens =
-    Math.floor((Math.random() * WEIGHTED_TOKENS_CAPACITY) / 40) + 1;
+    Math.floor(Math.random() * WEIGHTED_TOKENS_CAPACITY) + 1;
   it(`Create a Prism ETF with ${randomNumberTokens} asset(s)`, async () => {
     const [initPrismEtFTx, prismEtfMint, weightedTokensAcct] =
       await sdk.initPrismEtf({
@@ -197,7 +199,7 @@ describe("coherence-beamsplitter", () => {
     for (let i = 0; i < randomNumberTokens; i++) {
       weightedTokens.push({
         mint: new PublicKey(i),
-        weight: i + 1,
+        weight: new BN(i + 1),
       });
     }
 
@@ -215,13 +217,14 @@ describe("coherence-beamsplitter", () => {
     const weightedTokenData = await sdk.fetchWeightedTokens(
       prismEtf.weightedTokens
     );
-    expect(weightedTokenData?.index).to.be.equal(randomNumberTokens);
+
+    expect(weightedTokenData?.length).to.be.equal(randomNumberTokens);
 
     for (let i = 0; i < randomNumberTokens; i++) {
       assert(
         weightedTokenData?.weightedTokens[i]?.mint.equals(new PublicKey(i))
       );
-      expect(weightedTokenData?.weightedTokens[i]?.weight).to.be.equal(i + 1);
+      assert(weightedTokenData?.weightedTokens[i]?.weight.eq(new BN(i + 1)));
     }
 
     const finalizePrismEtfTx = await sdk.finalizePrismEtf({
@@ -247,13 +250,14 @@ describe("coherence-beamsplitter", () => {
     let prismEtfMint: PublicKey;
     let tokenAATA: PublicKey;
     let tokenBATA: PublicKey;
+    let tokenBMint: PublicKey;
     let transferredTokensAcct: PublicKey;
     let weightedTokens: WeightedToken[];
 
-    const decimalsA = 16;
-    const decimalsB = 3;
-    const tokenAWeight = 1;
-    const tokenBWeight = 10;
+    const decimalsA = 4;
+    const decimalsB = 11;
+    const tokenAWeight = new BN(3);
+    const tokenBWeight = new BN(7);
 
     /*
     1. Setup 2 Token Mints
@@ -304,6 +308,8 @@ describe("coherence-beamsplitter", () => {
         mintAuthority: authority,
       });
 
+      tokenBMint = tokenBKP.publicKey;
+
       await expectTX(tokenBMintTx).to.be.fulfilled;
 
       weightedTokens = [
@@ -332,7 +338,7 @@ describe("coherence-beamsplitter", () => {
         prismEtf.weightedTokens
       );
 
-      expect(weightedTokenData?.index).to.be.equal(2);
+      expect(weightedTokenData?.length).to.be.equal(2);
 
       const finalizePrismEtfTx = await sdk.finalizePrismEtf({
         beamsplitter,
@@ -444,6 +450,24 @@ describe("coherence-beamsplitter", () => {
 
       await expectTX(startOrder).to.be.fulfilled;
 
+      if (!orderState?.transferredTokens) {
+        return new Error("Transferred Tokens undefined");
+      }
+
+      let transferredTokens = await sdk.fetchTransferredTokens(
+        orderState?.transferredTokens
+      );
+
+      if (!transferredTokens?.transferredTokens) {
+        return new Error("Transferred Tokens Array undefined");
+      }
+
+      let transferredTokensArr = transferredTokens.transferredTokens;
+
+      for (let i = 0; i < transferredTokens.length; i++) {
+        expect(transferredTokensArr[i]).to.be.false;
+      }
+
       assert(authority.equals(sdk.provider.wallet.publicKey));
       const etfATAAddress = await getATAAddress({
         mint: prismEtfMint,
@@ -517,7 +541,7 @@ describe("coherence-beamsplitter", () => {
         return new Error("Transferred Tokens undefined");
       }
 
-      let transferredTokens = await sdk.fetchTransferredTokens(
+      transferredTokens = await sdk.fetchTransferredTokens(
         orderState?.transferredTokens
       );
 
@@ -525,16 +549,25 @@ describe("coherence-beamsplitter", () => {
         return new Error("Transferred Tokens Array undefined");
       }
 
-      let transferredTokensArr = transferredTokens.transferredTokens;
+      transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.true;
+      }
+
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
       }
 
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
         transferredTokens: _transferredTokens,
+        manager,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;
@@ -567,9 +600,215 @@ describe("coherence-beamsplitter", () => {
 
       transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
-        expect(transferredTokensArr[i]).to.be.false;
+      for (let i = 0; i < transferredTokens.length; i++) {
+        expect(transferredTokensArr[i]).to.be.true;
       }
+    });
+
+    /*it(`Validate amounts`, async () => {
+      console.log("here");
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
+
+      console.log("here2");
+      const startOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.DECONSTRUCTION,
+        amount: AMOUNT_TO_CONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+      console.log("here3");
+      await expectTX(startOrder).to.be.fulfilled;
+
+      const [prismETF] = await generatePrismEtfAddress(
+        prismEtfMint,
+        beamsplitter
+      );
+
+      console.log("here4");
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        orderStateAmount: AMOUNT_TO_CONSTRUCT,
+      });
+
+      await Promise.all(
+        cohere.map((cohereChunk) => expectTX(cohereChunk).to.be.fulfilled)
+      );
+
+      console.log("here5");
+      const beamsplitterBAta = await getATAAddress({
+        mint: tokenBATA,
+        owner: beamsplitter,
+      });
+      console.log("here6");
+      const tokenBBalBefore = (
+        await getTokenAccount(provider, beamsplitterBAta)
+      ).amount;
+      console.log("here7");
+      const tokenBBalAfter = (await getTokenAccount(provider, beamsplitterBAta))
+        .amount;
+      console.log(tokenBBalBefore.toString());
+      //console.log(tokenBBalAfter.toString());
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+      console.log("here8");
+      const finalizeOrderPre = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+      console.log("here");
+      await expectTX(finalizeOrderPre).to.be.fulfilled;
+
+      //console.log(tokenBBalBefore.toString());
+      //console.log(tokenBBalAfter.toString());
+    });*/
+
+    it(`Cancel DECONSTRUCT order`, async () => {
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_DECONSTRUCT = new BN(1).mul(new BN(_scalar));
+
+      const prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      if (!prismEtf) {
+        assert.fail("Prism Etf was not successfully created");
+      }
+
+      // ==== CONSTRUCT TOKENS (Prerequisite) ====
+
+      const prestartOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.CONSTRUCTION,
+        amount: AMOUNT_TO_DECONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      await expectTX(prestartOrder).to.be.fulfilled;
+
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        orderStateAmount: AMOUNT_TO_DECONSTRUCT,
+      });
+
+      await Promise.all(
+        cohere.map((cohereChunk) => expectTX(cohereChunk).to.be.fulfilled)
+      );
+
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+
+      const finalizeOrderPre = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+
+      await expectTX(finalizeOrderPre).to.be.fulfilled;
+
+      // ==== START =====
+
+      const tokenBBalBefore = (await getTokenAccount(provider, tokenBATA))
+        .amount;
+
+      const etfATAAddress = await getATAAddress({
+        mint: prismEtfMint,
+        owner: authority,
+      });
+
+      const etfBalanceBeforeOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const startOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.DECONSTRUCTION,
+        amount: AMOUNT_TO_DECONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      await expectTX(startOrder).to.be.fulfilled;
+      // ==== DECOHERE =====
+
+      const decohere = await sdk.decohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      if (!decohere[1]) {
+        assert.fail("Cohere 0 does not exist");
+      }
+
+      await expectTX(decohere[1]).to.be.fulfilled;
+
+      // ==== CANCEL =====
+
+      const cancel = await sdk.cancel({ beamsplitter, prismEtfMint });
+      await Promise.all(cancel.map((chunk) => expectTX(chunk).to.be.fulfilled));
+
+      // ==== FINALIZE =====
+
+      const finalizeOrder = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+
+      await expectTX(finalizeOrder).to.be.fulfilled;
+
+      // ==== CHECK ETF BALANCE DIFF =====
+
+      const expectedOrdererDiff = new BN(0);
+
+      const etfBalanceAfterOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const actualOrdererDiff = etfBalanceAfterOrderer.sub(
+        etfBalanceBeforeOrderer
+      );
+
+      assert(expectedOrdererDiff.eq(actualOrdererDiff));
+
+      // ==== CHECK TOKEN B BALANCE DIFF =====
+
+      const tokenBBalAfter = (await getTokenAccount(provider, tokenBATA))
+        .amount;
+
+      const actualTokenBBalDiff = tokenBBalAfter.sub(new BN(tokenBBalBefore));
+
+      if (!weightedTokens[1]?.weight) {
+        return new Error("weight B undefined");
+      }
+
+      const expectedBDiff = new BN(0);
+
+      assert(actualTokenBBalDiff.eq(expectedBDiff));
     });
 
     it(`Deconstruct two asset Prism ETF`, async () => {
@@ -615,6 +854,24 @@ describe("coherence-beamsplitter", () => {
       });
 
       await expectTX(startOrder).to.be.fulfilled;
+
+      if (!orderState?.transferredTokens) {
+        return new Error("Transferred Tokens undefined");
+      }
+
+      let transferredTokens = await sdk.fetchTransferredTokens(
+        orderState?.transferredTokens
+      );
+
+      if (!transferredTokens?.transferredTokens) {
+        return new Error("Transferred Tokens Array undefined");
+      }
+
+      let transferredTokensArr = transferredTokens.transferredTokens;
+
+      for (let i = 0; i < transferredTokens.length; i++) {
+        expect(transferredTokensArr[i]).to.be.true;
+      }
 
       assert(authority.equals(sdk.provider.wallet.publicKey));
 
@@ -677,7 +934,7 @@ describe("coherence-beamsplitter", () => {
         return new Error("Transferred Tokens undefined");
       }
 
-      let transferredTokens = await sdk.fetchTransferredTokens(
+      transferredTokens = await sdk.fetchTransferredTokens(
         orderState?.transferredTokens
       );
 
@@ -685,16 +942,25 @@ describe("coherence-beamsplitter", () => {
         return new Error("Transferred Tokens Array undefined");
       }
 
-      let transferredTokensArr = transferredTokens.transferredTokens;
+      transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
-        expect(transferredTokensArr[i]).to.be.true;
+      for (let i = 0; i < transferredTokens.length; i++) {
+        expect(transferredTokensArr[i]).to.be.false;
+      }
+
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
       }
 
       const finalizeOrder = await sdk.finalizeOrder({
         beamsplitter,
         prismEtfMint,
         transferredTokens: transferredTokensAcct,
+        manager,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;
@@ -727,9 +993,325 @@ describe("coherence-beamsplitter", () => {
 
       transferredTokensArr = transferredTokens.transferredTokens;
 
-      for (let i = 0; i < transferredTokens.index; i++) {
+      for (let i = 0; i < transferredTokens.length; i++) {
         expect(transferredTokensArr[i]).to.be.false;
       }
+    });
+
+    it(`Ensure fee distribution is correct`, async () => {
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
+
+      const etfATAAddress = await getATAAddress({
+        mint: prismEtfMint,
+        owner: authority,
+      });
+
+      const etfBalanceBeforeOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const newOwner = Keypair.generate();
+      const newManager = Keypair.generate();
+
+      const { address: ownerAta, instruction: createOwnerATA } =
+        await getOrCreateATA({
+          provider,
+          mint: prismEtfMint,
+          owner: newOwner.publicKey,
+        });
+
+      if (createOwnerATA) {
+        await expectTX(new TransactionEnvelope(provider, [createOwnerATA])).to
+          .be.fulfilled;
+      }
+
+      const { address: managerAta, instruction: createManagerATA } =
+        await getOrCreateATA({
+          provider,
+          mint: prismEtfMint,
+          owner: newManager.publicKey,
+        });
+
+      if (createManagerATA) {
+        await expectTX(new TransactionEnvelope(provider, [createManagerATA])).to
+          .be.fulfilled;
+      }
+
+      const etfBalanceBeforeOwner = (await getTokenAccount(provider, ownerAta))
+        .amount;
+
+      const etfBalanceBeforeManager = (
+        await getTokenAccount(provider, managerAta)
+      ).amount;
+
+      const setOwner = sdk.setOwner({
+        beamsplitter,
+        newOwner: newOwner.publicKey,
+      });
+
+      await expectTX(setOwner).to.be.fulfilled;
+
+      const beamsplitterData = await sdk.fetchBeamsplitterData(beamsplitter);
+      assert(beamsplitterData?.owner.equals(newOwner.publicKey));
+
+      const setManager = sdk.setManager({
+        beamsplitter,
+        prismEtfMint,
+        newManager: newManager.publicKey,
+      });
+
+      await expectTX(setManager).to.be.fulfilled;
+
+      const prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      if (!prismEtf) {
+        assert.fail("Prism Etf was not successfully created");
+      }
+
+      assert(prismEtf?.manager.equals(newManager.publicKey));
+
+      const startOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.CONSTRUCTION,
+        amount: AMOUNT_TO_CONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      await expectTX(startOrder).to.be.fulfilled;
+
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        orderStateAmount: AMOUNT_TO_CONSTRUCT,
+      });
+
+      await Promise.all(
+        cohere.map((cohereChunk) => expectTX(cohereChunk).to.be.fulfilled)
+      );
+
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+
+      const finalizeOrder = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+
+      await expectTX(finalizeOrder).to.be.fulfilled;
+
+      const etfBalanceAfterOwner = (await getTokenAccount(provider, ownerAta))
+        .amount;
+
+      const etfBalanceAfterManager = (
+        await getTokenAccount(provider, managerAta)
+      ).amount;
+
+      const etfBalanceAfterOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const feePortion = AMOUNT_TO_CONSTRUCT.mul(
+        new BN(prismEtf.constructionBps)
+      ).div(new BN(10 ** 4));
+
+      const expectedOrdererDiff = AMOUNT_TO_CONSTRUCT.sub(feePortion);
+
+      const expectedManagerDiff = feePortion
+        .mul(new BN(prismEtf.managerCut))
+        .div(new BN(10 ** 4));
+
+      const expectedOwnerDiff = feePortion.sub(expectedManagerDiff);
+
+      const actualOrdererDiff = etfBalanceAfterOrderer.sub(
+        etfBalanceBeforeOrderer
+      );
+      const actualOwnerDiff = etfBalanceAfterOwner.sub(etfBalanceBeforeOwner);
+      const actualManagerDiff = etfBalanceAfterManager.sub(
+        etfBalanceBeforeManager
+      );
+
+      assert(expectedOrdererDiff.eq(actualOrdererDiff));
+      assert(expectedOwnerDiff.eq(actualOwnerDiff));
+      assert(expectedManagerDiff.eq(actualManagerDiff));
+    });
+
+    it(`Cancel CONSTRUCT order`, async () => {
+      const _scalar =
+        10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
+      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
+
+      const etfATAAddress = await getATAAddress({
+        mint: prismEtfMint,
+        owner: authority,
+      });
+
+      const etfBalanceBeforeOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const prismEtf = await sdk.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+      });
+
+      if (!prismEtf) {
+        assert.fail("Prism Etf was not successfully created");
+      }
+
+      const tokenBBalBefore = (await getTokenAccount(provider, tokenBATA))
+        .amount;
+
+      // ==== START =====
+
+      const startOrder = await sdk.startOrder({
+        beamsplitter,
+        prismEtfMint,
+        type: OrderType.CONSTRUCTION,
+        amount: AMOUNT_TO_CONSTRUCT,
+        transferredTokens: transferredTokensAcct,
+      });
+
+      await expectTX(startOrder).to.be.fulfilled;
+
+      const cohere = await sdk.cohere({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        orderStateAmount: AMOUNT_TO_CONSTRUCT,
+      });
+
+      // ==== COHERE =====
+
+      if (!cohere[1]) {
+        assert.fail("Cohere 0 does not exist");
+      }
+
+      await expectTX(cohere[1]).to.be.fulfilled;
+
+      // ==== CANCEL =====
+
+      const cancel = await sdk.cancel({ beamsplitter, prismEtfMint });
+      await Promise.all(cancel.map((chunk) => expectTX(chunk).to.be.fulfilled));
+
+      // ==== FINALIZE =====
+
+      const manager = (
+        await sdk.fetchPrismEtfDataFromSeeds({ beamsplitter, prismEtfMint })
+      )?.manager;
+
+      if (!manager) {
+        return new Error("Manager undefined");
+      }
+
+      const finalizeOrder = await sdk.finalizeOrder({
+        beamsplitter,
+        prismEtfMint,
+        transferredTokens: transferredTokensAcct,
+        manager,
+      });
+
+      await expectTX(finalizeOrder).to.be.fulfilled;
+
+      // ==== CHECK ETF BALANCE DIFF =====
+
+      const expectedOrdererDiff = new BN(0);
+
+      const etfBalanceAfterOrderer = (
+        await getTokenAccount(provider, etfATAAddress)
+      ).amount;
+
+      const actualOrdererDiff = etfBalanceAfterOrderer.sub(
+        etfBalanceBeforeOrderer
+      );
+
+      assert(expectedOrdererDiff.eq(actualOrdererDiff));
+
+      // ==== CHECK TOKEN B BALANCE DIFF =====
+
+      const tokenBBalAfter = (await getTokenAccount(provider, tokenBATA))
+        .amount;
+
+      const actualTokenBBalDiff = tokenBBalAfter.sub(new BN(tokenBBalBefore));
+
+      if (!weightedTokens[1]?.weight) {
+        return new Error("weight B undefined");
+      }
+
+      const expectedBDiff = new BN(0);
+
+      assert(actualTokenBBalDiff.eq(expectedBDiff));
+    });
+
+    it(`Close PrismEtf`, async () => {
+      const preSolBal = (await provider.getAccountInfo(authority))?.accountInfo
+        .lamports;
+
+      const [initPrismEtf, testMint, testWeightedTokens] =
+        await sdk.initPrismEtf({ beamsplitter });
+      await expectTX(initPrismEtf).to.be.fulfilled;
+
+      const pushTokens = await sdk.pushTokens({
+        beamsplitter,
+        prismEtfMint: testMint,
+        weightedTokensAcct: testWeightedTokens,
+        weightedTokens: [
+          {
+            mint: new PublicKey(0),
+            weight: new BN(1),
+          },
+        ],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await expectTX(pushTokens[0]!).to.be.fulfilled;
+      const finalizePrismEtf = await sdk.finalizePrismEtf({
+        beamsplitter,
+        prismEtfMint: testMint,
+      });
+      await expectTX(finalizePrismEtf).to.be.fulfilled;
+
+      const closePrismEtf = await sdk.closePrismEtf({
+        prismEtfMint: testMint,
+        beamsplitter,
+      });
+
+      await expectTX(closePrismEtf).to.be.fulfilled;
+
+      const afterSolBal = (await provider.getAccountInfo(authority))
+        ?.accountInfo.lamports;
+
+      const weightedTokensData = await sdk.fetchWeightedTokens(
+        testWeightedTokens
+      );
+
+      const prismEtfTestData = await sdk.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint: testMint,
+      });
+
+      if (!preSolBal) {
+        throw new Error();
+      }
+
+      if (!afterSolBal) {
+        throw new Error();
+      }
+      expect(afterSolBal).to.be.not.eq(preSolBal);
+      expect(prismEtfTestData).to.be.null;
+      expect(weightedTokensData).to.be.null;
     });
   });
 });

@@ -3,6 +3,26 @@ export type CoherenceBeamsplitter = {
   "name": "coherence_beamsplitter",
   "constants": [
     {
+      "name": "DEFAULT_CONSTRUCT_BPS",
+      "type": "u16",
+      "value": "90"
+    },
+    {
+      "name": "DEFAULT_DECONSTRUCT_BPS",
+      "type": "u16",
+      "value": "0"
+    },
+    {
+      "name": "DEFAULT_MANAGER_BPS",
+      "type": "u16",
+      "value": "2_000"
+    },
+    {
+      "name": "BASIS_POINT_DECIMALS",
+      "type": "u8",
+      "value": "4"
+    },
+    {
       "name": "_PRISM_ETF_SIZE",
       "type": {
         "defined": "usize"
@@ -70,11 +90,6 @@ export type CoherenceBeamsplitter = {
       "name": "initPrismEtf",
       "accounts": [
         {
-          "name": "prismEtf",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "weightedTokens",
           "isMut": false,
           "isSigner": false
@@ -88,6 +103,11 @@ export type CoherenceBeamsplitter = {
           "name": "manager",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "beamsplitter",
@@ -111,11 +131,6 @@ export type CoherenceBeamsplitter = {
       "name": "finalizePrismEtf",
       "accounts": [
         {
-          "name": "prismEtf",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
@@ -124,6 +139,11 @@ export type CoherenceBeamsplitter = {
           "name": "manager",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "beamsplitter",
@@ -136,11 +156,6 @@ export type CoherenceBeamsplitter = {
     {
       "name": "pushTokens",
       "accounts": [
-        {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
         {
           "name": "weightedTokens",
           "isMut": true,
@@ -155,6 +170,11 @@ export type CoherenceBeamsplitter = {
           "name": "manager",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "beamsplitter",
@@ -187,11 +207,6 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "orderState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "transferredTokens",
           "isMut": false,
           "isSigner": false
@@ -204,6 +219,11 @@ export type CoherenceBeamsplitter = {
         {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -228,26 +248,6 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "orderState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "weightedTokens",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "orderer",
           "isMut": false,
           "isSigner": true
@@ -258,8 +258,28 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "transferredTokens",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -300,37 +320,12 @@ export type CoherenceBeamsplitter = {
       "name": "cohere",
       "accounts": [
         {
-          "name": "prismEtfMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "orderState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightedTokens",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
-          "name": "transferAuthority",
+          "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
         },
@@ -352,6 +347,26 @@ export type CoherenceBeamsplitter = {
         {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "transferredTokens",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -378,7 +393,7 @@ export type CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -386,37 +401,12 @@ export type CoherenceBeamsplitter = {
       "name": "decohere",
       "accounts": [
         {
-          "name": "prismEtfMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "orderState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightedTokens",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
-          "name": "transferAuthority",
+          "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
         },
@@ -438,6 +428,26 @@ export type CoherenceBeamsplitter = {
         {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "transferredTokens",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -464,7 +474,7 @@ export type CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -477,6 +487,36 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "orderer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ordererEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "managerEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ownerEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "prismEtf",
           "isMut": false,
           "isSigner": false
@@ -487,27 +527,17 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "weightedTokens",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "orderer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "ordererEtfAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "beamsplitter",
           "isMut": false,
           "isSigner": false
         },
@@ -533,6 +563,286 @@ export type CoherenceBeamsplitter = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "closePrismEtf",
+      "accounts": [
+        {
+          "name": "weightedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeOrderState",
+      "accounts": [
+        {
+          "name": "weightedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setOwner",
+      "accounts": [
+        {
+          "name": "newOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setDefaultManagerCut",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultConstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultDeconstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setManager",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "newManager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setManagerCut",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setConstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDeconstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -558,6 +868,48 @@ export type CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "referer",
+            "type": "publicKey"
+          },
+          {
+            "name": "totalSharedOrderStates",
+            "type": "u16"
+          },
+          {
+            "name": "constructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "deconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "managerCut",
+            "type": "u16"
+          },
+          {
+            "name": "managerFee",
+            "type": "u16"
+          },
+          {
+            "name": "rebalancingMode",
+            "type": {
+              "defined": "RebalancingMode"
+            }
+          },
+          {
+            "name": "autorebalancingSchedule",
+            "type": {
+              "defined": "AutorebalancingSchedule"
+            }
+          },
+          {
+            "name": "managerSchedule",
+            "type": {
+              "defined": "ManagerSchedule"
+            }
           }
         ]
       }
@@ -568,12 +920,12 @@ export type CoherenceBeamsplitter = {
         "kind": "struct",
         "fields": [
           {
-            "name": "index",
-            "type": "u32"
+            "name": "length",
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "weightedTokens",
@@ -627,12 +979,12 @@ export type CoherenceBeamsplitter = {
         "kind": "struct",
         "fields": [
           {
-            "name": "index",
-            "type": "u32"
+            "name": "length",
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "transferredTokens",
@@ -658,6 +1010,30 @@ export type CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "defaultConstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultDeconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultManagerCut",
+            "type": "u16"
+          },
+          {
+            "name": "defaultManagerFee",
+            "type": "u16"
+          },
+          {
+            "name": "referralCut",
+            "type": "u16"
+          },
+          {
+            "name": "autorebalancer",
+            "type": "publicKey"
           }
         ]
       }
@@ -675,7 +1051,7 @@ export type CoherenceBeamsplitter = {
           },
           {
             "name": "weight",
-            "type": "u32"
+            "type": "u64"
           }
         ]
       }
@@ -726,7 +1102,7 @@ export type CoherenceBeamsplitter = {
       }
     },
     {
-      "name": "RebalancingOption",
+      "name": "RebalancingMode",
       "type": {
         "kind": "enum",
         "variants": [
@@ -738,13 +1114,35 @@ export type CoherenceBeamsplitter = {
           }
         ]
       }
+    },
+    {
+      "name": "AutorebalancingSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ManagerSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
+          }
+        ]
+      }
     }
   ],
   "errors": [
     {
       "code": 6000,
       "name": "NotMintAuthority",
-      "msg": "Attempted to register prism etf but Beamsplitter was not authority over passed token AND you are not Beamsplitter owner"
+      "msg": "Attempted to register prism etf but Beamsplitter was not mint authority over passed token mint"
     },
     {
       "code": 6001,
@@ -785,6 +1183,61 @@ export type CoherenceBeamsplitter = {
       "code": 6008,
       "name": "StillPending",
       "msg": "Attempted to finalize but etf is still pending (some assets not transferred)"
+    },
+    {
+      "code": 6009,
+      "name": "IncorrectOrderStatus",
+      "msg": "Incorrect Order Status"
+    },
+    {
+      "code": 6010,
+      "name": "IncorrectOrderType",
+      "msg": "Incorrect Order Type"
+    },
+    {
+      "code": 6011,
+      "name": "NotEnoughApproved",
+      "msg": "Not enough approved."
+    },
+    {
+      "code": 6012,
+      "name": "IndexPassedBound",
+      "msg": "Index passed bound"
+    },
+    {
+      "code": 6013,
+      "name": "WrongIndexMint",
+      "msg": "Wrong asset mint. Mint keys did not match. Try changing index passed."
+    },
+    {
+      "code": 6014,
+      "name": "ScaleFailure",
+      "msg": "Scaling failed or overflowed."
+    },
+    {
+      "code": 6015,
+      "name": "U64Failure",
+      "msg": "Decimal to u64 conversion failed or overflowed."
+    },
+    {
+      "code": 6016,
+      "name": "PrismEtfNotFinished",
+      "msg": "Prism Etf was not done being designed when you tried to start an order."
+    },
+    {
+      "code": 6017,
+      "name": "ZeroOrder",
+      "msg": "Attempted to start an order of 0"
+    },
+    {
+      "code": 6018,
+      "name": "ZeroWeight",
+      "msg": "Attempted to set a weight at 0"
+    },
+    {
+      "code": 6019,
+      "name": "NotFreezeAuthority",
+      "msg": "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
     }
   ]
 };
@@ -794,6 +1247,26 @@ export const IDL: CoherenceBeamsplitter = {
   "name": "coherence_beamsplitter",
   "constants": [
     {
+      "name": "DEFAULT_CONSTRUCT_BPS",
+      "type": "u16",
+      "value": "90"
+    },
+    {
+      "name": "DEFAULT_DECONSTRUCT_BPS",
+      "type": "u16",
+      "value": "0"
+    },
+    {
+      "name": "DEFAULT_MANAGER_BPS",
+      "type": "u16",
+      "value": "2_000"
+    },
+    {
+      "name": "BASIS_POINT_DECIMALS",
+      "type": "u8",
+      "value": "4"
+    },
+    {
       "name": "_PRISM_ETF_SIZE",
       "type": {
         "defined": "usize"
@@ -861,11 +1334,6 @@ export const IDL: CoherenceBeamsplitter = {
       "name": "initPrismEtf",
       "accounts": [
         {
-          "name": "prismEtf",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "weightedTokens",
           "isMut": false,
           "isSigner": false
@@ -879,6 +1347,11 @@ export const IDL: CoherenceBeamsplitter = {
           "name": "manager",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "beamsplitter",
@@ -902,11 +1375,6 @@ export const IDL: CoherenceBeamsplitter = {
       "name": "finalizePrismEtf",
       "accounts": [
         {
-          "name": "prismEtf",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
@@ -915,6 +1383,11 @@ export const IDL: CoherenceBeamsplitter = {
           "name": "manager",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
         },
         {
           "name": "beamsplitter",
@@ -927,11 +1400,6 @@ export const IDL: CoherenceBeamsplitter = {
     {
       "name": "pushTokens",
       "accounts": [
-        {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
         {
           "name": "weightedTokens",
           "isMut": true,
@@ -946,6 +1414,11 @@ export const IDL: CoherenceBeamsplitter = {
           "name": "manager",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "beamsplitter",
@@ -978,11 +1451,6 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "orderState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "transferredTokens",
           "isMut": false,
           "isSigner": false
@@ -995,6 +1463,11 @@ export const IDL: CoherenceBeamsplitter = {
         {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1019,26 +1492,6 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "orderState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "weightedTokens",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "orderer",
           "isMut": false,
           "isSigner": true
@@ -1049,8 +1502,28 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "transferredTokens",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1091,37 +1564,12 @@ export const IDL: CoherenceBeamsplitter = {
       "name": "cohere",
       "accounts": [
         {
-          "name": "prismEtfMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "orderState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightedTokens",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
-          "name": "transferAuthority",
+          "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
         },
@@ -1143,6 +1591,26 @@ export const IDL: CoherenceBeamsplitter = {
         {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "transferredTokens",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1169,7 +1637,7 @@ export const IDL: CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -1177,37 +1645,12 @@ export const IDL: CoherenceBeamsplitter = {
       "name": "decohere",
       "accounts": [
         {
-          "name": "prismEtfMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "prismEtf",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "orderState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "weightedTokens",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
-          "name": "transferAuthority",
+          "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
         },
@@ -1229,6 +1672,26 @@ export const IDL: CoherenceBeamsplitter = {
         {
           "name": "beamsplitter",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtf",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "transferredTokens",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1255,7 +1718,7 @@ export const IDL: CoherenceBeamsplitter = {
       "args": [
         {
           "name": "index",
-          "type": "u32"
+          "type": "u16"
         }
       ]
     },
@@ -1268,6 +1731,36 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "orderer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ordererEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "managerEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ownerEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "prismEtf",
           "isMut": false,
           "isSigner": false
@@ -1278,27 +1771,17 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "weightedTokens",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "transferredTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "orderer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "ordererEtfAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "beamsplitter",
           "isMut": false,
           "isSigner": false
         },
@@ -1324,6 +1807,286 @@ export const IDL: CoherenceBeamsplitter = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "closePrismEtf",
+      "accounts": [
+        {
+          "name": "weightedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeOrderState",
+      "accounts": [
+        {
+          "name": "weightedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setOwner",
+      "accounts": [
+        {
+          "name": "newOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setDefaultManagerCut",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultConstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDefaultDeconstructionBps",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setManager",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "newManager",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setManagerCut",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDefaultManagerCut",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setConstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newConstructionBps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "setDeconstructionBps",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "newDeconstructionBps",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1349,6 +2112,48 @@ export const IDL: CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "referer",
+            "type": "publicKey"
+          },
+          {
+            "name": "totalSharedOrderStates",
+            "type": "u16"
+          },
+          {
+            "name": "constructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "deconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "managerCut",
+            "type": "u16"
+          },
+          {
+            "name": "managerFee",
+            "type": "u16"
+          },
+          {
+            "name": "rebalancingMode",
+            "type": {
+              "defined": "RebalancingMode"
+            }
+          },
+          {
+            "name": "autorebalancingSchedule",
+            "type": {
+              "defined": "AutorebalancingSchedule"
+            }
+          },
+          {
+            "name": "managerSchedule",
+            "type": {
+              "defined": "ManagerSchedule"
+            }
           }
         ]
       }
@@ -1359,12 +2164,12 @@ export const IDL: CoherenceBeamsplitter = {
         "kind": "struct",
         "fields": [
           {
-            "name": "index",
-            "type": "u32"
+            "name": "length",
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "weightedTokens",
@@ -1418,12 +2223,12 @@ export const IDL: CoherenceBeamsplitter = {
         "kind": "struct",
         "fields": [
           {
-            "name": "index",
-            "type": "u32"
+            "name": "length",
+            "type": "u16"
           },
           {
             "name": "capacity",
-            "type": "u32"
+            "type": "u16"
           },
           {
             "name": "transferredTokens",
@@ -1449,6 +2254,30 @@ export const IDL: CoherenceBeamsplitter = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "defaultConstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultDeconstructionBps",
+            "type": "u16"
+          },
+          {
+            "name": "defaultManagerCut",
+            "type": "u16"
+          },
+          {
+            "name": "defaultManagerFee",
+            "type": "u16"
+          },
+          {
+            "name": "referralCut",
+            "type": "u16"
+          },
+          {
+            "name": "autorebalancer",
+            "type": "publicKey"
           }
         ]
       }
@@ -1466,7 +2295,7 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "weight",
-            "type": "u32"
+            "type": "u64"
           }
         ]
       }
@@ -1517,7 +2346,7 @@ export const IDL: CoherenceBeamsplitter = {
       }
     },
     {
-      "name": "RebalancingOption",
+      "name": "RebalancingMode",
       "type": {
         "kind": "enum",
         "variants": [
@@ -1529,13 +2358,35 @@ export const IDL: CoherenceBeamsplitter = {
           }
         ]
       }
+    },
+    {
+      "name": "AutorebalancingSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ManagerSchedule",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NEVER"
+          }
+        ]
+      }
     }
   ],
   "errors": [
     {
       "code": 6000,
       "name": "NotMintAuthority",
-      "msg": "Attempted to register prism etf but Beamsplitter was not authority over passed token AND you are not Beamsplitter owner"
+      "msg": "Attempted to register prism etf but Beamsplitter was not mint authority over passed token mint"
     },
     {
       "code": 6001,
@@ -1576,6 +2427,61 @@ export const IDL: CoherenceBeamsplitter = {
       "code": 6008,
       "name": "StillPending",
       "msg": "Attempted to finalize but etf is still pending (some assets not transferred)"
+    },
+    {
+      "code": 6009,
+      "name": "IncorrectOrderStatus",
+      "msg": "Incorrect Order Status"
+    },
+    {
+      "code": 6010,
+      "name": "IncorrectOrderType",
+      "msg": "Incorrect Order Type"
+    },
+    {
+      "code": 6011,
+      "name": "NotEnoughApproved",
+      "msg": "Not enough approved."
+    },
+    {
+      "code": 6012,
+      "name": "IndexPassedBound",
+      "msg": "Index passed bound"
+    },
+    {
+      "code": 6013,
+      "name": "WrongIndexMint",
+      "msg": "Wrong asset mint. Mint keys did not match. Try changing index passed."
+    },
+    {
+      "code": 6014,
+      "name": "ScaleFailure",
+      "msg": "Scaling failed or overflowed."
+    },
+    {
+      "code": 6015,
+      "name": "U64Failure",
+      "msg": "Decimal to u64 conversion failed or overflowed."
+    },
+    {
+      "code": 6016,
+      "name": "PrismEtfNotFinished",
+      "msg": "Prism Etf was not done being designed when you tried to start an order."
+    },
+    {
+      "code": 6017,
+      "name": "ZeroOrder",
+      "msg": "Attempted to start an order of 0"
+    },
+    {
+      "code": 6018,
+      "name": "ZeroWeight",
+      "msg": "Attempted to set a weight at 0"
+    },
+    {
+      "code": 6019,
+      "name": "NotFreezeAuthority",
+      "msg": "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
     }
   ]
 };

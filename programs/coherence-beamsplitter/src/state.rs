@@ -21,15 +21,34 @@ pub struct PrismEtf {
     pub status: PrismEtfStatus,
     /// The bump for this PDA account
     pub bump: u8,
+    /// The referrer of this Prism ETF
+    pub referer: Pubkey,
+    /// How many shared order states have been intialized for this ETF
+    pub total_shared_order_states: u16,
+    /// Basis points used for construction fee
+    pub construction_bps: u16,
+    /// Basis points used for deconstruction fee
+    pub deconstruction_bps: u16,
+    /// Basis points used for manager's cut
+    pub manager_cut: u16,
+    /// Basis points used for recurring management fee
+    pub manager_fee: u16,
+    /// Rebalancing option dictates the managers ability to rebalance the account
+    pub rebalancing_mode: RebalancingMode,
+    /// How often the autorebalancer runs
+    pub autorebalancing_schedule: AutorebalancingSchedule,
+    /// How often the manager collects fee
+    pub manager_schedule: ManagerSchedule,
 }
 
+#[repr(packed)]
 #[account(zero_copy)]
 #[derive(Debug)]
 pub struct WeightedTokens {
     /// The index of array
-    pub index: u32,
+    pub length: u16,
     /// Max capacity of the array
-    pub capacity: u32,
+    pub capacity: u16,
     /// [WeightedToken] array
     pub weighted_tokens: [WeightedToken; 10], // TODO find better name
 }
@@ -54,9 +73,9 @@ pub struct OrderState {
 #[derive(Debug)]
 pub struct TransferredTokens {
     /// The index of array
-    pub index: u32,
+    pub length: u16,
     /// Max capacity of the array
-    pub capacity: u32,
+    pub capacity: u16,
     /// Each bool is true if the corresponding weight_token was transferred succesfully in the order
     pub transferred_tokens: [bool; 10], // TODO find better name
 }
@@ -65,7 +84,7 @@ pub struct TransferredTokens {
 #[derive(Debug, Default, AnchorDeserialize, AnchorSerialize)]
 pub struct WeightedToken {
     pub mint: Pubkey,
-    pub weight: u32,
+    pub weight: u64,
 }
 
 #[account]
@@ -75,4 +94,16 @@ pub struct Beamsplitter {
     pub owner: Pubkey,
     /// Bump seed. Stored for find_program_address on-chain performance
     pub bump: u8,
+    /// Default basis points used for construction fee
+    pub default_construction_bps: u16,
+    /// Default basis points used for deconstruction fee
+    pub default_deconstruction_bps: u16,
+    /// Default basis points used for manager's cut
+    pub default_manager_cut: u16,
+    /// Default basis points used for manager's recurring fee
+    pub default_manager_fee: u16,
+    /// The cut for referrer + referree
+    pub referral_cut: u16,
+    /// The account with rights to autorebalance prism etfs with non NEVER schedule
+    pub autorebalancer: Pubkey,
 }
