@@ -254,9 +254,9 @@ describe("coherence-beamsplitter", () => {
     let transferredTokensAcct: PublicKey;
     let weightedTokens: WeightedToken[];
 
-    const decimalsA = 4;
+    const decimalsA = 6;
     const decimalsB = 11;
-    const tokenAWeight = new BN(3);
+    const tokenAWeight = new BN(3246753);
     const tokenBWeight = new BN(7);
 
     /*
@@ -408,7 +408,7 @@ describe("coherence-beamsplitter", () => {
     it(`Construct two asset Prism ETF`, async () => {
       const _scalar =
         10 ** (await getMintInfo(provider, prismEtfMint)).decimals;
-      const AMOUNT_TO_CONSTRUCT = new BN(1).mul(new BN(_scalar));
+      const AMOUNT_TO_CONSTRUCT = new BN(1800266);
 
       const tokenABalBefore = (await getTokenAccount(provider, tokenAATA))
         .amount;

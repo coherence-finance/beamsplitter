@@ -320,7 +320,8 @@ pub mod coherence_beamsplitter {
             .to_u64()
             .ok_or(BeamsplitterErrors::U64Failure)?;
 
-        // This rounds up to 1 if the value was extremely small (prevent free cohere)
+        // This used to round up by default. Ex. if required_amount = 1.5, we must take 2. We always round up 1 even if required amount is 1.0 (becomes 2)
+        // This prevents free coheres where required amount could equal 0.2 and gets truncated to 0
         required_64 += 1;
 
         transfer(transfer_ctx, required_64)?;
@@ -496,6 +497,15 @@ pub mod coherence_beamsplitter {
         // Subtract out the manager portion from fee portion
         fee_portion.sub_assign(manager_portion);
 
+        let mut mint_amount_u64 = mint_amount.to_u64().ok_or(BeamsplitterErrors::U64Failure)?;
+        let fee_portion_u64 = fee_portion.to_u64().ok_or(BeamsplitterErrors::U64Failure)?;
+        let manager_portion_u64 = manager_portion
+            .to_u64()
+            .ok_or(BeamsplitterErrors::U64Failure)?;
+
+        // Add back any lost to rounding
+        mint_amount_u64 += amount - (mint_amount_u64 + fee_portion_u64 + manager_portion_u64);
+
         // Mint tokens to the orderer
         let mint_accounts_orderer = MintTo {
             mint: ctx.accounts.prism_etf_mint.to_account_info(),
@@ -512,10 +522,7 @@ pub mod coherence_beamsplitter {
             signer_seeds,
         );
 
-        mint_to(
-            mint_ctx_orderer,
-            mint_amount.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
-        )?;
+        mint_to(mint_ctx_orderer, mint_amount_u64)?;
 
         // Mint tokens to Program owner
         let mint_accounts_owner = MintTo {
@@ -533,10 +540,7 @@ pub mod coherence_beamsplitter {
             signer_seeds,
         );
 
-        mint_to(
-            mint_ctx_owner,
-            fee_portion.to_u64().ok_or(BeamsplitterErrors::U64Failure)?,
-        )?;
+        mint_to(mint_ctx_owner, fee_portion_u64)?;
 
         // Mint tokens to Manager of ETF
         let mint_accounts_manager = MintTo {
@@ -554,12 +558,7 @@ pub mod coherence_beamsplitter {
             signer_seeds,
         );
 
-        mint_to(
-            mint_ctx_manager,
-            manager_portion
-                .to_u64()
-                .ok_or(BeamsplitterErrors::U64Failure)?,
-        )?;
+        mint_to(mint_ctx_manager, manager_portion_u64)?;
 
         order_state.status = OrderStatus::SUCCEEDED;
 
