@@ -512,7 +512,9 @@ describe("coherence-beamsplitter", () => {
 
       let expectedADiff = AMOUNT_TO_CONSTRUCT.mul(
         new BN(weightedTokens[0]?.weight)
-      ).div(new BN(scalarA));
+      )
+        .div(new BN(scalarA))
+        .add(new BN(1));
 
       expectedADiff = expectedADiff.lte(new BN(0)) ? new BN(1) : expectedADiff;
 
@@ -531,7 +533,9 @@ describe("coherence-beamsplitter", () => {
 
       let expectedBDiff = AMOUNT_TO_CONSTRUCT.mul(
         new BN(weightedTokens[1]?.weight)
-      ).div(new BN(scalarB));
+      )
+        .div(new BN(scalarB))
+        .add(new BN(1));
 
       expectedBDiff = expectedBDiff.lte(new BN(0)) ? new BN(1) : expectedBDiff;
 
@@ -806,7 +810,7 @@ describe("coherence-beamsplitter", () => {
         return new Error("weight B undefined");
       }
 
-      const expectedBDiff = new BN(0);
+      const expectedBDiff = new BN(-1);
 
       assert(actualTokenBBalDiff.eq(expectedBDiff));
     });
@@ -1251,7 +1255,7 @@ describe("coherence-beamsplitter", () => {
         return new Error("weight B undefined");
       }
 
-      const expectedBDiff = new BN(0);
+      const expectedBDiff = new BN(-1);
 
       assert(actualTokenBBalDiff.eq(expectedBDiff));
     });

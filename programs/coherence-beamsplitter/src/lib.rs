@@ -321,9 +321,7 @@ pub mod coherence_beamsplitter {
             .ok_or(BeamsplitterErrors::U64Failure)?;
 
         // This rounds up to 1 if the value was extremely small (prevent free cohere)
-        if required_64 <= 0 {
-            required_64 = 1;
-        };
+        required_64 += 1;
 
         transfer(transfer_ctx, required_64)?;
 
