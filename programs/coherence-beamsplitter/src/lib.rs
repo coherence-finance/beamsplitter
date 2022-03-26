@@ -491,6 +491,10 @@ pub mod coherence_beamsplitter {
             fee_portion = Decimal::from(1u8);
         }
 
+        if mint_amount <= fee_portion {
+            return Err(BeamsplitterErrors::PotentialUnderflow.into());
+        }
+
         // Subtract out the construction fee from orderer amount
         mint_amount.sub_assign(fee_portion);
 

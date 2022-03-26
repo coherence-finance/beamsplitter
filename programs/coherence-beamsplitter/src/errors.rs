@@ -48,4 +48,8 @@ pub enum BeamsplitterErrors {
         "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
     )]
     NotFreezeAuthority, // 6019 - 0x1783
+    #[msg(
+        "The calculated fees were higher than the orderers received `mint_amount`, potentially resulting in underflow."
+    )]
+    PotentialUnderflow, // 6019 - 0x1783
 }
