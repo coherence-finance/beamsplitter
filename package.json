@@ -1,6 +1,6 @@
 {
-  "name": "@coherence-fin/sdk",
-  "version": "0.0.13",
+  "name": "@coherence-finance/sdk",
+  "version": "0.0.21",
   "description": "SDK for Beamsplitter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -21,11 +21,13 @@
     "prepare": "husky install",
     "typecheck": "tsc",
     "copy-idl": "cp ./target/types/coherence_beamsplitter.ts src/",
-    "test": "anchor build && yarn copy-idl && anchor test --skip-build"
+    "test": "anchor build && yarn copy-idl && anchor test --skip-build",
+    "key": "solana-keygen pubkey ./target/deploy/coherence_beamsplitter-keypair.json"
   },
   "dependencies": {
     "@saberhq/tsconfig": "^1.12.36",
-    "chai-as-promised": "^7.1.1"
+    "chai-as-promised": "^7.1.1",
+    "chai-bn": "^0.3.1"
   },
   "devDependencies": {
     "@project-serum/anchor": "^0.22.1",
