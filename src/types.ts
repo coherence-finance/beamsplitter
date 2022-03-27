@@ -31,9 +31,9 @@ export type Defined = BeamsplitterTypes["Defined"];
 export type WeightedToken = Defined["WeightedToken"];
 
 // TODO figure out how to get this out of idl
-export const WEIGHTED_TOKENS_SIZE = 404 + 8; // Bytes
-export const TRANSFERRED_TOKENS_SIZE = 14 + 8; // Bytes
-export const WEIGHTED_TOKENS_CAPACITY = 10;
+export const WEIGHTED_TOKENS_SIZE = 4004 + 8; // Bytes
+export const TRANSFERRED_TOKENS_SIZE = 104 + 8; // Bytes
+export const WEIGHTED_TOKENS_CAPACITY = 100;
 
 /*export const constants = CoherenceBeamsplitterIDL.constants.reduce(
   (acc, next) => {

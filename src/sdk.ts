@@ -42,7 +42,7 @@ import {
 } from "./types";
 
 // How many weighted tokens are chunked together per tx
-const PUSH_TX_CHUNK_SIZE = 24;
+const PUSH_TX_CHUNK_SIZE = 22;
 
 // const CONSTRUCT_TX_CHUNK_SIZE = 24;
 // const DECONSTRUCT_TX_CHUNK_SIZE = 24;

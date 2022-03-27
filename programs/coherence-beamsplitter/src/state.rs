@@ -7,7 +7,7 @@ use crate::enums::*;
 #[constant]
 pub const _PRISM_ETF_SIZE: usize = size_of::<PrismEtf>();
 #[constant]
-pub const MAX_WEIGHTED_TOKENS: usize = 10;
+pub const MAX_WEIGHTED_TOKENS: usize = 100;
 
 /// Contains the info of the prism etf.
 #[account]
@@ -50,7 +50,7 @@ pub struct WeightedTokens {
     /// Max capacity of the array
     pub capacity: u16,
     /// [WeightedToken] array
-    pub weighted_tokens: [WeightedToken; 10], // TODO find better name
+    pub weighted_tokens: [WeightedToken; 100], // TODO find better name
 }
 
 /// Contains the info of the prism etf.
@@ -77,7 +77,7 @@ pub struct TransferredTokens {
     /// Max capacity of the array
     pub capacity: u16,
     /// Each bool is true if the corresponding weight_token was transferred succesfully in the order
-    pub transferred_tokens: [bool; 10], // TODO find better name
+    pub transferred_tokens: [bool; 100], // TODO find better name
 }
 
 #[zero_copy]
