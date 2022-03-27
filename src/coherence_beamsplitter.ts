@@ -1238,6 +1238,11 @@ export type CoherenceBeamsplitter = {
       "code": 6019,
       "name": "NotFreezeAuthority",
       "msg": "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
+    },
+    {
+      "code": 6020,
+      "name": "PotentialUnderflow",
+      "msg": "The calculated fees were higher than the orderers received `mint_amount`, potentially resulting in underflow."
     }
   ]
 };
@@ -2482,6 +2487,11 @@ export const IDL: CoherenceBeamsplitter = {
       "code": 6019,
       "name": "NotFreezeAuthority",
       "msg": "Attempted to register prism etf but freeze authority exists and it's not Beamsplitter for passed token mint"
+    },
+    {
+      "code": 6020,
+      "name": "PotentialUnderflow",
+      "msg": "The calculated fees were higher than the orderers received `mint_amount`, potentially resulting in underflow."
     }
   ]
 };
