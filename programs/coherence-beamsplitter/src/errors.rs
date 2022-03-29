@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[error]
+#[error_code]
 pub enum BeamsplitterErrors {
     #[msg(
         "Attempted to register prism etf but Beamsplitter was not mint authority over passed token mint"

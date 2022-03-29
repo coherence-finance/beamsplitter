@@ -42,7 +42,7 @@ pub mod coherence_beamsplitter {
     use super::*;
 
     /// Initializes the Beamsplitter program state
-    pub fn initialize(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
+    pub fn initialize(ctx: Context<Initialize>, bump: u8) -> Result<()> {
         let beamsplitter = &mut ctx.accounts.beamsplitter;
 
         **beamsplitter = Beamsplitter {
@@ -59,7 +59,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn init_weighted_tokens(ctx: Context<InitWeightedTokens>) -> ProgramResult {
+    pub fn init_weighted_tokens(ctx: Context<InitWeightedTokens>) -> Result<()> {
         msg![
             "weighted tokens (without discriminator) is {} bytes",
             &size_of::<WeightedTokens>().to_string()[..]
@@ -69,7 +69,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn init_transferred_tokens(ctx: Context<InitTransferredTokens>) -> ProgramResult {
+    pub fn init_transferred_tokens(ctx: Context<InitTransferredTokens>) -> Result<()> {
         msg![
             "transferred tokens (without discriminator) is {} bytes",
             &size_of::<TransferredTokens>().to_string()[..]
@@ -79,7 +79,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn init_prism_etf(ctx: Context<InitPrismEtf>, bump: u8) -> ProgramResult {
+    pub fn init_prism_etf(ctx: Context<InitPrismEtf>, bump: u8) -> Result<()> {
         let prism_etf = &mut ctx.accounts.prism_etf;
         let beamsplitter = &ctx.accounts.beamsplitter;
         let weighted_tokens = &ctx.accounts.weighted_tokens;
@@ -118,7 +118,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn finalize_prism_etf(ctx: Context<FinalizePrismEtf>) -> ProgramResult {
+    pub fn finalize_prism_etf(ctx: Context<FinalizePrismEtf>) -> Result<()> {
         let prism_etf = &mut ctx.accounts.prism_etf;
         prism_etf.status = PrismEtfStatus::FINISHED;
 
@@ -126,7 +126,7 @@ pub mod coherence_beamsplitter {
     }
 
     /// Push weighted tokens into an ETF
-    pub fn push_tokens(ctx: Context<PushTokens>, new_tokens: Vec<WeightedToken>) -> ProgramResult {
+    pub fn push_tokens(ctx: Context<PushTokens>, new_tokens: Vec<WeightedToken>) -> Result<()> {
         let prism_etf = &ctx.accounts.prism_etf;
         let weighted_tokens = &mut ctx.accounts.weighted_tokens.load_mut()?;
 
@@ -150,7 +150,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn init_order_state(ctx: Context<InitOrderState>, bump: u8) -> ProgramResult {
+    pub fn init_order_state(ctx: Context<InitOrderState>, bump: u8) -> Result<()> {
         let order_state = &mut ctx.accounts.order_state;
         order_state.bump = bump;
         order_state.transferred_tokens = ctx.accounts.transferred_tokens.key();
@@ -173,11 +173,7 @@ pub mod coherence_beamsplitter {
     2. Set order_state.type = <order_type>
     3. if order_state.type == DECONSTRUCTION, burn <amount> of tokens
     */
-    pub fn start_order(
-        ctx: Context<StartOrder>,
-        order_type: OrderType,
-        amount: u64,
-    ) -> ProgramResult {
+    pub fn start_order(ctx: Context<StartOrder>, order_type: OrderType, amount: u64) -> Result<()> {
         let order_state = &mut ctx.accounts.order_state;
         let prism_etf = &ctx.accounts.prism_etf;
 
@@ -255,7 +251,7 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer amount of required tokens to Beamspltitter from user ata accounts
     */
-    pub fn cohere(ctx: Context<Cohere>, index: u16) -> ProgramResult {
+    pub fn cohere(ctx: Context<Cohere>, index: u16) -> Result<()> {
         let order_state = &mut ctx.accounts.order_state;
         let index_usize = index as usize;
 
@@ -325,7 +321,7 @@ pub mod coherence_beamsplitter {
         required_64 += 1;
 
         transfer(transfer_ctx, required_64)?;
-
+        msg!("here");
         Ok(())
     }
 
@@ -343,7 +339,7 @@ pub mod coherence_beamsplitter {
     Flow:
     1. Transfer tokens from beamsplitter to user
     */
-    pub fn decohere(ctx: Context<Cohere>, index: u16) -> ProgramResult {
+    pub fn decohere(ctx: Context<Cohere>, index: u16) -> Result<()> {
         let index_usize = index as usize;
         let order_state = &mut ctx.accounts.order_state;
 
@@ -427,7 +423,7 @@ pub mod coherence_beamsplitter {
     1. Set order_state.status = SUCCEEDED
     2. if order_state.type == CONSTRUCTION, mint order_state.amount of tokens
     */
-    pub fn finalize_order(ctx: Context<FinalizeOrder>) -> ProgramResult {
+    pub fn finalize_order(ctx: Context<FinalizeOrder>) -> Result<()> {
         let order_state = &mut ctx.accounts.order_state;
 
         if order_state.status != OrderStatus::PENDING {
@@ -492,7 +488,7 @@ pub mod coherence_beamsplitter {
         }
 
         if mint_amount <= fee_portion {
-            return Err(BeamsplitterErrors::PotentialUnderflow.into());
+            return err!(BeamsplitterErrors::PotentialUnderflow);
         }
 
         // Subtract out the construction fee from orderer amount
@@ -569,18 +565,18 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn close_prism_etf(ctx: Context<ClosePrismEtf>) -> ProgramResult {
+    pub fn close_prism_etf(ctx: Context<ClosePrismEtf>) -> Result<()> {
         if ctx.accounts.prism_etf_mint.supply != 0 {
             return Err(BeamsplitterErrors::NonZeroSupply.into());
         }
         Ok(())
     }
 
-    pub fn close_order_state(_ctx: Context<ClosePrismEtf>) -> ProgramResult {
+    pub fn close_order_state(_ctx: Context<ClosePrismEtf>) -> Result<()> {
         Ok(())
     }
 
-    pub fn set_owner(ctx: Context<SetOwner>) -> ProgramResult {
+    pub fn set_owner(ctx: Context<SetOwner>) -> Result<()> {
         ctx.accounts.beamsplitter.owner = ctx.accounts.new_owner.key();
         Ok(())
     }
@@ -588,7 +584,7 @@ pub mod coherence_beamsplitter {
     pub fn set_default_manager_cut(
         ctx: Context<SetDefaultManagerCut>,
         new_default_manager_cut: u16,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         ctx.accounts.beamsplitter.default_manager_cut = new_default_manager_cut;
         Ok(())
     }
@@ -596,7 +592,7 @@ pub mod coherence_beamsplitter {
     pub fn set_default_construction_bps(
         ctx: Context<SetDefaultConstruction>,
         new_construction_bps: u16,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         ctx.accounts.beamsplitter.default_construction_bps = new_construction_bps;
         Ok(())
     }
@@ -604,12 +600,12 @@ pub mod coherence_beamsplitter {
     pub fn set_default_deconstruction_bps(
         ctx: Context<SetDefaultDeconstruction>,
         new_deconstruction_bps: u16,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         ctx.accounts.beamsplitter.default_deconstruction_bps = new_deconstruction_bps;
         Ok(())
     }
 
-    pub fn set_manager(ctx: Context<SetManager>) -> ProgramResult {
+    pub fn set_manager(ctx: Context<SetManager>) -> Result<()> {
         ctx.accounts.prism_etf.manager = ctx.accounts.new_manager.key();
         Ok(())
     }
@@ -617,7 +613,7 @@ pub mod coherence_beamsplitter {
     pub fn set_manager_cut(
         ctx: Context<SetManagerCut>,
         new_default_manager_cut: u16,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         ctx.accounts.prism_etf.manager_cut = new_default_manager_cut;
         Ok(())
     }
@@ -625,7 +621,7 @@ pub mod coherence_beamsplitter {
     pub fn set_construction_bps(
         ctx: Context<SetConstruction>,
         new_construction_bps: u16,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         ctx.accounts.prism_etf.construction_bps = new_construction_bps;
         Ok(())
     }
@@ -633,7 +629,7 @@ pub mod coherence_beamsplitter {
     pub fn set_deconstruction_bps(
         ctx: Context<SetDeconstruction>,
         new_deconstruction_bps: u16,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         ctx.accounts.prism_etf.deconstruction_bps = new_deconstruction_bps;
         Ok(())
     }

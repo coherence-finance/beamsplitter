@@ -20,7 +20,7 @@
     "lint": "eslint .",
     "prepare": "husky install",
     "typecheck": "tsc",
-    "copy-idl": "cp ./target/types/coherence_beamsplitter.ts src/",
+    "copy-idl": "cp ./target/types/coherence_beamsplitter.ts src/ && cp ./target/idl/coherence_beamsplitter.json src/coherence_beamsplitter_idl.json",
     "test": "anchor build && yarn copy-idl && anchor test --skip-build",
     "key": "solana-keygen pubkey ./target/deploy/coherence_beamsplitter-keypair.json",
     "pub": "npm version patch --force && npm run build && npm publish"

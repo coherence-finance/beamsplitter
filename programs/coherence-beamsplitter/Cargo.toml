@@ -16,9 +16,8 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.20.0"
-anchor-spl = { version = "0.20.0", features = ["dex"] }
-solana-program = "1.9.5"
+anchor-lang = "0.23.0"
+anchor-spl = { version = "0.23.0", features = ["dex"] }
 bigdecimal = "0.3.0"
 rust_decimal = "1.21"
 borsh = { version = "0.9.2", features = ["const-generics"] }

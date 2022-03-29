@@ -6,6 +6,10 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 
+const BEAMSPLITTER_SIZE: usize = std::mem::size_of::<Beamsplitter>();
+const PRISM_ETF_SIZE: usize = std::mem::size_of::<PrismEtf>();
+const ORDER_STATE_SIZE: usize = std::mem::size_of::<OrderState>();
+
 #[derive(Accounts)]
 #[instruction(bump: u8)]
 pub struct Initialize<'info> {
@@ -17,9 +21,11 @@ pub struct Initialize<'info> {
         ],
         bump,
         payer = owner,
+        space = BEAMSPLITTER_SIZE + 8,
     )]
     pub beamsplitter: Account<'info, Beamsplitter>,
     /// The owner of the Beamsplitter program
+    #[account(mut)]
     pub owner: Signer<'info>,
 
     // ========================= Programs =========================
@@ -46,11 +52,12 @@ pub struct InitPrismEtf<'info> {
     /// [Mint] of the [PrismEtf].
     pub prism_etf_mint: Account<'info, Mint>,
 
+    #[account(mut)]
     pub manager: Signer<'info>,
 
     // ========================= PDA's =========================
     /// Information about the [PrismEtf].
-    #[account(init, seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = bump, payer = manager)]
+    #[account(init, seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump, payer = manager, space = PRISM_ETF_SIZE + 1 + 8)]
     pub prism_etf: Account<'info, PrismEtf>,
 
     /// The central mint authority for all registered tokens, used for checks
@@ -124,6 +131,7 @@ pub struct InitOrderState<'info> {
     pub transferred_tokens: AccountLoader<'info, TransferredTokens>,
 
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
+    #[account(mut)]
     pub orderer: Signer<'info>,
 
     // ========================= PDA's =========================
@@ -136,7 +144,7 @@ pub struct InitOrderState<'info> {
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
-    #[account(init, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = bump, payer = orderer)]
+    #[account(init, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump, payer = orderer, space = ORDER_STATE_SIZE + 4 + 8)]
     pub order_state: Account<'info, OrderState>,
 
     // ========================= Programs =========================
@@ -205,7 +213,7 @@ pub struct Cohere<'info> {
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
-    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = prism_etf, payer = orderer)]
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = prism_etf, mut)]
     pub beamsplitter_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     // ========================= PDA's =========================
@@ -222,7 +230,7 @@ pub struct Cohere<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump =  order_state.bump, has_one = transferred_tokens)]
+    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     // ========================= Big Data Accounts =========================
@@ -254,7 +262,7 @@ pub struct Decohere<'info> {
 
     // ========================= ATA's =========================
     /// The [TokenAccount] that transfers out tokens
-    #[account(init_if_needed, associated_token::mint = transfer_mint, associated_token::authority = orderer, payer = orderer)]
+    #[account(associated_token::mint = transfer_mint, associated_token::authority = orderer, mut)]
     pub orderer_transfer_ata: Box<Account<'info, TokenAccount>>,
 
     /// The [TokenAccount] that transfers in tokens
@@ -311,10 +319,10 @@ pub struct FinalizeOrder<'info> {
     #[account(associated_token::mint = prism_etf_mint, associated_token::authority = orderer, mut)]
     pub orderer_etf_ata: Box<Account<'info, TokenAccount>>,
 
-    #[account(init_if_needed, associated_token::mint = prism_etf_mint, associated_token::authority = manager, payer = orderer)]
+    #[account(associated_token::mint = prism_etf_mint, associated_token::authority = manager, mut)]
     pub manager_etf_ata: Box<Account<'info, TokenAccount>>,
 
-    #[account(init_if_needed, associated_token::mint = prism_etf_mint, associated_token::authority = owner, payer = orderer)]
+    #[account(associated_token::mint = prism_etf_mint, associated_token::authority = owner, mut)]
     pub owner_etf_ata: Box<Account<'info, TokenAccount>>,
 
     // ========================= PDA's =========================

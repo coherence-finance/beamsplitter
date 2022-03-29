@@ -1,8 +1,9 @@
+import { ACCOUNT_DISCRIMINATOR_SIZE } from "@project-serum/anchor";
 import type { AnchorTypes } from "@saberhq/anchor-contrib";
 import type { PublicKey } from "@solana/web3.js";
 
 import type { CoherenceBeamsplitter } from "./coherence_beamsplitter";
-//import CoherenceBeamsplitterIDL from "./coherence_beamsplitter.json";
+import CoherenceBeamsplitterIDL from "./coherence_beamsplitter_idl.json";
 
 export type BeamsplitterTypes = AnchorTypes<
   CoherenceBeamsplitter,
@@ -30,19 +31,28 @@ export type BeamsplitterProgram = BeamsplitterTypes["Program"];
 export type Defined = BeamsplitterTypes["Defined"];
 export type WeightedToken = Defined["WeightedToken"];
 
-// TODO figure out how to get this out of idl
-export const WEIGHTED_TOKENS_SIZE = 4004 + 8; // Bytes
-export const TRANSFERRED_TOKENS_SIZE = 104 + 8; // Bytes
-export const WEIGHTED_TOKENS_CAPACITY = 100;
+export const WEIGHTED_TOKENS_CAPACITY = parseInt(
+  (CoherenceBeamsplitterIDL as unknown as CoherenceBeamsplitter).constants.find(
+    (constant) => {
+      return constant.name === "MAX_WEIGHTED_TOKENS";
+    }
+  )?.value ?? "1"
+);
 
-/*export const constants = CoherenceBeamsplitterIDL.constants.reduce(
-  (acc, next) => {
-    return {
-      ...acc,
-      [next.name]: parseInt(next.value),
-    };
-  }
-);*/
+export const WEIGHTED_TOKEN_BYTE_SIZE = 40; // WeightedToken Struct size in bytes, u64 (8 bytes) + Pubkey (32 bytes)
+export const WEIGHTED_TOKENS_BYTE_SIZE = 4; // Weighted tokens metadata size in bytes, u16 + u16
+
+export const WEIGHTED_TOKENS_SIZE =
+  WEIGHTED_TOKENS_CAPACITY * WEIGHTED_TOKEN_BYTE_SIZE +
+  WEIGHTED_TOKENS_BYTE_SIZE +
+  ACCOUNT_DISCRIMINATOR_SIZE; // Bytes
+
+export const TRANSFERRED_TOKENS_BYTE_SIZE = 4; // Transferred tokens metadata size in bytes, u16 + u16
+
+export const TRANSFERRED_TOKENS_SIZE =
+  WEIGHTED_TOKENS_CAPACITY +
+  TRANSFERRED_TOKENS_BYTE_SIZE +
+  ACCOUNT_DISCRIMINATOR_SIZE; // Bytes
 
 export enum OrderType {
   CONSTRUCTION = "construction",
