@@ -108,7 +108,7 @@ pub struct Beamsplitter {
     pub default_manager_fee: u16,
     /// The cut for referrer + referree
     pub referral_cut: u16,
-    /// The number of slots that orders may pend for before being ownership can be stolen
+    /// The number of slots that orders may pend for before ownership can be stolen
     pub timeout_slots: u16,
     /// The account with rights to autorebalance prism etfs with non NEVER schedule
     pub autorebalancer: Pubkey,

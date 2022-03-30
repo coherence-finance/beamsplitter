@@ -13,8 +13,13 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import { Token, u64 } from "@solana/spl-token";
-import { PublicKey, Signer, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
-import { Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import type { PublicKey, Signer } from "@solana/web3.js";
+import {
+  Keypair,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
+  SYSVAR_RENT_PUBKEY,
+} from "@solana/web3.js";
 import BN from "bn.js";
 
 import { IDL } from "./coherence_beamsplitter";
