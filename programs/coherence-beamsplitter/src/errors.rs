@@ -51,5 +51,9 @@ pub enum BeamsplitterErrors {
     #[msg(
         "The calculated fees were higher than the orderers received `mint_amount`, potentially resulting in underflow."
     )]
-    PotentialUnderflow, // 6019 - 0x1783
+    PotentialUnderflow, // 6020 - 0x1784
+    #[msg(
+        "Attempted to take ownership of order state but order is pending and slot timeout has not yet passed."
+    )]
+    CouldNotBecomeOrderer, // 6021 - 0x1785
 }

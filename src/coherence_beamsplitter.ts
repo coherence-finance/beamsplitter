@@ -23,6 +23,11 @@ export type CoherenceBeamsplitter = {
       "value": "4"
     },
     {
+      "name": "DEFAULT_TIMEOUT_SLOTS",
+      "type": "u16",
+      "value": "10"
+    },
+    {
       "name": "_PRISM_ETF_SIZE",
       "type": {
         "defined": "usize"
@@ -288,6 +293,11 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -375,6 +385,11 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -452,6 +467,11 @@ export type CoherenceBeamsplitter = {
         },
         {
           "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
           "isMut": false,
           "isSigner": false
         },
@@ -947,6 +967,14 @@ export type CoherenceBeamsplitter = {
         "kind": "struct",
         "fields": [
           {
+            "name": "orderer",
+            "type": "publicKey"
+          },
+          {
+            "name": "timeout",
+            "type": "u64"
+          },
+          {
             "name": "transferredTokens",
             "type": "publicKey"
           },
@@ -1029,6 +1057,10 @@ export type CoherenceBeamsplitter = {
           },
           {
             "name": "referralCut",
+            "type": "u16"
+          },
+          {
+            "name": "timeoutSlots",
             "type": "u16"
           },
           {
@@ -1204,6 +1236,9 @@ export type CoherenceBeamsplitter = {
           },
           {
             "name": "PotentialUnderflow"
+          },
+          {
+            "name": "CouldNotBecomeOrderer"
           }
         ]
       }
@@ -1236,6 +1271,11 @@ export const IDL: CoherenceBeamsplitter = {
       "value": "4"
     },
     {
+      "name": "DEFAULT_TIMEOUT_SLOTS",
+      "type": "u16",
+      "value": "10"
+    },
+    {
       "name": "_PRISM_ETF_SIZE",
       "type": {
         "defined": "usize"
@@ -1501,6 +1541,11 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -1588,6 +1633,11 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -1665,6 +1715,11 @@ export const IDL: CoherenceBeamsplitter = {
         },
         {
           "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
           "isMut": false,
           "isSigner": false
         },
@@ -2160,6 +2215,14 @@ export const IDL: CoherenceBeamsplitter = {
         "kind": "struct",
         "fields": [
           {
+            "name": "orderer",
+            "type": "publicKey"
+          },
+          {
+            "name": "timeout",
+            "type": "u64"
+          },
+          {
             "name": "transferredTokens",
             "type": "publicKey"
           },
@@ -2242,6 +2305,10 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "referralCut",
+            "type": "u16"
+          },
+          {
+            "name": "timeoutSlots",
             "type": "u16"
           },
           {
@@ -2417,6 +2484,9 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "PotentialUnderflow"
+          },
+          {
+            "name": "CouldNotBecomeOrderer"
           }
         ]
       }

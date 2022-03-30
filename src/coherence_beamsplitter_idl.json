@@ -23,6 +23,11 @@
       "value": "4"
     },
     {
+      "name": "DEFAULT_TIMEOUT_SLOTS",
+      "type": "u16",
+      "value": "10"
+    },
+    {
       "name": "_PRISM_ETF_SIZE",
       "type": {
         "defined": "usize"
@@ -288,6 +293,11 @@
           "isSigner": false
         },
         {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -375,6 +385,11 @@
           "isSigner": false
         },
         {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -452,6 +467,11 @@
         },
         {
           "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
           "isMut": false,
           "isSigner": false
         },
@@ -947,6 +967,14 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "orderer",
+            "type": "publicKey"
+          },
+          {
+            "name": "timeout",
+            "type": "u64"
+          },
+          {
             "name": "transferredTokens",
             "type": "publicKey"
           },
@@ -1029,6 +1057,10 @@
           },
           {
             "name": "referralCut",
+            "type": "u16"
+          },
+          {
+            "name": "timeoutSlots",
             "type": "u16"
           },
           {
@@ -1204,6 +1236,9 @@
           },
           {
             "name": "PotentialUnderflow"
+          },
+          {
+            "name": "CouldNotBecomeOrderer"
           }
         ]
       }

@@ -189,6 +189,8 @@ pub struct StartOrder<'info> {
     // ========================= Programs =========================
     pub rent: Sysvar<'info, Rent>,
 
+    pub clock: Sysvar<'info, Clock>,
+
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub token_program: Program<'info, Token>,
@@ -242,6 +244,8 @@ pub struct Cohere<'info> {
     // ========================= Programs =========================
     pub rent: Sysvar<'info, Rent>,
 
+    pub clock: Sysvar<'info, Clock>,
+
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub token_program: Program<'info, Token>,
@@ -294,6 +298,8 @@ pub struct Decohere<'info> {
 
     // ========================= Programs =========================
     pub rent: Sysvar<'info, Rent>,
+
+    pub clock: Sysvar<'info, Clock>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 

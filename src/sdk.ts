@@ -13,7 +13,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import { Token, u64 } from "@solana/spl-token";
-import type { PublicKey, Signer } from "@solana/web3.js";
+import { PublicKey, Signer, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
 import { Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import BN from "bn.js";
 
@@ -366,6 +366,7 @@ export class CoherenceBeamsplitterSDK {
           ordererEtfAta,
           beamsplitter,
           rent: SYSVAR_RENT_PUBKEY,
+          clock: SYSVAR_CLOCK_PUBKEY,
           weightedTokens: prismEtf.weightedTokens,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -485,6 +486,7 @@ export class CoherenceBeamsplitterSDK {
               beamsplitterTransferAta: prismEtfTransferAta,
               beamsplitter,
               rent: SYSVAR_RENT_PUBKEY,
+              clock: SYSVAR_CLOCK_PUBKEY,
               associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
               tokenProgram: TOKEN_PROGRAM_ID,
               systemProgram: SystemProgram.programId,
@@ -588,6 +590,7 @@ export class CoherenceBeamsplitterSDK {
               beamsplitterTransferAta: prismEtfTransferAta,
               beamsplitter,
               rent: SYSVAR_RENT_PUBKEY,
+              clock: SYSVAR_CLOCK_PUBKEY,
               associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
               tokenProgram: TOKEN_PROGRAM_ID,
               systemProgram: SystemProgram.programId,
