@@ -559,11 +559,9 @@ pub struct CloseOrderState<'info> {
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
     pub orderer: Signer<'info>,
 
-    pub manager: AccountInfo<'info>,
-
     // ========================= PDA's =========================
     /// The Prism ETF [Account] that this instruction uses
-    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut, has_one = manager)]
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
     #[account(seeds = [b"OrderState".as_ref(), &beamsplitter.key().to_bytes(), &prism_etf_mint.key().to_bytes(), &(order_state.id as u64).to_be_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut, close = orderer)]

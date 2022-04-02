@@ -633,7 +633,7 @@ export type CoherenceBeamsplitter = {
       "name": "closeOrderState",
       "accounts": [
         {
-          "name": "weightedTokens",
+          "name": "transferredTokens",
           "isMut": true,
           "isSigner": false
         },
@@ -643,12 +643,17 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "manager",
+          "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
           "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
           "isMut": true,
           "isSigner": false
         },
@@ -1894,7 +1899,7 @@ export const IDL: CoherenceBeamsplitter = {
       "name": "closeOrderState",
       "accounts": [
         {
-          "name": "weightedTokens",
+          "name": "transferredTokens",
           "isMut": true,
           "isSigner": false
         },
@@ -1904,12 +1909,17 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "manager",
+          "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
           "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
           "isMut": true,
           "isSigner": false
         },

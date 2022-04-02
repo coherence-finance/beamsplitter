@@ -607,7 +607,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn close_order_state(_ctx: Context<ClosePrismEtf>) -> Result<()> {
+    pub fn close_order_state(_ctx: Context<CloseOrderState>) -> Result<()> {
         Ok(())
     }
 

@@ -854,33 +854,41 @@ export class CoherenceBeamsplitterSDK {
   async closeOrderState({
     beamsplitter,
     prismEtfMint,
+    id,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    id: number;
   }): Promise<TransactionEnvelope> {
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
     );
-    const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
+
+    const [orderState] = await generateOrderStateAddress(
+      prismEtfMint,
+      beamsplitter,
+      id
+    );
+
+    const orderStateData = await this.fetchOrderStateDataFromSeeds({
       beamsplitter,
       prismEtfMint,
+      id,
     });
-    if (!prismEtfData) {
-      throw new Error("PrismEtf not intialized");
-    }
 
-    if (!prismEtfData.weightedTokens) {
-      throw new Error("Weighted tokens not set");
+    if (!orderStateData || !orderStateData.transferredTokens) {
+      throw new Error("Orderstate was not initaliazed.");
     }
 
     return new TransactionEnvelope(this.provider, [
-      this.program.instruction.closePrismEtf({
+      this.program.instruction.closeOrderState({
         accounts: {
-          manager: this.provider.wallet.publicKey,
-          prismEtf,
-          weightedTokens: prismEtfData.weightedTokens,
+          transferredTokens: orderStateData.transferredTokens,
           prismEtfMint,
+          orderer: this.provider.wallet.publicKey,
+          prismEtf,
+          orderState,
           beamsplitter,
           systemProgram: SystemProgram.programId,
         },

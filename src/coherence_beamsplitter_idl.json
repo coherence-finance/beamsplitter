@@ -633,7 +633,7 @@
       "name": "closeOrderState",
       "accounts": [
         {
-          "name": "weightedTokens",
+          "name": "transferredTokens",
           "isMut": true,
           "isSigner": false
         },
@@ -643,12 +643,17 @@
           "isSigner": false
         },
         {
-          "name": "manager",
+          "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
           "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
           "isMut": true,
           "isSigner": false
         },
