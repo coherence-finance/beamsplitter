@@ -227,6 +227,11 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "orderState",
           "isMut": true,
           "isSigner": false
@@ -241,6 +246,10 @@ export type CoherenceBeamsplitter = {
         {
           "name": "bump",
           "type": "u8"
+        },
+        {
+          "name": "id",
+          "type": "u16"
         }
       ]
     },
@@ -966,6 +975,10 @@ export type CoherenceBeamsplitter = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "id",
+            "type": "u16"
+          },
           {
             "name": "orderer",
             "type": "publicKey"
@@ -1475,6 +1488,11 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "orderState",
           "isMut": true,
           "isSigner": false
@@ -1489,6 +1507,10 @@ export const IDL: CoherenceBeamsplitter = {
         {
           "name": "bump",
           "type": "u8"
+        },
+        {
+          "name": "id",
+          "type": "u16"
         }
       ]
     },
@@ -2214,6 +2236,10 @@ export const IDL: CoherenceBeamsplitter = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "id",
+            "type": "u16"
+          },
           {
             "name": "orderer",
             "type": "publicKey"

@@ -45,7 +45,7 @@ before("Initialize coherence helper", () => {
   let authority: PublicKey;
 
   // Unit tests
-  it("Initialize test state", async () => {
+  it("Initialize test state (fund accounts)", async () => {
     authority = testSigner.publicKey;
 
     await expectTX(

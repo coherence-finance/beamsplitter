@@ -57,6 +57,8 @@ pub struct WeightedTokens {
 #[account]
 #[derive(Copy, Debug, Default)]
 pub struct OrderState {
+    /// Used as additional bump in PDA seeds
+    pub id: u16,
     /// The current orderer using this shared_orderer_state
     pub orderer: Pubkey,
     /// After this epoch time (s) this shared_order_state may be used by another orderer
