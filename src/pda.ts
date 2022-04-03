@@ -28,6 +28,7 @@ export const generatePrismEtfAddress = (
 export const generateOrderStateAddress = (
   mint: PublicKey,
   beamsplitter: PublicKey,
+  orderer: PublicKey,
   id: number
 ): Promise<[PublicKey, number]> => {
   return PublicKey.findProgramAddress(
@@ -35,6 +36,7 @@ export const generateOrderStateAddress = (
       utils.bytes.utf8.encode("OrderState"),
       beamsplitter.toBuffer(),
       mint.toBuffer(),
+      orderer.toBuffer(),
       new u64(id).toBuffer(),
     ],
     PROGRAM_ID

@@ -10,7 +10,7 @@ use enums::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("2mh3iT7CjtTU36d1tL8ZfR9Wy4v2mJSReK7VLUYo18nu");
+declare_id!("Cm921Cpvi9CbeWyrjTUFccdaHTZwcQjJmEuGhNTo2NTh");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
 #[constant]
@@ -199,10 +199,6 @@ pub mod coherence_beamsplitter {
                 return Err(BeamsplitterErrors::CouldNotBecomeOrderer.into());
             }
         }*/
-
-        if order_state.orderer != ctx.accounts.orderer.key() {
-            return Err(ProgramError::IllegalOwner.into());
-        }
 
         if order_state.status == OrderStatus::PENDING {
             return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
