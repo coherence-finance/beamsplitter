@@ -1,27 +1,23 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import "chai-bn";
-
-import { chaiSolana, expectTX } from "@saberhq/chai-solana";
-import type { PublicKey } from "@saberhq/solana-contrib";
+import { expectTX } from "@saberhq/chai-solana";
 import { TransactionEnvelope } from "@saberhq/solana-contrib";
 import {
   createInitMintInstructions,
   createMintToInstruction,
   getMintInfo,
   getOrCreateATA,
-  u64,
 } from "@saberhq/token-utils";
+import { u64 } from "@solana/spl-token";
+import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
-import { BN } from "bn.js";
-import chai, { assert, expect } from "chai";
+import BN from "bn.js";
+import { assert, expect } from "chai";
 
 import type { WeightedToken } from "../../src";
 import { enumLikeToString } from "../../src";
-import { coherenceHelper } from "../helper";
+import { coherenceHelper } from "../coherenceBeamsplitterTest";
+import constructDeconstruct from "./coherence-beamsplitter";
 
-chai.use(chaiSolana);
-
-before("Intialize Unit Helper", () => {
+export default function unitTests() {
   let prismEtfMint: PublicKey;
   let tokenAATA: PublicKey;
   let tokenBATA: PublicKey;
@@ -181,14 +177,8 @@ before("Intialize Unit Helper", () => {
 
     await expectTX(tokenBToTx).to.be.fulfilled;
   });
-});
 
-// Create's PrismETF using coherencehelper's beamsplitter program
-export const createPrismEtfUsingHelper = async (
-  weightedTokens: WeightedToken[]
-) => {
-  await coherenceHelper.sdk.createPrismEtf({
-    beamsplitter: coherenceHelper.beamsplitter,
-    weightedTokens,
+  describe("#UNIT TESTS", () => {
+    constructDeconstruct();
   });
-};
+}

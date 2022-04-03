@@ -8,7 +8,7 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 
-import { coherenceHelper } from "./helper";
+import { coherenceHelper } from "./coherenceBeamsplitterTest";
 
 /*
 Includes a suite of commonly used functionality for retrieving ATA balances, account lamports (SOL balance), tracking diffs, etc

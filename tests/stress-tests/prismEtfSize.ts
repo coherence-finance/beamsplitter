@@ -8,11 +8,11 @@ import chai, { assert, expect } from "chai";
 
 import type { WeightedToken } from "../../src";
 import { enumLikeToString, WEIGHTED_TOKENS_CAPACITY } from "../../src";
-import { coherenceHelper } from "../helper";
+import { coherenceHelper } from "../coherenceBeamsplitterTest";
 
 chai.use(chaiSolana);
 
-describe("stress test large prism etf creation", () => {
+export default function prismEtfSize() {
   const randomNumberTokens =
     Math.floor(Math.random() * WEIGHTED_TOKENS_CAPACITY) + 1;
   it(`Create a Prism ETF with ${randomNumberTokens} asset(s)`, async () => {
@@ -86,4 +86,4 @@ describe("stress test large prism etf creation", () => {
 
     expect(enumLikeToString(prismEtf.status)).to.be.equal("finished");
   });
-});
+}

@@ -14,6 +14,9 @@ import chai, { expect } from "chai";
 import { before } from "mocha";
 
 import { CoherenceBeamsplitterSDK, generateBeamsplitterAddress } from "../src";
+import exploitTests from "./exploit-tests";
+import stressTests from "./stress-tests";
+import unitTests from "./unit-tests";
 
 chai.use(chaiSolana);
 
@@ -86,4 +89,10 @@ before("Initialize coherence helper", () => {
       beamsplitter: pdaKey,
     };
   });
+});
+
+describe("coherence-beamsplitter", () => {
+  stressTests();
+  exploitTests();
+  unitTests();
 });
