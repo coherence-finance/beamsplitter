@@ -308,6 +308,7 @@ export class CoherenceBeamsplitterSDK {
     const [orderStatePda, bump] = await generateOrderStateAddress(
       prismEtfMint,
       beamsplitter,
+      this.provider.wallet.publicKey,
       id
     );
 
@@ -390,6 +391,7 @@ export class CoherenceBeamsplitterSDK {
       [orderStatePda] = await generateOrderStateAddress(
         prismEtfMint,
         beamsplitter,
+        this.provider.wallet.publicKey,
         id
       );
     } else {
@@ -467,6 +469,7 @@ export class CoherenceBeamsplitterSDK {
     const [orderStatePda] = await generateOrderStateAddress(
       prismEtfMint,
       beamsplitter,
+      this.provider.wallet.publicKey,
       orderStateId
     );
 
@@ -590,6 +593,7 @@ export class CoherenceBeamsplitterSDK {
     const [orderStatePda] = await generateOrderStateAddress(
       prismEtfMint,
       beamsplitter,
+      this.provider.wallet.publicKey,
       orderStateId
     );
 
@@ -735,6 +739,7 @@ export class CoherenceBeamsplitterSDK {
     const [orderStatePda] = await generateOrderStateAddress(
       prismEtfMint,
       beamsplitter,
+      this.provider.wallet.publicKey,
       orderStateId
     );
 
@@ -868,6 +873,7 @@ export class CoherenceBeamsplitterSDK {
     const [orderState] = await generateOrderStateAddress(
       prismEtfMint,
       beamsplitter,
+      this.provider.wallet.publicKey,
       id
     );
 
@@ -975,15 +981,18 @@ export class CoherenceBeamsplitterSDK {
   async fetchOrderStateDataFromSeeds({
     beamsplitter,
     prismEtfMint,
+    orderer = this.provider.wallet.publicKey,
     id,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    orderer?: PublicKey;
     id: number;
   }): Promise<OrderStateData | null> {
     const [orderState] = await generateOrderStateAddress(
       prismEtfMint,
       beamsplitter,
+      orderer,
       id
     );
     return (await this.program.account.orderState.fetchNullable(
@@ -1048,11 +1057,13 @@ export class CoherenceBeamsplitterSDK {
   async getNextAvailableOrderState({
     beamsplitter,
     prismEtfMint,
+    orderer = this.provider.wallet.publicKey,
     maxToSearch,
     startFromId = 0,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    orderer?: PublicKey;
     startFromId?: number;
     maxToSearch?: number;
   }): Promise<[PublicKey, number]> {
@@ -1079,7 +1090,14 @@ export class CoherenceBeamsplitterSDK {
       }
       if (enumLikeToString(orderStateData.status) === OrderStatus.SUCCEEDED) {
         return [
-          (await generateOrderStateAddress(prismEtfMint, beamsplitter, i))[0],
+          (
+            await generateOrderStateAddress(
+              prismEtfMint,
+              beamsplitter,
+              orderer,
+              i
+            )
+          )[0],
           i,
         ];
       }
@@ -1092,11 +1110,13 @@ export class CoherenceBeamsplitterSDK {
   async getNextValidOrderState({
     beamsplitter,
     prismEtfMint,
+    orderer = this.provider.wallet.publicKey,
     maxToSearch,
     startFromId = 0,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    orderer?: PublicKey;
     startFromId?: number;
     maxToSearch?: number;
   }): Promise<[PublicKey, number]> {
@@ -1122,7 +1142,14 @@ export class CoherenceBeamsplitterSDK {
         break;
       }
       return [
-        (await generateOrderStateAddress(prismEtfMint, beamsplitter, i))[0],
+        (
+          await generateOrderStateAddress(
+            prismEtfMint,
+            beamsplitter,
+            orderer,
+            i
+          )
+        )[0],
         i,
       ];
     }
