@@ -36,11 +36,11 @@ import type {
   PrismEtfData,
   TransferredTokensData,
   WeightedToken,
-  WeightedTokensData} from "./types";
+  WeightedTokensData,
+} from "./types";
 import {
-  OrderStatus,
   enumLikeToString,
-  OrderStataus,
+  OrderStatus,
   OrderType,
   stringToEnumLike,
   TRANSFERRED_TOKENS_SIZE,
