@@ -59,7 +59,7 @@ export enum OrderType {
   DECONSTRUCTION = "deconstruction",
 }
 
-export enum OrderStataus {
+export enum OrderStatus {
   PENDING = "pending",
   SUCCEEDED = "succeeded",
 }

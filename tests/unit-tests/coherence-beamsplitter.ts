@@ -261,7 +261,7 @@ export default function constructDeconstruct() {
         await getTokenAccount(coherenceHelper.provider, etfATAAddress)
       ).amount;
 
-      const [, _id] = await coherenceHelper.sdk.getNextAvailableOrderState({
+      const [, _id] = await coherenceHelper.sdk.getNextValidOrderState({
         beamsplitter: coherenceHelper.beamsplitter,
         prismEtfMint,
       });
@@ -636,7 +636,7 @@ export default function constructDeconstruct() {
       ).amount;
 
       // TODO rename this
-      const [, _id] = await coherenceHelper.sdk.getNextAvailableOrderState({
+      const [, _id] = await coherenceHelper.sdk.getNextValidOrderState({
         beamsplitter: coherenceHelper.beamsplitter,
         prismEtfMint,
       });

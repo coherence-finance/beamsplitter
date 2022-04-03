@@ -36,9 +36,9 @@ import type {
   PrismEtfData,
   TransferredTokensData,
   WeightedToken,
-  WeightedTokensData,
-} from "./types";
+  WeightedTokensData} from "./types";
 import {
+  OrderStatus,
   enumLikeToString,
   OrderStataus,
   OrderType,
@@ -1077,17 +1077,54 @@ export class CoherenceBeamsplitterSDK {
       if (!orderStateData) {
         break;
       }
-      if (
-        enumLikeToString(orderStateData.status) === OrderStataus.SUCCEEDED ||
-        orderStateData.timeout.lte(
-          new BN(await this.provider.connection.getSlot())
-        )
-      ) {
+      if (enumLikeToString(orderStateData.status) === OrderStatus.SUCCEEDED) {
         return [
           (await generateOrderStateAddress(prismEtfMint, beamsplitter, i))[0],
           i,
         ];
       }
+    }
+    throw new Error(
+      "No available order states, create another or wait for availability"
+    );
+  }
+
+  async getNextValidOrderState({
+    beamsplitter,
+    prismEtfMint,
+    maxToSearch,
+    startFromId = 0,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+    startFromId?: number;
+    maxToSearch?: number;
+  }): Promise<[PublicKey, number]> {
+    if (!maxToSearch) {
+      const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+      });
+      if (!prismEtfData) {
+        throw new Error(
+          "prismEtfMint does not correspond to valid prismEtf account"
+        );
+      }
+      maxToSearch = prismEtfData.totalSharedOrderStates;
+    }
+    for (let i = startFromId; i < maxToSearch; i++) {
+      const orderStateData = await this.fetchOrderStateDataFromSeeds({
+        beamsplitter,
+        prismEtfMint,
+        id: i,
+      });
+      if (!orderStateData) {
+        break;
+      }
+      return [
+        (await generateOrderStateAddress(prismEtfMint, beamsplitter, i))[0],
+        i,
+      ];
     }
     throw new Error(
       "No available order states, create another or wait for availability"
