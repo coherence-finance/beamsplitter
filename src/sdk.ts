@@ -386,7 +386,7 @@ export class CoherenceBeamsplitterSDK {
     );
 
     let orderStatePda: PublicKey;
-    if (id) {
+    if (id !== undefined) {
       [orderStatePda] = await generateOrderStateAddress(
         prismEtfMint,
         beamsplitter,
