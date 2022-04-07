@@ -721,7 +721,8 @@ export class CoherenceBeamsplitterSDK {
     if (
       createManagerEtfAtaTx &&
       shouldCreateAtas &&
-      manager !== this.provider.wallet.publicKey
+      manager !== this.provider.wallet.publicKey &&
+      beamsplitterData.owner !== manager
     ) {
       initOrderStateEnvelope.addInstructions(createManagerEtfAtaTx);
     }
