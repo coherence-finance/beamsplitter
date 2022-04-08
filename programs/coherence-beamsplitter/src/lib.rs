@@ -200,10 +200,6 @@ pub mod coherence_beamsplitter {
             }
         }*/
 
-        if order_state.status == OrderStatus::PENDING {
-            return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
-        }
-
         if prism_etf.status != PrismEtfStatus::FINISHED {
             return Err(BeamsplitterErrors::PrismEtfNotFinished.into());
         }
