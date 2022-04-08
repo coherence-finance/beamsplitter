@@ -49,6 +49,7 @@ export default function prismEtfSize() {
       weightedTokens,
       prismEtfMint,
       weightedTokensAcct,
+      shouldCreateAtas: false,
     });
 
     // Have to do pushing in seq (Promise.all is not an option)

@@ -219,12 +219,13 @@ export default function constructDeconstruct() {
       expect(orderState?.transferredTokens).to.not.be.undefined;
       expect(enumLikeToString(orderState?.status)).to.be.equal("succeeded");
 
-      const [startOrder] = await coherenceHelper.sdk.startOrder({
+      const [startOrder, a_id] = await coherenceHelper.sdk.startOrder({
         beamsplitter: coherenceHelper.beamsplitter,
         prismEtfMint,
         type: OrderType.CONSTRUCTION,
         amount: AMOUNT_TO_CONSTRUCT,
         transferredTokens: _transferredTokens,
+        id,
       });
 
       await expectTX(startOrder).to.be.fulfilled;
@@ -283,7 +284,7 @@ export default function constructDeconstruct() {
         prismEtfMint,
         transferredTokens: _transferredTokens,
         orderStateAmount: AMOUNT_TO_CONSTRUCT,
-        orderStateId: _id,
+        orderStateId: id,
       });
 
       await Promise.all(
@@ -368,7 +369,7 @@ export default function constructDeconstruct() {
         prismEtfMint,
         transferredTokens: _transferredTokens,
         manager,
-        orderStateId: _id,
+        orderStateId: id,
       });
 
       await expectTX(finalizeOrder).to.be.fulfilled;
@@ -1108,6 +1109,7 @@ export default function constructDeconstruct() {
             weight: new BN(1),
           },
         ],
+        shouldCreateAtas: false,
       });
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       await expectTX(pushTokens[0]!).to.be.fulfilled;

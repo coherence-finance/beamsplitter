@@ -219,26 +219,38 @@ export class CoherenceBeamsplitterSDK {
     prismEtfMint, // Mint of the corresponding PrismEtf SPL token
     weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
     weightedTokensAcct, // Key of weighted tokens account (found inside prismETF PDA)
+    shouldCreateAtas = true, // Creates ATA's for each weighted token mint for the PrismETF PDA (this should usually be true)
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     weightedTokens: WeightedToken[];
     weightedTokensAcct: PublicKey;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope[]> {
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
     );
+    let pushTokenTxChunks = new TransactionEnvelope(this.provider, []);
+    for (let i = 0; i < weightedTokens.length; i++) {
+      const pushTokenChunk = new TransactionEnvelope(this.provider, []);
 
-    const pushTokenTxChunks: TransactionEnvelope[] = [];
-    for (let i = 0; i < weightedTokens.length; i += PUSH_TX_CHUNK_SIZE) {
-      const weightedTokensChunk = weightedTokens.slice(
-        i,
-        i + PUSH_TX_CHUNK_SIZE
-      );
-      pushTokenTxChunks.push(
-        new TransactionEnvelope(this.provider, [
-          this.program.instruction.pushTokens(weightedTokensChunk, {
+      // Setup ATA's for PDA
+      const { address: _, instruction: createATATx } = await getOrCreateATA({
+        provider: this.provider,
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        mint: weightedTokens[i]!.mint,
+        owner: prismEtf,
+      });
+
+      if (createATATx && shouldCreateAtas) {
+        pushTokenChunk.append(createATATx);
+      }
+
+      pushTokenChunk.append(
+        this.program.instruction.pushTokens(
+          [weightedTokens[i]] as WeightedToken[],
+          {
             accounts: {
               prismEtf,
               prismEtfMint,
@@ -247,12 +259,14 @@ export class CoherenceBeamsplitterSDK {
               manager: this.provider.wallet.publicKey,
               systemProgram: SystemProgram.programId,
             },
-          }),
-        ])
+          }
+        )
       );
+
+      pushTokenTxChunks = pushTokenTxChunks.combine(pushTokenChunk);
     }
 
-    return pushTokenTxChunks;
+    return pushTokenTxChunks.dedupeATAIXs().partition();
   }
 
   // Finalize PrismETF (you will no longer be able to modify it without rebalancing)
@@ -495,7 +509,7 @@ export class CoherenceBeamsplitterSDK {
       });
 
       if (createBeamsplitterAta && shouldCreateAtas) {
-        constructEnvelope.addInstructions(createBeamsplitterAta);
+        //constructEnvelope.addInstructions(createBeamsplitterAta);
       }
 
       const { address: ordererTransferAta, instruction: createOrdererAta } =
