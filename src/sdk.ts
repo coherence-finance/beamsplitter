@@ -273,15 +273,60 @@ export class CoherenceBeamsplitterSDK {
   async finalizePrismEtf({
     beamsplitter,
     prismEtfMint,
+    shouldCreateAtas = true,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
+    shouldCreateAtas?: boolean;
   }): Promise<TransactionEnvelope> {
+    const finalizeTx = new TransactionEnvelope(this.provider, []);
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
     );
-    return new TransactionEnvelope(this.provider, [
+
+    const beamsplitterData = await this.fetchBeamsplitterDataFromSeeds();
+
+    if (!beamsplitterData) {
+      throw new Error(
+        "You must create the beamsplitter first. Call initialize()"
+      );
+    }
+
+    const { address: _ownerEtfAta, instruction: createOwnerAtaTx } =
+      await getOrCreateATA({
+        provider: this.provider,
+        mint: prismEtfMint,
+        owner: beamsplitterData.owner,
+      });
+
+    if (
+      createOwnerAtaTx &&
+      shouldCreateAtas &&
+      beamsplitterData.owner.toString() !==
+        this.provider.wallet.publicKey.toString()
+    ) {
+      finalizeTx.append(createOwnerAtaTx);
+    }
+
+    const manager = this.provider.wallet.publicKey;
+
+    const { address: _managerEtfAta, instruction: createManagerEtfAtaTx } =
+      await getOrCreateATA({
+        provider: this.provider,
+        mint: prismEtfMint,
+        owner: manager,
+      });
+
+    if (
+      createManagerEtfAtaTx &&
+      shouldCreateAtas &&
+      manager.toString() !== this.provider.wallet.publicKey.toString() &&
+      beamsplitterData.owner.toString() !== manager.toString()
+    ) {
+      finalizeTx.append(createManagerEtfAtaTx);
+    }
+    return finalizeTx.append(
       this.program.instruction.finalizePrismEtf({
         accounts: {
           manager: this.provider.wallet.publicKey,
@@ -289,8 +334,8 @@ export class CoherenceBeamsplitterSDK {
           prismEtf,
           prismEtfMint,
         },
-      }),
-    ]);
+      })
+    );
   }
 
   async initOrderState({
@@ -392,7 +437,7 @@ export class CoherenceBeamsplitterSDK {
       });
 
     if (createATATx && shouldCreateAtas) {
-      initOrderStateEnvelope.addInstructions(createATATx);
+      initOrderStateEnvelope.append(createATATx);
     }
 
     const [prismEtfPda] = await generatePrismEtfAddress(
