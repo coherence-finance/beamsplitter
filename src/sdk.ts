@@ -363,7 +363,8 @@ export class CoherenceBeamsplitterSDK {
       );
     }
 
-    const id = prismEtfData.totalSharedOrderStates;
+    //const id = prismEtfData.totalSharedOrderStates;
+    const id = 0;
     const [orderStatePda, bump] = await generateOrderStateAddress(
       prismEtfMint,
       beamsplitter,
