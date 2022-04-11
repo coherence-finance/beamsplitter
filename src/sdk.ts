@@ -396,11 +396,7 @@ export class CoherenceBeamsplitterSDK {
       systemProgram: SystemProgram.programId.toString(),
     });*/
 
-    return [
-      initOrderStateEnvelope,
-      transferredTokensKP.publicKey,
-      prismEtfData.totalSharedOrderStates,
-    ];
+    return [initOrderStateEnvelope, transferredTokensKP.publicKey, id];
   }
 
   async startOrder({
