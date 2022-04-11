@@ -47,12 +47,6 @@ import {
   WEIGHTED_TOKENS_SIZE,
 } from "./types";
 
-// How many weighted tokens are chunked together per tx
-const PUSH_TX_CHUNK_SIZE = 22;
-
-// const CONSTRUCT_TX_CHUNK_SIZE = 24;
-// const DECONSTRUCT_TX_CHUNK_SIZE = 24;
-
 // Number of decimals used by prism etf by default
 export const PRISM_ETF_DECIMALS = 9;
 
