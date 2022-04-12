@@ -214,53 +214,49 @@ export class CoherenceBeamsplitterSDK {
     weightedTokens, // Weighted tokens being pushed into the Prism ETF (may be empty)
     weightedTokensAcct, // Key of weighted tokens account (found inside prismETF PDA)
     shouldCreateAtas = true, // Creates ATA's for each weighted token mint for the PrismETF PDA (this should usually be true)
+    manager = this.provider.wallet.publicKey,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
     weightedTokens: WeightedToken[];
     weightedTokensAcct: PublicKey;
     shouldCreateAtas?: boolean;
+    manager?: PublicKey;
   }): Promise<TransactionEnvelope[]> {
     const [prismEtf] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
     );
-    let pushTokenTxChunks = new TransactionEnvelope(this.provider, []);
-    for (let i = 0; i < weightedTokens.length; i++) {
-      const pushTokenChunk = new TransactionEnvelope(this.provider, []);
+    const pushTokenTxChunk = new TransactionEnvelope(this.provider, []);
 
+    for (const token of weightedTokens) {
+      const { mint } = token;
       // Setup ATA's for PDA
       const { address: _, instruction: createATATx } = await getOrCreateATA({
         provider: this.provider,
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        mint: weightedTokens[i]!.mint,
+        mint,
         owner: prismEtf,
       });
 
       if (createATATx && shouldCreateAtas) {
-        pushTokenChunk.append(createATATx);
+        pushTokenTxChunk.append(createATATx);
       }
 
-      pushTokenChunk.append(
-        this.program.instruction.pushTokens(
-          [weightedTokens[i]] as WeightedToken[],
-          {
-            accounts: {
-              prismEtf,
-              prismEtfMint,
-              beamsplitter,
-              weightedTokens: weightedTokensAcct,
-              manager: this.provider.wallet.publicKey,
-              systemProgram: SystemProgram.programId,
-            },
-          }
-        )
+      pushTokenTxChunk.append(
+        this.program.instruction.pushTokens([token] as WeightedToken[], {
+          accounts: {
+            prismEtf,
+            prismEtfMint,
+            beamsplitter,
+            weightedTokens: weightedTokensAcct,
+            manager,
+            systemProgram: SystemProgram.programId,
+          },
+        })
       );
-
-      pushTokenTxChunks = pushTokenTxChunks.combine(pushTokenChunk);
     }
 
-    return pushTokenTxChunks.dedupeATAIXs().partition();
+    return pushTokenTxChunk.partition();
   }
 
   // Finalize PrismETF (you will no longer be able to modify it without rebalancing)
