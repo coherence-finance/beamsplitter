@@ -664,12 +664,13 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn update_etf_price(ctx: Context<UpdatePrismEtfPrice>) -> Result<()> {
+    pub fn update_etf_price<'info>(
+        ctx: Context<'_, '_, '_, 'info, UpdatePrismEtfPrice<'info>>,
+    ) -> Result<()> {
         let mut etf_price = 0;
 
         let prism_etf = &mut ctx.accounts.prism_etf;
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
-        let weighted_tokens_length = weighted_tokens.length as usize;
 
         let token_feeds = &ctx.remaining_accounts;
 
@@ -677,13 +678,13 @@ pub mod coherence_beamsplitter {
 
         for (idx, feed) in token_feeds.iter().enumerate() {
             let round = chainlink::latest_round_data(
-                ctx.accounts.chainlink_program.clone().to_account_info(),
-                feed.clone().to_account_info(),
+                ctx.accounts.chainlink_program.to_account_info(),
+                feed.to_account_info(),
             )?;
 
             let decimals = chainlink::decimals(
-                ctx.accounts.chainlink_program.clone().to_account_info(),
-                feed.clone().to_account_info(),
+                ctx.accounts.chainlink_program.to_account_info(),
+                feed.to_account_info(),
             )?;
 
             let decimals = u32::from(decimals);
