@@ -602,6 +602,5 @@ pub struct UpdatePrismEtfPrice<'info> {
     )]
     pub beamsplitter: Account<'info, Beamsplitter>,
 
-    pub chainlink_feed: AccountInfo<'info>,
     pub chainlink_program: AccountInfo<'info>,
 }

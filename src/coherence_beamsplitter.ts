@@ -877,6 +877,47 @@ export type CoherenceBeamsplitter = {
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "updateEtfPrice",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "chainlinkFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "chainlinkProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -944,6 +985,10 @@ export type CoherenceBeamsplitter = {
             "type": {
               "defined": "ManagerSchedule"
             }
+          },
+          {
+            "name": "price",
+            "type": "u64"
           }
         ]
       }
@@ -2143,6 +2188,47 @@ export const IDL: CoherenceBeamsplitter = {
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "updateEtfPrice",
+      "accounts": [
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "weightedTokens",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "chainlinkFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "chainlinkProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -2210,6 +2296,10 @@ export const IDL: CoherenceBeamsplitter = {
             "type": {
               "defined": "ManagerSchedule"
             }
+          },
+          {
+            "name": "price",
+            "type": "u64"
           }
         ]
       }

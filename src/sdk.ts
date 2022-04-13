@@ -13,7 +13,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import { Token, u64 } from "@solana/spl-token";
-import type { PublicKey, Signer } from "@solana/web3.js";
+import { PublicKey, Signer } from "@solana/web3.js";
 import {
   Keypair,
   SystemProgram,
@@ -49,6 +49,10 @@ import {
 
 // Number of decimals used by prism etf by default
 export const PRISM_ETF_DECIMALS = 9;
+
+const CHAINLINK_PROGRAM_ID = new PublicKey(
+  "CaH12fwNTKJAG8PxEvo9R96Zc2j8qNHZaFj8ZW49yZNT"
+);
 
 export class CoherenceBeamsplitterSDK {
   constructor(
@@ -1204,5 +1208,41 @@ export class CoherenceBeamsplitterSDK {
     throw new Error(
       "No available order states, create another or wait for availability"
     );
+  }
+
+  async updatePrice({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<[PublicKey, number]> {
+    const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+    if (!prismEtfData) {
+      throw new Error(
+        "prismEtfMint does not correspond to valid prismEtf account"
+      );
+    }
+
+    const [prismEtfPda, bump] = await generatePrismEtfAddress(
+      prismEtfMint,
+      beamsplitter
+    );
+
+    return new TransactionEnvelope(this.provider, [
+      this.program.instruction.updateEtfPrice({
+        accounts: {
+          prismEtfMint: prismEtfMint,
+          weightedTokens: prismEtfData.weightedTokens,
+          manager: this.provider.wallet.publicKey,
+          prismEtf: prismEtfPda,
+          beamsplitter,
+          chainlinkProgram: CHAINLINK_PROGRAM_ID,
+        },
+      }),
+    ]);
   }
 }

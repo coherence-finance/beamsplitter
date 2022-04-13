@@ -671,20 +671,24 @@ pub mod coherence_beamsplitter {
         let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
         let weighted_tokens_length = weighted_tokens.length as usize;
 
+        let token_feeds = &ctx.remaining_accounts;
+
         let prism_etf_decimals = u32::from(ctx.accounts.prism_etf_mint.decimals);
 
-        for weighted_token in weighted_tokens.weighted_tokens[..weighted_tokens_length].iter() {
+        for (idx, feed) in token_feeds.iter().enumerate() {
             let round = chainlink::latest_round_data(
-                ctx.accounts.chainlink_program.to_account_info(),
-                ctx.accounts.chainlink_feed.to_account_info(),
+                ctx.accounts.chainlink_program.clone().to_account_info(),
+                feed.clone().to_account_info(),
             )?;
 
             let decimals = chainlink::decimals(
-                ctx.accounts.chainlink_program.to_account_info(),
-                ctx.accounts.chainlink_feed.to_account_info(),
+                ctx.accounts.chainlink_program.clone().to_account_info(),
+                feed.clone().to_account_info(),
             )?;
 
             let decimals = u32::from(decimals);
+
+            let weighted_token = weighted_tokens.weighted_tokens[idx];
 
             etf_price += (round.answer
                 * i128::pow(10, prism_etf_decimals)
