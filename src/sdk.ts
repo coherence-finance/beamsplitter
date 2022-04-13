@@ -13,9 +13,10 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import { Token, u64 } from "@solana/spl-token";
-import { PublicKey, Signer } from "@solana/web3.js";
+import type { AccountMeta, Signer } from "@solana/web3.js";
 import {
   Keypair,
+  PublicKey,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
@@ -1210,13 +1211,13 @@ export class CoherenceBeamsplitterSDK {
     );
   }
 
-  async updatePrice({
+  async getPrice({
     beamsplitter,
     prismEtfMint,
   }: {
     beamsplitter: PublicKey;
     prismEtfMint: PublicKey;
-  }): Promise<[PublicKey, number]> {
+  }): Promise<number> {
     const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
       beamsplitter,
       prismEtfMint,
@@ -1227,10 +1228,50 @@ export class CoherenceBeamsplitterSDK {
       );
     }
 
-    const [prismEtfPda, bump] = await generatePrismEtfAddress(
+    const { decimals } = await getMintInfo(this.provider, prismEtfMint);
+
+    return prismEtfData.price.toNumber() / Math.pow(10, decimals);
+  }
+
+  async updatePrice({
+    beamsplitter,
+    prismEtfMint,
+  }: {
+    beamsplitter: PublicKey;
+    prismEtfMint: PublicKey;
+  }): Promise<TransactionEnvelope> {
+    const prismEtfData = await this.fetchPrismEtfDataFromSeeds({
+      beamsplitter,
+      prismEtfMint,
+    });
+    if (!prismEtfData) {
+      throw new Error(
+        "prismEtfMint does not correspond to valid prismEtf account"
+      );
+    }
+
+    const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter
     );
+
+    const weightedTokensAcct = await this.fetchWeightedTokens(
+      prismEtfData.weightedTokens
+    );
+
+    if (!weightedTokensAcct) {
+      throw new Error("Weighted tokens was not initalized.");
+    }
+
+    const dataFeeds: AccountMeta[] = weightedTokensAcct.weightedTokens
+      .slice(weightedTokensAcct.length)
+      .map((d) => {
+        return {
+          pubkey: d.mint,
+          isSigner: false,
+          isWritable: false,
+        };
+      });
 
     return new TransactionEnvelope(this.provider, [
       this.program.instruction.updateEtfPrice({
@@ -1242,6 +1283,7 @@ export class CoherenceBeamsplitterSDK {
           beamsplitter,
           chainlinkProgram: CHAINLINK_PROGRAM_ID,
         },
+        remainingAccounts: dataFeeds,
       }),
     ]);
   }

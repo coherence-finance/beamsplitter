@@ -907,11 +907,6 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "chainlinkFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "chainlinkProgram",
           "isMut": false,
           "isSigner": false
@@ -2214,11 +2209,6 @@ export const IDL: CoherenceBeamsplitter = {
         },
         {
           "name": "beamsplitter",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "chainlinkFeed",
           "isMut": false,
           "isSigner": false
         },
