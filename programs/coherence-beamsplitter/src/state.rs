@@ -39,6 +39,8 @@ pub struct PrismEtf {
     pub autorebalancing_schedule: AutorebalancingSchedule,
     /// How often the manager collects fee
     pub manager_schedule: ManagerSchedule,
+    /// Price of the ETF, calculated from weighted sum
+    pub price: u64,
 }
 
 #[repr(packed)]

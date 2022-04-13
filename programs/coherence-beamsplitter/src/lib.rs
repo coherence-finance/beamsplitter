@@ -10,6 +10,8 @@ use enums::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
+use chainlink_solana as chainlink;
+
 declare_id!("Cm921Cpvi9CbeWyrjTUFccdaHTZwcQjJmEuGhNTo2NTh");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
@@ -106,6 +108,7 @@ pub mod coherence_beamsplitter {
             autorebalancing_schedule: AutorebalancingSchedule::NEVER,
             manager_schedule: ManagerSchedule::NEVER,
             referer: manager.key(),
+            price: 0,
         };
 
         if beamsplitter.key() != mint.mint_authority.unwrap() {
@@ -658,6 +661,41 @@ pub mod coherence_beamsplitter {
         new_deconstruction_bps: u16,
     ) -> Result<()> {
         ctx.accounts.prism_etf.deconstruction_bps = new_deconstruction_bps;
+        Ok(())
+    }
+
+    pub fn update_etf_price(ctx: Context<UpdatePrismEtfPrice>) -> Result<()> {
+        let mut etf_price = 0;
+
+        let prism_etf = &mut ctx.accounts.prism_etf;
+        let weighted_tokens = &ctx.accounts.weighted_tokens.load()?;
+        let weighted_tokens_length = weighted_tokens.length as usize;
+
+        let prism_etf_decimals = u32::from(ctx.accounts.prism_etf_mint.decimals);
+
+        for weighted_token in weighted_tokens.weighted_tokens[..weighted_tokens_length].iter() {
+            let round = chainlink::latest_round_data(
+                ctx.accounts.chainlink_program.to_account_info(),
+                ctx.accounts.chainlink_feed.to_account_info(),
+            )?;
+
+            let decimals = chainlink::decimals(
+                ctx.accounts.chainlink_program.to_account_info(),
+                ctx.accounts.chainlink_feed.to_account_info(),
+            )?;
+
+            let decimals = u32::from(decimals);
+
+            etf_price += (round.answer
+                * i128::pow(10, prism_etf_decimals)
+                * i128::from(weighted_token.weight)
+                / i128::pow(10, decimals * 2))
+            .to_u64()
+            .unwrap();
+        }
+
+        prism_etf.price = etf_price;
+
         Ok(())
     }
 }

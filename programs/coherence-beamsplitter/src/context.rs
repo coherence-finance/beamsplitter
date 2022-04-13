@@ -578,3 +578,30 @@ pub struct CloseOrderState<'info> {
 
     pub system_program: Program<'info, System>,
 }
+
+#[derive(Accounts)]
+pub struct UpdatePrismEtfPrice<'info> {
+    /// [Mint] of the [PrismEtf].
+    pub prism_etf_mint: Account<'info, Mint>,
+
+    pub weighted_tokens: AccountLoader<'info, WeightedTokens>,
+
+    pub manager: Signer<'info>,
+
+    // ========================= PDA's =========================
+    /// Information about the [PrismEtf].
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = manager, mut)]
+    pub prism_etf: Account<'info, PrismEtf>,
+
+    /// The central mint authority for all registered tokens, used for checks
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+    )]
+    pub beamsplitter: Account<'info, Beamsplitter>,
+
+    pub chainlink_feed: AccountInfo<'info>,
+    pub chainlink_program: AccountInfo<'info>,
+}
