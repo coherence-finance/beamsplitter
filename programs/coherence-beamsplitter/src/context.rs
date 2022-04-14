@@ -124,7 +124,7 @@ pub struct PushTokens<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
+#[instruction(bump: u8, id: u16)]
 pub struct InitOrderState<'info> {
     pub prism_etf_mint: Account<'info, Mint>,
 
@@ -144,7 +144,10 @@ pub struct InitOrderState<'info> {
     )]
     pub beamsplitter: Box<Account<'info, Beamsplitter>>,
 
-    #[account(init, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump, payer = orderer, space = ORDER_STATE_SIZE + 4 + 8)]
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+
+    #[account(init, seeds = [b"OrderState".as_ref(), &beamsplitter.key().to_bytes(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &(id as u64).to_le_bytes()], bump, payer = orderer, space = ORDER_STATE_SIZE + 4 + 8)]
     pub order_state: Account<'info, OrderState>,
 
     // ========================= Programs =========================
@@ -169,7 +172,7 @@ pub struct StartOrder<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(mut, seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
+    #[account(mut, seeds = [b"OrderState".as_ref(), &beamsplitter.key().to_bytes(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &(order_state.id as u64).to_le_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     #[account(
@@ -188,6 +191,8 @@ pub struct StartOrder<'info> {
 
     // ========================= Programs =========================
     pub rent: Sysvar<'info, Rent>,
+
+    pub clock: Sysvar<'info, Clock>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -230,7 +235,7 @@ pub struct Cohere<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = weighted_tokens)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
+    #[account(seeds = [b"OrderState".as_ref(), &beamsplitter.key().to_bytes(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &(order_state.id as u64).to_le_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     // ========================= Big Data Accounts =========================
@@ -241,6 +246,8 @@ pub struct Cohere<'info> {
 
     // ========================= Programs =========================
     pub rent: Sysvar<'info, Rent>,
+
+    pub clock: Sysvar<'info, Clock>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -274,7 +281,7 @@ pub struct Decohere<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
+    #[account(seeds = [b"OrderState".as_ref(), &beamsplitter.key().to_bytes(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &(order_state.id as u64).to_le_bytes()], bump = order_state.bump, has_one = transferred_tokens)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
@@ -294,6 +301,8 @@ pub struct Decohere<'info> {
 
     // ========================= Programs =========================
     pub rent: Sysvar<'info, Rent>,
+
+    pub clock: Sysvar<'info, Clock>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -330,7 +339,7 @@ pub struct FinalizeOrder<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, has_one = manager)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut)]
+    #[account(seeds = [b"OrderState".as_ref(), &beamsplitter.key().to_bytes(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &(order_state.id as u64).to_le_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
@@ -550,14 +559,12 @@ pub struct CloseOrderState<'info> {
     /// The [Signer] of the tx and owner of the [Deposit] [Account]
     pub orderer: Signer<'info>,
 
-    pub manager: AccountInfo<'info>,
-
     // ========================= PDA's =========================
     /// The Prism ETF [Account] that this instruction uses
-    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut, has_one = manager)]
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    #[account(seeds = [b"OrderState".as_ref(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut, close = orderer)]
+    #[account(seeds = [b"OrderState".as_ref(), &beamsplitter.key().to_bytes(), &prism_etf_mint.key().to_bytes(), &orderer.key().to_bytes(), &(order_state.id as u64).to_le_bytes()], bump = order_state.bump, has_one = transferred_tokens, mut, close = orderer)]
     pub order_state: Box<Account<'info, OrderState>>,
 
     /// The [Beamsplitter] [Account] that holds all of the Program's funds

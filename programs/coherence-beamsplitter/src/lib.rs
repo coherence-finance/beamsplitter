@@ -10,7 +10,7 @@ use enums::*;
 use errors::BeamsplitterErrors;
 use state::*;
 
-declare_id!("5g1y9P62oCLGGdhtfWZcpyK6FJUueMe4AHCbxNjtevPY");
+declare_id!("Cm921Cpvi9CbeWyrjTUFccdaHTZwcQjJmEuGhNTo2NTh");
 
 // The default share of transferred assets split between beamsplitter and manager (0.45% for each way)
 #[constant]
@@ -26,8 +26,13 @@ const DEFAULT_MANAGER_BPS: u16 = 2_000;
 #[constant]
 const BASIS_POINT_DECIMALS: u8 = 4;
 
+// The number of slots by default orders can pend for before ownership may be stolen
+#[constant]
+const DEFAULT_TIMEOUT_SLOTS: u16 = 10;
+
 #[program]
 pub mod coherence_beamsplitter {
+    use anchor_lang::solana_program::*;
     use std::{
         mem::size_of,
         ops::{Mul, MulAssign, SubAssign},
@@ -54,6 +59,7 @@ pub mod coherence_beamsplitter {
             default_manager_fee: 0,
             autorebalancer: ctx.accounts.owner.key(),
             referral_cut: 0,
+            timeout_slots: DEFAULT_TIMEOUT_SLOTS,
         };
 
         Ok(())
@@ -150,11 +156,15 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn init_order_state(ctx: Context<InitOrderState>, bump: u8) -> Result<()> {
+    pub fn init_order_state(ctx: Context<InitOrderState>, bump: u8, id: u16) -> Result<()> {
         let order_state = &mut ctx.accounts.order_state;
+        let prism_etf = &mut ctx.accounts.prism_etf;
+        order_state.id = id;
         order_state.bump = bump;
         order_state.transferred_tokens = ctx.accounts.transferred_tokens.key();
         order_state.status = OrderStatus::SUCCEEDED;
+        order_state.orderer = ctx.accounts.orderer.key();
+        prism_etf.total_shared_order_states += 1;
         Ok(())
     }
 
@@ -177,9 +187,18 @@ pub mod coherence_beamsplitter {
         let order_state = &mut ctx.accounts.order_state;
         let prism_etf = &ctx.accounts.prism_etf;
 
-        if order_state.status == OrderStatus::PENDING {
-            return Err(BeamsplitterErrors::IncorrectOrderStatus.into());
-        }
+        //let clock = &ctx.accounts.clock;
+        // The signer is attempting to take ownership over this order state
+        /*if order_state.orderer != ctx.accounts.orderer.key() {
+            if order_state.status == OrderStatus::SUCCEEDED {
+                order_state.orderer = ctx.accounts.orderer.key();
+            } else if order_state.timeout <= clock.slot {
+                order_state.orderer = ctx.accounts.orderer.key();
+                order_state.status = OrderStatus::SUCCEEDED
+            } else {
+                return Err(BeamsplitterErrors::CouldNotBecomeOrderer.into());
+            }
+        }*/
 
         if prism_etf.status != PrismEtfStatus::FINISHED {
             return Err(BeamsplitterErrors::PrismEtfNotFinished.into());
@@ -234,6 +253,10 @@ pub mod coherence_beamsplitter {
         let burn_amount = amount.to_u64().ok_or(BeamsplitterErrors::U64Failure)?;
 
         burn(burn_ctx, burn_amount)?;
+
+        // Set timeout of order
+        /*order_state.timeout =
+        ctx.accounts.clock.slot + ctx.accounts.beamsplitter.timeout_slots as u64;*/
         Ok(())
     }
 
@@ -321,7 +344,8 @@ pub mod coherence_beamsplitter {
         required_64 += 1;
 
         transfer(transfer_ctx, required_64)?;
-        msg!("here");
+        /*order_state.timeout =
+        ctx.accounts.clock.slot + ctx.accounts.beamsplitter.timeout_slots as u64;*/
         Ok(())
     }
 
@@ -405,6 +429,9 @@ pub mod coherence_beamsplitter {
                 .to_u64()
                 .ok_or(BeamsplitterErrors::U64Failure)?,
         )?;
+
+        /*order_state.timeout =
+        ctx.accounts.clock.slot + ctx.accounts.beamsplitter.timeout_slots as u64;*/
 
         Ok(())
     }
@@ -572,7 +599,7 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn close_order_state(_ctx: Context<ClosePrismEtf>) -> Result<()> {
+    pub fn close_order_state(_ctx: Context<CloseOrderState>) -> Result<()> {
         Ok(())
     }
 

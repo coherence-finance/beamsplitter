@@ -59,6 +59,11 @@ export enum OrderType {
   DECONSTRUCTION = "deconstruction",
 }
 
+export enum OrderStatus {
+  PENDING = "pending",
+  SUCCEEDED = "succeeded",
+}
+
 export type EnumLike = { name: never };
 
 export const enumLikeToString = (enumLike: unknown | EnumLike) =>

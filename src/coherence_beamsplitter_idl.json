@@ -23,6 +23,11 @@
       "value": "4"
     },
     {
+      "name": "DEFAULT_TIMEOUT_SLOTS",
+      "type": "u16",
+      "value": "10"
+    },
+    {
       "name": "_PRISM_ETF_SIZE",
       "type": {
         "defined": "usize"
@@ -222,6 +227,11 @@
           "isSigner": false
         },
         {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "orderState",
           "isMut": true,
           "isSigner": false
@@ -236,6 +246,10 @@
         {
           "name": "bump",
           "type": "u8"
+        },
+        {
+          "name": "id",
+          "type": "u16"
         }
       ]
     },
@@ -284,6 +298,11 @@
         },
         {
           "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
           "isMut": false,
           "isSigner": false
         },
@@ -375,6 +394,11 @@
           "isSigner": false
         },
         {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -452,6 +476,11 @@
         },
         {
           "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
           "isMut": false,
           "isSigner": false
         },
@@ -604,7 +633,7 @@
       "name": "closeOrderState",
       "accounts": [
         {
-          "name": "weightedTokens",
+          "name": "transferredTokens",
           "isMut": true,
           "isSigner": false
         },
@@ -614,12 +643,17 @@
           "isSigner": false
         },
         {
-          "name": "manager",
+          "name": "orderer",
           "isMut": false,
           "isSigner": true
         },
         {
           "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
           "isMut": true,
           "isSigner": false
         },
@@ -947,6 +981,18 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "id",
+            "type": "u16"
+          },
+          {
+            "name": "orderer",
+            "type": "publicKey"
+          },
+          {
+            "name": "timeout",
+            "type": "u64"
+          },
+          {
             "name": "transferredTokens",
             "type": "publicKey"
           },
@@ -1029,6 +1075,10 @@
           },
           {
             "name": "referralCut",
+            "type": "u16"
+          },
+          {
+            "name": "timeoutSlots",
             "type": "u16"
           },
           {
@@ -1204,6 +1254,9 @@
           },
           {
             "name": "PotentialUnderflow"
+          },
+          {
+            "name": "CouldNotBecomeOrderer"
           }
         ]
       }
