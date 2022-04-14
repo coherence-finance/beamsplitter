@@ -83,12 +83,13 @@ export class CoherenceBeamsplitterSDK {
   }: {
     owner?: PublicKey;
   }): Promise<TransactionEnvelope> {
-    const [prismEtfKey, bump] = await generateBeamsplitterAddress();
+    const [beamsplitter, bump] = await generateBeamsplitterAddress();
+
     return new TransactionEnvelope(this.provider, [
       this.program.instruction.initialize(bump, {
         accounts: {
-          beamsplitter: prismEtfKey,
-          owner: owner,
+          beamsplitter,
+          owner,
           systemProgram: SystemProgram.programId,
         },
       }),
