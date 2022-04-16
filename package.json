@@ -1,6 +1,6 @@
 {
   "name": "@coherence-finance/sdk",
-  "version": "0.0.40",
+  "version": "0.0.41",
   "description": "SDK for Beamsplitter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -28,6 +28,8 @@
   "dependencies": {
     "@project-serum/anchor": "^0.23.0",
     "@saberhq/tsconfig": "^1.12.36",
+    "axios": "^0.26.1",
+    "bs58": "^5.0.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.3.1"
   },

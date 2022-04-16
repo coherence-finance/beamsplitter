@@ -13,7 +13,7 @@ import BN from "bn.js";
 import { assert, expect } from "chai";
 
 import type { WeightedToken } from "../../src";
-import { enumLikeToString } from "../../src";
+import { enumLikeToString, PrismEtf } from "../../src";
 import { coherenceHelper } from "../coherenceBeamsplitterTest";
 import constructDeconstruct from "./coherence-beamsplitter";
 
@@ -21,14 +21,20 @@ export default function unitTests() {
   let prismEtfMint: PublicKey;
   let tokenAATA: PublicKey;
   let tokenBATA: PublicKey;
-  let tokenBMint: PublicKey;
-  let transferredTokensAcct: PublicKey;
   let weightedTokens: WeightedToken[];
+  let prismEtf: PrismEtf;
 
   const decimalsA = 6;
   const decimalsB = 11;
   const tokenAWeight = new BN(3246753);
   const tokenBWeight = new BN(7);
+
+  const refreshPrismEtf = async () => {
+    prismEtf = await PrismEtf.loadPrismEtf({
+      beamsplitter: coherenceHelper.sdk.beamsplitter,
+      prismEtfMint,
+    });
+  };
 
   /*
   1. Setup 2 Token Mints
@@ -36,10 +42,8 @@ export default function unitTests() {
   3. Mint 100 of each token to testSigner.publicKey
   */
   it("Building sample PrismETF for unitHelper", async () => {
-    const [initPrismEtFTx, _prismEtfMint, weightedTokensAcct] =
-      await coherenceHelper.sdk.initPrismEtf({
-        beamsplitter: coherenceHelper.beamsplitter,
-      });
+    const [initPrismEtFTx, _prismEtfMint, prismEtfPda, weightedTokensAcct] =
+      await coherenceHelper.sdk.beamsplitter.initPrismEtf({});
 
     prismEtfMint = _prismEtfMint;
 
@@ -49,17 +53,16 @@ export default function unitTests() {
     const mintInfo = await getMintInfo(coherenceHelper.provider, prismEtfMint);
     assert(mintInfo.mintAuthority?.equals(coherenceHelper.beamsplitter));
 
-    let prismEtf = await coherenceHelper.sdk.fetchPrismEtfDataFromSeeds({
-      beamsplitter: coherenceHelper.beamsplitter,
-      prismEtfMint,
-    });
+    await refreshPrismEtf();
 
-    if (!prismEtf) {
+    if (!prismEtf.prismEtfData) {
       assert.fail("Prism Etf was not successfully created");
     }
 
-    assert(prismEtf.manager.equals(coherenceHelper.authority));
-    expect(enumLikeToString(prismEtf.status)).to.be.equal("unfinished");
+    assert(prismEtf.prismEtfData.manager.equals(coherenceHelper.authority));
+    expect(enumLikeToString(prismEtf.prismEtfData.status)).to.be.equal(
+      "unfinished"
+    );
 
     const tokenAKP = Keypair.generate();
     const tokenAMintTx = await createInitMintInstructions({
@@ -79,8 +82,6 @@ export default function unitTests() {
       mintAuthority: coherenceHelper.authority,
     });
 
-    tokenBMint = tokenBKP.publicKey;
-
     await expectTX(tokenBMintTx).to.be.fulfilled;
 
     weightedTokens = [
@@ -93,41 +94,40 @@ export default function unitTests() {
         weight: tokenBWeight,
       },
     ];
-    const pushTokensEnvelopes = await coherenceHelper.sdk.pushTokens({
-      beamsplitter: coherenceHelper.beamsplitter,
-      prismEtfMint,
-      weightedTokens,
-      weightedTokensAcct,
-    });
+    const pushTokensEnvelopes =
+      await coherenceHelper.sdk.beamsplitter.pushTokens({
+        prismEtfMint,
+        prismEtfPda,
+        weightedTokens,
+        weightedTokensAcct,
+      });
 
     // Have to do pushing in seq (Promise.all is not an option)
     for (const pushTokensEnvelope of pushTokensEnvelopes) {
       await expectTX(pushTokensEnvelope).to.be.fulfilled;
     }
 
-    const weightedTokenData = await coherenceHelper.sdk.fetchWeightedTokens(
-      prismEtf.weightedTokens
-    );
+    await refreshPrismEtf();
 
-    expect(weightedTokenData?.length).to.be.equal(2);
+    expect(prismEtf.weightedTokensData?.length).to.be.equal(2);
 
-    const finalizePrismEtfTx = await coherenceHelper.sdk.finalizePrismEtf({
-      beamsplitter: coherenceHelper.beamsplitter,
-      prismEtfMint,
-    });
+    const finalizePrismEtfTx =
+      await coherenceHelper.sdk.beamsplitter.finalizePrismEtf({
+        prismEtfMint,
+        prismEtfPda,
+      });
 
     await expectTX(finalizePrismEtfTx, "Finalize PrismEtf").to.be.fulfilled;
 
-    prismEtf = await coherenceHelper.sdk.fetchPrismEtfDataFromSeeds({
-      beamsplitter: coherenceHelper.beamsplitter,
-      prismEtfMint,
-    });
+    await refreshPrismEtf();
 
-    if (!prismEtf) {
+    if (!prismEtf.prismEtfData) {
       assert.fail("Prism Etf was not successfully created");
     }
 
-    expect(enumLikeToString(prismEtf.status)).to.be.equal("finished");
+    expect(enumLikeToString(prismEtf.prismEtfData.status)).to.be.equal(
+      "finished"
+    );
 
     const { address: _tokenAATA, instruction: createAATA } =
       await getOrCreateATA({

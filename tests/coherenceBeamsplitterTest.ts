@@ -13,7 +13,7 @@ import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import chai, { expect } from "chai";
 import { before } from "mocha";
 
-import { CoherenceBeamsplitterSDK, generateBeamsplitterAddress } from "../src";
+import { CoherenceSDK, generateBeamsplitterAddress } from "../src";
 import exploitTests from "./exploit-tests";
 import stressTests from "./stress-tests";
 import unitTests from "./unit-tests";
@@ -24,7 +24,7 @@ export interface CoherenceHelper {
   anchorProvider: Provider;
   testSigner: Keypair;
   provider: SaberProvider;
-  sdk: CoherenceBeamsplitterSDK;
+  sdk: CoherenceSDK;
   authority: PublicKey;
   beamsplitter: PublicKey;
 }
@@ -39,13 +39,17 @@ before("Initialize coherence helper", () => {
   const testSigner = Keypair.generate();
 
   const provider = makeSaberProvider(anchorProvider);
-  const sdk = CoherenceBeamsplitterSDK.loadWithSigner({
-    provider: provider,
-    signer: testSigner,
-  });
+  let sdk: CoherenceSDK;
 
   // Helper variables
   let authority: PublicKey;
+
+  it("Initialize sdk", async () => {
+    sdk = await CoherenceSDK.initWithSigner({
+      provider: provider,
+      signer: testSigner,
+    });
+  });
 
   // Unit tests
   it("Initialize test state (fund accounts)", async () => {
@@ -64,7 +68,7 @@ before("Initialize coherence helper", () => {
 
   it("Initialize beamsplitter program state", async () => {
     // Initialize prism
-    const tx = await sdk.initialize({
+    const tx = sdk.beamsplitter.initialize({
       owner: authority,
     });
 
@@ -73,12 +77,13 @@ before("Initialize coherence helper", () => {
       "Initialize beamsplitter program state with owner as invoker."
     ).to.be.fulfilled;
 
+    await sdk.refreshBeamsplitter();
+
     // Verify beamsplitter data
     const [pdaKey, bump] = await generateBeamsplitterAddress();
-    const beamsplitterData = await sdk.fetchBeamsplitterData(pdaKey);
 
-    expect(beamsplitterData?.owner).to.eqAddress(authority);
-    expect(beamsplitterData?.bump).to.equal(bump);
+    expect(sdk.beamsplitter.beamsplitterData?.owner).to.eqAddress(authority);
+    expect(sdk.beamsplitter.beamsplitterData?.bump).to.equal(bump);
 
     coherenceHelper = {
       anchorProvider,

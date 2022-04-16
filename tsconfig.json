@@ -1,9 +1,10 @@
 {
-    "extends": "@saberhq/tsconfig/tsconfig.lib.json",
-    "compilerOptions": {
-        "module": "CommonJS",
-        "types": ["mocha"],
-        "resolveJsonModule": true
-    },
-    "include": ["./src", "./tests"]
+  "extends": "@saberhq/tsconfig/tsconfig.lib.json",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "module": "CommonJS",
+    "types": ["mocha"],
+    "resolveJsonModule": true
+  },
+  "include": ["./src", "./tests"]
 }
