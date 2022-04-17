@@ -1,3 +1,8 @@
+import type { DataV2 } from "@metaplex-foundation/mpl-token-metadata";
+import {
+  createCreateMetadataAccountV2Instruction,
+  PROGRAM_ID,
+} from "@metaplex-foundation/mpl-token-metadata";
 import type { Provider, TransactionEnvelope } from "@saberhq/solana-contrib";
 import { getATAAddress } from "@saberhq/token-utils";
 import type { Signer } from "@solana/web3.js";
@@ -168,7 +173,7 @@ export class CoherenceSDK extends CoherenceClient {
     name: string;
     symbol: string;
   }): Promise<PublicKey> {
-    const prismEtfMint = await this.createPrismEtf({ tokens });
+    const prismEtfMint = await this.createPrismEtf({ tokens, name, symbol });
     await this.listPrismEtf({
       prismEtfMint,
       listingMessage,
@@ -184,8 +189,12 @@ export class CoherenceSDK extends CoherenceClient {
 
   async createPrismEtf({
     tokens,
+    name,
+    symbol,
   }: {
     tokens: WeightedToken[];
+    name: string;
+    symbol: string;
   }): Promise<PublicKey> {
     const [initPrismEtfTx, prismEtfMint, prismEtfPda, weightedTokensAcct] =
       await this.beamsplitter.initPrismEtf({});
@@ -202,6 +211,38 @@ export class CoherenceSDK extends CoherenceClient {
       prismEtfPda,
     });
 
+    const data: DataV2 = {
+      uri: "",
+      name,
+      symbol,
+      sellerFeeBasisPoints: 0,
+      creators: [],
+      collection: null,
+      uses: null,
+    };
+
+    const [metadata] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from("metadata"),
+        PROGRAM_ID.toBuffer(),
+        this.loader.getUserPublicKey().toBuffer(),
+      ],
+      PROGRAM_ID
+    );
+
+    const metadataTxInstr = createCreateMetadataAccountV2Instruction(
+      {
+        metadata,
+        mint: prismEtfMint,
+        updateAuthority: this.loader.getUserPublicKey(),
+        mintAuthority: this.loader.getUserPublicKey(),
+        payer: this.loader.getUserPublicKey(),
+      },
+      { createMetadataAccountArgsV2: { isMutable: true, data } }
+    );
+
+    const metadataTx = this.loader.makeProviderEnvelope([metadataTxInstr]);
+
     const partitionedEnvelopes = combineAndPartitionEnvelopes([
       initPrismEtfTx,
       ...pushTokensEnvelopes,
@@ -217,6 +258,12 @@ export class CoherenceSDK extends CoherenceClient {
                 tag: TxTag.createPrismEtfFinalized,
               };
             }),
+            [
+              {
+                data: metadataTx,
+                tag: TxTag.metadataCreate,
+              },
+            ],
           ]
         : [
             partitionedEnvelopes.slice(0, -1).map((env, i) => {
@@ -232,6 +279,12 @@ export class CoherenceSDK extends CoherenceClient {
                 tag: TxTag.createPrismEtfFinalized,
               };
             }),
+            [
+              {
+                data: metadataTx,
+                tag: TxTag.metadataCreate,
+              },
+            ],
           ];
 
     await this.signAndSendTransactions({
