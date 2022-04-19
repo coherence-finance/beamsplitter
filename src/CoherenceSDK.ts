@@ -292,18 +292,15 @@ export class CoherenceSDK extends CoherenceClient {
   }
 
   async deletePrismEtf({ prismEtf }: { prismEtf: PrismEtf }) {
-    await this.postSendTxCallback?.({
-      tag: TxTag.closePrismEtf,
-      txid: "",
-    });
-
-    await prismEtf
-      .closePrismEtf()
-      .confirm({ skipPreflight: true, commitment: "processed" });
-
-    await this.finishedTxCallback?.({
-      tag: TxTag.closePrismEtf,
-      txid: "",
+    await this.signAndSendTransactions({
+      unsignedTxsArr: [
+        [
+          {
+            data: prismEtf.closePrismEtf(),
+            tag: TxTag.deletePrismEtf,
+          },
+        ],
+      ],
     });
   }
 
