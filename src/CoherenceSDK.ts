@@ -27,6 +27,7 @@ import {
   delay,
   getDecimalValue,
   getNativeBalance,
+  getNativeValue,
 } from "./utils";
 
 export const makeEtfFinalizedKey = (mint: PublicKey) => {
@@ -487,8 +488,9 @@ export class CoherenceSDK extends CoherenceClient {
       };
     });
 
-    const etfNativeAmount = await (assetSource || this.assetSource).sourceInAll(
-      { sources, ...rest }
+    const etfNativeAmount = getNativeValue(
+      await (assetSource || this.assetSource).sourceInAll({ sources, ...rest }),
+      prismEtf.prismEtfDecimals
     );
 
     return new BN(etfNativeAmount);

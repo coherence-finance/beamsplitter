@@ -148,7 +148,7 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
     await finishedTxCallback?.({ tag: TxTag.sourceInAssetFinalized, txid: "" });
 
-    const etfNativeAmount = sources.reduce((acc, source) => {
+    const etfDecimalAmount = sources.reduce((acc, source) => {
       const mint = source.outputMint.toString();
       const preBalance = this.mintToPreBalance[mint];
       const postBalance = this.mintToPostBalance[mint];
@@ -156,12 +156,12 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
       if (preBalance === undefined || postBalance === undefined) return acc;
 
       const balanceDiff = postBalance - preBalance;
-      const nativeAmountToMint = balanceDiff / source.nativeWeight;
+      const amount = balanceDiff / source.nativeWeight;
 
-      return Math.min(acc, nativeAmountToMint);
+      return Math.min(acc, amount);
     }, Number.MAX_SAFE_INTEGER);
 
-    return etfNativeAmount;
+    return etfDecimalAmount;
   }
 
   async sourceOutAll({
