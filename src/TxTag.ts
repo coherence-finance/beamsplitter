@@ -7,6 +7,8 @@ export const TxTag = {
   orderPrismEtfTransfer: "orderPrismEtfTransfer",
   orderPrismEtfFinalized: "orderPrismEtfFinalized",
   sourceInAsset: "sourceInAsset",
+  sourceInAssetFinalized: "sourceInAssetFinalized",
   sourceOutAsset: "sourceOutAsset",
+  sourceOutAssetFinalized: "sourceOutAssetFinalized",
   unlistPrismEtf: "unlistPrismEtf",
 };

@@ -6,6 +6,7 @@ import BN from "bn.js";
 import base58 from "bs58";
 
 import type { AssetSource, SourceProps } from "./AssetSource";
+import { JupiterSource } from "./AssetSource";
 import type { UserPrismEtfPostBody } from "./CoherenceApi";
 import { addNewEtf, deleteEtf, getAllEtfs, getEtf } from "./CoherenceApi";
 import { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
@@ -40,6 +41,7 @@ const extractEtfMint = (tag: string) => {
 
 export class CoherenceSDK extends CoherenceClient {
   beamsplitter: CoherenceBeamsplitter;
+  assetSource: AssetSource;
   etfPreBalance: number;
   etfPostBalance: number;
 
@@ -47,6 +49,7 @@ export class CoherenceSDK extends CoherenceClient {
     loader: CoherenceLoader,
     beamsplitter: CoherenceBeamsplitter,
     timeout: number,
+    assetSource: AssetSource,
     _postSendTxCallback?: TxCallback,
     _finishedTxCallback?: TxCallback
   ) {
@@ -96,6 +99,7 @@ export class CoherenceSDK extends CoherenceClient {
 
     super(loader, timeout, postSendTxCallback, finishedTxCallback);
 
+    this.assetSource = assetSource;
     this.beamsplitter = beamsplitter;
     this.etfPreBalance = 0;
     this.etfPostBalance = 0;
@@ -104,11 +108,13 @@ export class CoherenceSDK extends CoherenceClient {
   static async init({
     provider,
     timeout = 60000,
+    assetSource,
     postSendTxCallback,
     finishedTxCallback,
   }: {
     provider: Provider;
     timeout?: number;
+    assetSource?: AssetSource;
     postSendTxCallback?: TxCallback;
     finishedTxCallback?: TxCallback;
   }): Promise<CoherenceSDK> {
@@ -121,6 +127,7 @@ export class CoherenceSDK extends CoherenceClient {
       loader,
       beamsplitter,
       timeout,
+      assetSource || new JupiterSource(loader, timeout),
       postSendTxCallback,
       finishedTxCallback
     );
@@ -130,12 +137,14 @@ export class CoherenceSDK extends CoherenceClient {
     provider,
     signer,
     timeout = 60000,
+    assetSource,
     postSendTxCallback,
     finishedTxCallback,
   }: {
     provider: Provider;
     signer: Signer;
     timeout?: number;
+    assetSource?: AssetSource;
     postSendTxCallback?: TxCallback;
     finishedTxCallback?: TxCallback;
   }): Promise<CoherenceSDK> {
@@ -148,6 +157,7 @@ export class CoherenceSDK extends CoherenceClient {
       loader,
       beamsplitter,
       timeout,
+      assetSource || new JupiterSource(loader, timeout),
       postSendTxCallback,
       finishedTxCallback
     );
@@ -379,14 +389,14 @@ export class CoherenceSDK extends CoherenceClient {
   }: {
     inputNativeAmount: number;
     inputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
   } & TxCallbacks) {
     const etfNativeAmount = await this.sourceInUnderlyingAssets({
       inputNativeAmount,
       inputMint,
-      assetSource,
+      assetSource: assetSource || this.assetSource,
       prismEtf,
       slippage,
       ...rest,
@@ -413,7 +423,7 @@ export class CoherenceSDK extends CoherenceClient {
   }: {
     nativeAmount: number;
     outputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
   } & TxCallbacks) {
@@ -426,7 +436,7 @@ export class CoherenceSDK extends CoherenceClient {
     const outputNativeAmount = await this.sourceOutUnderlyingAssets({
       nativeAmount,
       outputMint,
-      assetSource,
+      assetSource: assetSource || this.assetSource,
       prismEtf,
       slippage,
       ...rest,
@@ -445,7 +455,7 @@ export class CoherenceSDK extends CoherenceClient {
   }: {
     inputNativeAmount: number;
     inputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
   } & TxCallbacks): Promise<BN> {
@@ -486,7 +496,9 @@ export class CoherenceSDK extends CoherenceClient {
       }
     );
 
-    const etfNativeAmount = await assetSource.sourceInAll({ sources, ...rest });
+    const etfNativeAmount = await (assetSource || this.assetSource).sourceInAll(
+      { sources, ...rest }
+    );
 
     return new BN(etfNativeAmount);
   }
@@ -501,7 +513,7 @@ export class CoherenceSDK extends CoherenceClient {
   }: {
     nativeAmount: number;
     outputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
   } & TxCallbacks): Promise<BN> {
@@ -526,7 +538,9 @@ export class CoherenceSDK extends CoherenceClient {
       };
     });
 
-    const outputNativeAmount = await assetSource.sourceOutAll({
+    const outputNativeAmount = await (
+      assetSource || this.assetSource
+    ).sourceOutAll({
       sources,
       ...rest,
     });

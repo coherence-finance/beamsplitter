@@ -123,6 +123,7 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
   async sourceInAll({
     sources,
+    finishedTxCallback,
     ...rest
   }: { sources: SourceProps[] } & TxCallbacks) {
     this.resetMintToBalance();
@@ -141,8 +142,11 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      finishedTxCallback,
       ...rest,
     });
+
+    await finishedTxCallback?.({ tag: TxTag.sourceInAssetFinalized, txid: "" });
 
     const etfNativeAmount = sources.reduce((acc, source) => {
       const mint = source.outputMint.toString();
@@ -162,6 +166,7 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
   async sourceOutAll({
     sources,
+    finishedTxCallback,
     ...rest
   }: { sources: SourceProps[] } & TxCallbacks) {
     this.resetMintToBalance();
@@ -180,7 +185,13 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      finishedTxCallback,
       ...rest,
+    });
+
+    await finishedTxCallback?.({
+      tag: TxTag.sourceOutAssetFinalized,
+      txid: "",
     });
 
     const outputMint = (sources[0] as SourceProps).outputMint.toString();
