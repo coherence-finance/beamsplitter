@@ -70,8 +70,8 @@ export class PrismEtf {
     readonly prismEtfDecimals: number,
     readonly prismEtfCirculatingSupply: number,
     readonly weightedTokensData: WeightedTokensData | null,
-    readonly orderStatePda: PublicKey,
-    readonly orderStateBump: number,
+    readonly orderStatePda: PublicKey | null,
+    readonly orderStateBump: number | null,
     readonly orderStateData: OrderStateData | null,
     transferredTokensAcct: PublicKey | undefined,
     readonly transferredTokensData: TransferredTokensData | null,
@@ -103,14 +103,17 @@ export class PrismEtf {
           )
         : null;
 
-    const [orderStatePda, orderStateBump] = await generateOrderStateAddress(
-      prismEtfMint,
-      beamsplitter.beamsplitter,
-      beamsplitter.loader.getUserPublicKey(),
-      0
-    );
+    const [orderStatePda, orderStateBump] =
+      beamsplitter.loader.getUserPublicKey() !== undefined
+        ? await generateOrderStateAddress(
+            prismEtfMint,
+            beamsplitter.beamsplitter,
+            beamsplitter.loader.getUserPublicKey(),
+            0
+          )
+        : [null, null];
     const orderStateData =
-      prismEtfData !== null
+      orderStatePda !== null
         ? await beamsplitter.loader.fetchOrderStateData(orderStatePda)
         : null;
     const transferredTokensAcct = orderStateData?.transferredTokens;
@@ -187,7 +190,13 @@ export class PrismEtf {
       );
     }
 
-    this.transferredTokensAcct = transferredTokensKP.publicKey;
+    if (this.orderStatePda === null || this.orderStateBump === null) {
+      throw new Error("User wallet is not connected.");
+    }
+
+    if (this.transferredTokensAcct === undefined) {
+      this.transferredTokensAcct = transferredTokensKP.publicKey;
+    }
 
     initOrderStateEnvelope.append(
       this.getProgramInstructions().initOrderState(this.orderStateBump, 0, {
@@ -223,6 +232,10 @@ export class PrismEtf {
 
     if (this.transferredTokensAcct === undefined) {
       throw new Error("Transferred tokens was not initalized.");
+    }
+
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
     }
 
     const { address: ordererEtfAta, instruction: createATATx } =
@@ -274,6 +287,10 @@ export class PrismEtf {
 
     if (this.transferredTokensAcct === undefined) {
       throw new Error("Transferred tokens was not initalized.");
+    }
+
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
     }
 
     const { weightedTokens, length } = this.weightedTokensData;
@@ -364,6 +381,10 @@ export class PrismEtf {
       throw new Error("Transferred tokens was not initalized.");
     }
 
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
+    }
+
     const { weightedTokens, length } = this.weightedTokensData;
     const constructTxChunks: TransactionEnvelope[] = [];
 
@@ -440,6 +461,10 @@ export class PrismEtf {
 
     if (this.transferredTokensAcct === undefined) {
       throw new Error("Transferred tokens was not initalized.");
+    }
+
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
     }
 
     const beamsplitterOwner = beamsplitterData.owner;
@@ -552,6 +577,10 @@ export class PrismEtf {
   closeOrderState(): TransactionEnvelope {
     if (this.transferredTokensAcct === undefined) {
       throw new Error("Transferred tokens was not initaliazed.");
+    }
+
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
     }
 
     return this.makeProviderEnvelope([
