@@ -468,34 +468,24 @@ export class CoherenceSDK extends CoherenceClient {
 
     const weightedTokens = weightedTokensArr.slice(0, weightedTokensLength);
 
-    const decimalWeightTokens = weightedTokens.map(({ mint, weight }) => {
-      const decimals = prismEtf.mintToDecimal[mint.toString()] as number;
-      return {
-        mint,
-        nativeWeight: weight.toNumber(),
-        decimalWeight: getDecimalValue(weight.toNumber(), decimals),
-      };
-    });
-    const totalDecimalWeight = decimalWeightTokens.reduce(
-      (acc, { decimalWeight }) => {
-        return acc + decimalWeight;
+    const mintToTargetPercent = prismEtf.userPrismEtf.targetAllocations.reduce(
+      (acc, { mint, target }) => {
+        return { ...acc, [mint]: target };
       },
-      0
+      {} as { [mint: string]: number }
     );
 
-    const sources: SourceProps[] = decimalWeightTokens.map(
-      ({ mint, nativeWeight, decimalWeight }) => {
-        return {
-          nativeAmount: Math.floor(
-            inputNativeAmount * (decimalWeight / totalDecimalWeight)
-          ),
-          inputMint,
-          outputMint: mint,
-          nativeWeight,
-          slippage,
-        };
-      }
-    );
+    const sources: SourceProps[] = weightedTokens.map(({ mint, weight }) => {
+      return {
+        nativeAmount: Math.floor(
+          inputNativeAmount * (mintToTargetPercent[mint.toString()] as number)
+        ),
+        inputMint,
+        outputMint: mint,
+        nativeWeight: weight.toNumber(),
+        slippage,
+      };
+    });
 
     const etfNativeAmount = await (assetSource || this.assetSource).sourceInAll(
       { sources, ...rest }
