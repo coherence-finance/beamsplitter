@@ -1,7 +1,11 @@
 import { getATAAddress } from "@saberhq/token-utils";
 import { PublicKey, Transaction } from "@solana/web3.js";
 
-import type { TxCallback, UnsignedTxData } from "../CoherenceClient";
+import type {
+  TxCallback,
+  TxCallbacks,
+  UnsignedTxData,
+} from "../CoherenceClient";
 import { CoherenceClient } from "../CoherenceClient";
 import type { CoherenceLoader } from "../CoherenceLoader";
 import type { JupiterRoute } from "../JupiterApi";
@@ -117,7 +121,10 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
     this.mintToPostBalance = {};
   }
 
-  async sourceInAll(sources: SourceProps[]) {
+  async sourceInAll({
+    sources,
+    ...rest
+  }: { sources: SourceProps[] } & TxCallbacks) {
     this.resetMintToBalance();
 
     const keyToSwapTx = await this.makeKeyToSwapTx(sources);
@@ -134,6 +141,7 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      ...rest,
     });
 
     const etfNativeAmount = sources.reduce((acc, source) => {
@@ -152,7 +160,10 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
     return etfNativeAmount;
   }
 
-  async sourceOutAll(sources: SourceProps[]) {
+  async sourceOutAll({
+    sources,
+    ...rest
+  }: { sources: SourceProps[] } & TxCallbacks) {
     this.resetMintToBalance();
 
     const keyToSwapTx = await this.makeKeyToSwapTx(sources);
@@ -169,6 +180,7 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      ...rest,
     });
 
     const outputMint = (sources[0] as SourceProps).outputMint.toString();
