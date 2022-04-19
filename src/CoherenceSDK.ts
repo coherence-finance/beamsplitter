@@ -7,7 +7,7 @@ import base58 from "bs58";
 
 import type { AssetSource, SourceProps } from "./AssetSource";
 import { JupiterSource } from "./AssetSource";
-import type { UserPrismEtfPostBody } from "./CoherenceApi";
+import type { UserPrismEtf, UserPrismEtfPostBody } from "./CoherenceApi";
 import { addNewEtf, deleteEtf, getAllEtfs, getEtf } from "./CoherenceApi";
 import { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
 import type {
@@ -169,10 +169,11 @@ export class CoherenceSDK extends CoherenceClient {
     });
   }
 
-  async loadPrismEtf(prismEtfMint: PublicKey) {
+  async loadPrismEtf(prismEtfMint: PublicKey, userPrismEtf: UserPrismEtf) {
     return await PrismEtf.loadPrismEtf({
       beamsplitter: this.beamsplitter,
       prismEtfMint,
+      userPrismEtf,
     });
   }
 
@@ -525,7 +526,10 @@ export class CoherenceSDK extends CoherenceClient {
 
     const weightedTokens = weightedTokensArr.slice(0, weightedTokensLength);
 
-    const decimalAmount = getDecimalValue(nativeAmount, prismEtf.getDecimals());
+    const decimalAmount = getDecimalValue(
+      nativeAmount,
+      prismEtf.prismEtfDecimals
+    );
 
     const sources: SourceProps[] = weightedTokens.map(({ mint, weight }) => {
       const nativeWeight = weight.toNumber();
@@ -560,15 +564,17 @@ export class CoherenceSDK extends CoherenceClient {
   } & TxCallbacks) {
     const initOrderState = await prismEtf.initOrderState();
 
+    const amount = prismEtf.orderStateData?.amount ?? nativeAmount;
+
     const startOrder = await prismEtf.startOrder({
       type,
-      amount: nativeAmount,
+      amount,
     });
 
     let transferEnvelopes: TransactionEnvelope[];
     if (type === OrderType.CONSTRUCTION) {
       transferEnvelopes = await prismEtf.cohere({
-        orderStateAmount: nativeAmount,
+        orderStateAmount: amount,
       });
     } else {
       transferEnvelopes = await prismEtf.decohere({});

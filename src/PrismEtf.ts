@@ -19,6 +19,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 
+import type { UserPrismEtf } from "./CoherenceApi";
 import type { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
 import { generateOrderStateAddress, generatePrismEtfAddress } from "./pda";
 import type {
@@ -45,9 +46,12 @@ const getDecimalsForMints = async (
 
   await Promise.all(
     mints.map(async (mint) => {
-      mintToDecimal[mint.toString()] = (
-        await getMintInfo(provider, mint)
-      ).decimals;
+      try {
+        mintToDecimal[mint.toString()] = (
+          await getMintInfo(provider, mint)
+        ).decimals;
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
     })
   );
 
@@ -59,6 +63,7 @@ export class PrismEtf {
 
   constructor(
     readonly beamsplitter: CoherenceBeamsplitter,
+    readonly userPrismEtf: UserPrismEtf,
     readonly prismEtfMint: PublicKey,
     readonly prismEtfPda: PublicKey,
     readonly prismEtfData: PrismEtfData | null,
@@ -78,9 +83,11 @@ export class PrismEtf {
   static async loadPrismEtf({
     beamsplitter,
     prismEtfMint,
+    userPrismEtf,
   }: {
     readonly beamsplitter: CoherenceBeamsplitter;
     readonly prismEtfMint: PublicKey;
+    readonly userPrismEtf: UserPrismEtf;
   }): Promise<PrismEtf> {
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
@@ -127,6 +134,7 @@ export class PrismEtf {
 
     return new PrismEtf(
       beamsplitter,
+      userPrismEtf,
       prismEtfMint,
       prismEtfPda,
       prismEtfData,
@@ -297,7 +305,7 @@ export class PrismEtf {
 
       const approvedAmount = orderStateAmount
         .mul(new BN(weight))
-        .div(new BN(10 ** this.getDecimals()))
+        .div(new BN(10 ** this.prismEtfDecimals))
         .add(new BN(1));
 
       constructEnvelope.append(
@@ -608,9 +616,5 @@ export class PrismEtf {
     payer?: PublicKey;
   }) {
     return this.beamsplitter.loader.getOrCreateATA(props);
-  }
-
-  getDecimals(): number {
-    return this.mintToDecimal[this.prismEtfMint.toString()] as number;
   }
 }

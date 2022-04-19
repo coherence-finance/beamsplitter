@@ -6,7 +6,7 @@ import { PublicKey } from "@saberhq/solana-contrib";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
-import type { WeightedToken } from "../../src";
+import type { UserPrismEtf, WeightedToken } from "../../src";
 import {
   enumLikeToString,
   PrismEtf,
@@ -29,6 +29,7 @@ export default function prismEtfSize() {
     let prismEtf = await PrismEtf.loadPrismEtf({
       beamsplitter: coherenceHelper.sdk.beamsplitter,
       prismEtfMint,
+      userPrismEtf: {} as UserPrismEtf,
     });
 
     if (!prismEtf.prismEtfData) {
@@ -65,6 +66,7 @@ export default function prismEtfSize() {
     prismEtf = await PrismEtf.loadPrismEtf({
       beamsplitter: coherenceHelper.sdk.beamsplitter,
       prismEtfMint,
+      userPrismEtf: {} as UserPrismEtf,
     });
 
     expect(prismEtf.weightedTokensData?.length).to.be.equal(randomNumberTokens);
@@ -92,6 +94,7 @@ export default function prismEtfSize() {
     prismEtf = await PrismEtf.loadPrismEtf({
       beamsplitter: coherenceHelper.sdk.beamsplitter,
       prismEtfMint,
+      userPrismEtf: {} as UserPrismEtf,
     });
 
     if (!prismEtf.prismEtfData) {

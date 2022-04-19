@@ -12,7 +12,7 @@ import { Keypair } from "@solana/web3.js";
 import BN from "bn.js";
 import { assert, expect } from "chai";
 
-import type { WeightedToken } from "../../src";
+import type { UserPrismEtf, WeightedToken } from "../../src";
 import { enumLikeToString, PrismEtf } from "../../src";
 import { coherenceHelper } from "../coherenceBeamsplitterTest";
 import constructDeconstruct from "./coherence-beamsplitter";
@@ -33,6 +33,7 @@ export default function unitTests() {
     prismEtf = await PrismEtf.loadPrismEtf({
       beamsplitter: coherenceHelper.sdk.beamsplitter,
       prismEtfMint,
+      userPrismEtf: {} as UserPrismEtf,
     });
   };
 
