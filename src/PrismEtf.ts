@@ -62,6 +62,8 @@ export class PrismEtf {
     readonly prismEtfMint: PublicKey,
     readonly prismEtfPda: PublicKey,
     readonly prismEtfData: PrismEtfData | null,
+    readonly prismEtfDecimals: number,
+    readonly prismEtfCirculatingSupply: number,
     readonly weightedTokensData: WeightedTokensData | null,
     readonly orderStatePda: PublicKey,
     readonly orderStateBump: number,
@@ -113,12 +115,14 @@ export class PrismEtf {
         : null;
     const mintToDecimal = await getDecimalsForMints(
       beamsplitter.loader.provider,
-      [
-        ...(weightedTokensData?.weightedTokens
-          .slice(0, weightedTokensData?.length ?? 0)
-          .map((t) => t.mint) ?? []),
-        prismEtfMint,
-      ]
+      weightedTokensData?.weightedTokens
+        .slice(0, weightedTokensData?.length ?? 0)
+        .map((t) => t.mint) ?? []
+    );
+
+    const prismEtfMintInfo = await getMintInfo(
+      beamsplitter.loader.provider,
+      prismEtfMint
     );
 
     return new PrismEtf(
@@ -126,6 +130,8 @@ export class PrismEtf {
       prismEtfMint,
       prismEtfPda,
       prismEtfData,
+      prismEtfMintInfo.decimals,
+      prismEtfMintInfo.supply.toNumber(),
       weightedTokensData,
       orderStatePda,
       orderStateBump,
