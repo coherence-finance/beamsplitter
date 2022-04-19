@@ -12,6 +12,7 @@ import { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
 import type { TxCallback, UnsignedTxData } from "./CoherenceClient";
 import { CoherenceClient } from "./CoherenceClient";
 import { CoherenceLoader } from "./CoherenceLoader";
+import { generatePrismEtfAddress } from "./pda";
 import type { PrismEtf } from "./PrismEtf";
 import { TxTag } from "./TxTag";
 import type { WeightedToken } from "./types";
@@ -542,5 +543,13 @@ export class CoherenceSDK extends CoherenceClient {
     await this.signAndSendTransactions({
       unsignedTxsArr,
     });
+  }
+
+  async fetchPrismEtfDataFromSeeds(prismEtfMint: PublicKey) {
+    const [prismEtfPda] = await generatePrismEtfAddress(
+      prismEtfMint,
+      this.beamsplitter.beamsplitter
+    );
+    return await this.loader.fetchPrismEtfData(prismEtfPda);
   }
 }

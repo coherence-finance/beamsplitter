@@ -23,7 +23,6 @@ import type { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
 import { generateOrderStateAddress, generatePrismEtfAddress } from "./pda";
 import type {
   BeamsplitterData,
-  BeamsplitterProgram,
   OrderStateData,
   PrismEtfData,
   TransferredTokensData,
@@ -35,42 +34,6 @@ import {
   stringToEnumLike,
   TRANSFERRED_TOKENS_SIZE,
 } from "./types";
-
-const fetchPrismEtfData = async (
-  program: BeamsplitterProgram,
-  prismEtfPda: PublicKey
-): Promise<PrismEtfData | null> => {
-  return (await program.account.prismEtf.fetchNullable(
-    prismEtfPda
-  )) as PrismEtfData;
-};
-
-const fetchWeightedTokensData = async (
-  program: BeamsplitterProgram,
-  weightedTokens: PublicKey
-): Promise<WeightedTokensData | null> => {
-  return (await program.account.weightedTokens.fetchNullable(
-    weightedTokens
-  )) as WeightedTokensData;
-};
-
-const fetchOrderStateData = async (
-  program: BeamsplitterProgram,
-  orderStatePda: PublicKey
-): Promise<OrderStateData | null> => {
-  return (await program.account.orderState.fetchNullable(
-    orderStatePda
-  )) as OrderStateData;
-};
-
-const fetchTransferredTokensData = async (
-  program: BeamsplitterProgram,
-  transferredTokensAcct: PublicKey
-): Promise<TransferredTokensData | null> => {
-  return (await program.account.transferredTokens.fetchNullable(
-    transferredTokensAcct
-  )) as TransferredTokensData;
-};
 
 export type MintToDecimal = { [key: string]: number };
 
@@ -121,14 +84,12 @@ export class PrismEtf {
       prismEtfMint,
       beamsplitter.beamsplitter
     );
-    const prismEtfData = await fetchPrismEtfData(
-      beamsplitter.loader.program,
+    const prismEtfData = await beamsplitter.loader.fetchPrismEtfData(
       prismEtfPda
     );
     const weightedTokensData =
       prismEtfData !== null
-        ? await fetchWeightedTokensData(
-            beamsplitter.loader.program,
+        ? await beamsplitter.loader.fetchWeightedTokensData(
             prismEtfData.weightedTokens
           )
         : null;
@@ -141,13 +102,12 @@ export class PrismEtf {
     );
     const orderStateData =
       prismEtfData !== null
-        ? await fetchOrderStateData(beamsplitter.loader.program, orderStatePda)
+        ? await beamsplitter.loader.fetchOrderStateData(orderStatePda)
         : null;
     const transferredTokensAcct = orderStateData?.transferredTokens;
     const transferredTokensData =
       transferredTokensAcct !== undefined
-        ? await fetchTransferredTokensData(
-            beamsplitter.loader.program,
+        ? await beamsplitter.loader.fetchTransferredTokensData(
             transferredTokensAcct
           )
         : null;
