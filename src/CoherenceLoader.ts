@@ -50,7 +50,7 @@ export class CoherenceLoader {
   }
 
   getUserPublicKey(): PublicKey {
-    return this.provider.walletKey;
+    return this.provider.wallet?.publicKey;
   }
 
   getConnection(): Connection {
