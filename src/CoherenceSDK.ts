@@ -7,7 +7,7 @@ import base58 from "bs58";
 
 import type { AssetSource, SourceProps } from "./AssetSource";
 import type { UserPrismEtfPostBody } from "./CoherenceApi";
-import { addNewEtf } from "./CoherenceApi";
+import { addNewEtf, deleteEtf, getAllEtfs, getEtf } from "./CoherenceApi";
 import { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
 import type { TxCallback, UnsignedTxData } from "./CoherenceClient";
 import { CoherenceClient } from "./CoherenceClient";
@@ -281,6 +281,46 @@ export class CoherenceSDK extends CoherenceClient {
     });
   }
 
+  // Delete ETF
+  async deleteAndUnlistEtf({
+    prismEtf,
+  }: {
+    prismEtf: PrismEtf;
+  }): Promise<void> {
+    await this.deletePrismEtf({ prismEtf });
+    await this.unlistPrismEtf({ prismEtfMint: prismEtf.prismEtfMint });
+  }
+
+  async deletePrismEtf({ prismEtf }: { prismEtf: PrismEtf }) {
+    await this.postSendTxCallback?.({
+      tag: TxTag.closePrismEtf,
+      txid: "",
+    });
+
+    await prismEtf
+      .closePrismEtf()
+      .confirm({ skipPreflight: true, commitment: "processed" });
+
+    await this.finishedTxCallback?.({
+      tag: TxTag.closePrismEtf,
+      txid: "",
+    });
+  }
+
+  async unlistPrismEtf({ prismEtfMint }: { prismEtfMint: PublicKey }) {
+    await this.postSendTxCallback?.({
+      tag: TxTag.unlistPrismEtf,
+      txid: "",
+    });
+
+    await deleteEtf(prismEtfMint.toString());
+
+    await this.finishedTxCallback?.({
+      tag: TxTag.unlistPrismEtf,
+      txid: "",
+    });
+  }
+
   // Buy/sell ETF
   async buyEtf({
     inputNativeAmount,
@@ -543,6 +583,14 @@ export class CoherenceSDK extends CoherenceClient {
     await this.signAndSendTransactions({
       unsignedTxsArr,
     });
+  }
+
+  async getAllEtfs() {
+    return await getAllEtfs();
+  }
+
+  async getEtf(mint: string) {
+    return await getEtf(mint);
   }
 
   async fetchPrismEtfDataFromSeeds(prismEtfMint: PublicKey) {
