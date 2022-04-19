@@ -29,11 +29,11 @@ import {
   getNativeBalance,
 } from "./utils";
 
-const makeEtfFinalizedKey = (mint: PublicKey) => {
+export const makeEtfFinalizedKey = (mint: PublicKey) => {
   return `${TxTag.orderPrismEtfFinalized}-${mint.toString()}`;
 };
 
-const extractEtfMint = (tag: string) => {
+export const extractFinalizedEtfMint = (tag: string) => {
   // Length of TxTag + "-"
   if (!tag.startsWith(TxTag.orderPrismEtfFinalized)) return undefined;
   return new PublicKey(tag.slice(TxTag.orderPrismEtfFinalized.length + 1));
@@ -54,7 +54,7 @@ export class CoherenceSDK extends CoherenceClient {
     _finishedTxCallback?: TxCallback
   ) {
     const postSendTxCallback: TxCallback = async ({ tag, txid }) => {
-      const mint = extractEtfMint(tag);
+      const mint = extractFinalizedEtfMint(tag);
       if (mint === undefined) return;
 
       const tokenAccount = await getATAAddress({
@@ -70,7 +70,7 @@ export class CoherenceSDK extends CoherenceClient {
     };
 
     const finishedTxCallback: TxCallback = async ({ tag, txid }) => {
-      const mint = extractEtfMint(tag);
+      const mint = extractFinalizedEtfMint(tag);
       if (mint === undefined) return;
 
       const tokenAccount = await getATAAddress({
@@ -470,7 +470,7 @@ export class CoherenceSDK extends CoherenceClient {
 
     const mintToTargetPercent = prismEtf.userPrismEtf.targetAllocations.reduce(
       (acc, { mint, target }) => {
-        return { ...acc, [mint]: target };
+        return { ...acc, [mint]: target / 100 };
       },
       {} as { [mint: string]: number }
     );
@@ -572,22 +572,22 @@ export class CoherenceSDK extends CoherenceClient {
 
     const finalizeOrder = await prismEtf.finalizeOrder({});
 
-    if (prismEtf.transferredTokensData === null) {
-      throw new Error("Transferred tokens not initialized");
-    }
+    let indicesToTransfer: number[] | undefined;
 
-    const { transferredTokens, length: transferredTokensLength } =
-      prismEtf.transferredTokensData;
-    const indicesToTransfer = transferredTokens
-      .slice(0, transferredTokensLength)
-      .reduce((acc, transferred, i) => {
-        if (
-          (type === OrderType.CONSTRUCTION && transferred) ||
-          (type === OrderType.DECONSTRUCTION && !transferred)
-        )
-          return acc;
-        return [...acc, i];
-      }, [] as number[]);
+    if (prismEtf.transferredTokensData !== null) {
+      const { transferredTokens, length: transferredTokensLength } =
+        prismEtf.transferredTokensData;
+      indicesToTransfer = transferredTokens
+        .slice(0, transferredTokensLength)
+        .reduce((acc, transferred, i) => {
+          if (
+            (type === OrderType.CONSTRUCTION && transferred) ||
+            (type === OrderType.DECONSTRUCTION && !transferred)
+          )
+            return acc;
+          return [...acc, i];
+        }, [] as number[]);
+    }
 
     const partitionedEnvelopes = combineAndPartitionEnvelopes([
       ...(prismEtf.orderStateData === null
@@ -595,9 +595,11 @@ export class CoherenceSDK extends CoherenceClient {
         : prismEtf.orderStateData.status === OrderStatus.PENDING
         ? [startOrder]
         : []),
-      ...indicesToTransfer.map((i) => {
-        return transferEnvelopes[i] as TransactionEnvelope;
-      }),
+      ...(indicesToTransfer !== undefined
+        ? indicesToTransfer.map((i) => {
+            return transferEnvelopes[i] as TransactionEnvelope;
+          })
+        : transferEnvelopes),
       finalizeOrder,
     ]);
 
