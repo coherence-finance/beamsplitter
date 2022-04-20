@@ -589,7 +589,7 @@ export class CoherenceSDK extends CoherenceClient {
 
     let indicesToTransfer: number[] | undefined;
 
-    if (prismEtf.transferredTokensData !== null) {
+    if (hasPendingOrder && prismEtf.transferredTokensData !== null) {
       const { transferredTokens, length: transferredTokensLength } =
         prismEtf.transferredTokensData;
       indicesToTransfer = transferredTokens
