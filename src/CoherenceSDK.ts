@@ -353,13 +353,13 @@ export class CoherenceSDK extends CoherenceClient {
               }),
             ]
           : [
-              partitionedEnvelopes.slice(0, 1).map((data, i) => {
+              partitionedEnvelopes.slice(0, -1).map((data, i) => {
                 return {
                   data,
                   tag: `${TxTag.closePrismEtfAta}-${i}`,
                 };
               }),
-              partitionedEnvelopes.slice(1).map((data) => {
+              partitionedEnvelopes.slice(-1).map((data) => {
                 return {
                   data,
                   tag: TxTag.closePrismEtf,
