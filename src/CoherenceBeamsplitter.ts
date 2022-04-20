@@ -10,24 +10,11 @@ import BN from "bn.js";
 
 import type { CoherenceLoader } from "./CoherenceLoader";
 import { generateBeamsplitterAddress, generatePrismEtfAddress } from "./pda";
-import type {
-  BeamsplitterData,
-  BeamsplitterProgram,
-  WeightedToken,
-} from "./types";
+import type { BeamsplitterData, WeightedToken } from "./types";
 import { WEIGHTED_TOKENS_SIZE } from "./types";
 
 // Number of decimals used by prism etf by default
 export const PRISM_ETF_DECIMALS = 9;
-
-const fetchBeamsplitterDataFromSeeds = async (
-  program: BeamsplitterProgram,
-  beamsplitter: PublicKey
-): Promise<BeamsplitterData | null> => {
-  return (await program.account.beamsplitter.fetchNullable(
-    beamsplitter
-  )) as BeamsplitterData;
-};
 
 export class CoherenceBeamsplitter {
   constructor(
@@ -43,10 +30,7 @@ export class CoherenceBeamsplitter {
     readonly loader: CoherenceLoader;
   }): Promise<CoherenceBeamsplitter> {
     const [beamsplitter, bump] = await generateBeamsplitterAddress();
-    const beamsplitterData = await fetchBeamsplitterDataFromSeeds(
-      loader.program,
-      beamsplitter
-    );
+    const beamsplitterData = await loader.fetchBeamsplitterData(beamsplitter);
     return new CoherenceBeamsplitter(
       loader,
       beamsplitter,

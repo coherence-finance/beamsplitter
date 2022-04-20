@@ -6,28 +6,35 @@ import BN from "bn.js";
 import base58 from "bs58";
 
 import type { AssetSource, SourceProps } from "./AssetSource";
-import type { UserPrismEtfPostBody } from "./CoherenceApi";
-import { addNewEtf } from "./CoherenceApi";
+import { JupiterSource } from "./AssetSource";
+import type { UserPrismEtf, UserPrismEtfPostBody } from "./CoherenceApi";
+import { addNewEtf, deleteEtf, getAllEtfs, getEtf } from "./CoherenceApi";
 import { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
-import type { TxCallback, UnsignedTxData } from "./CoherenceClient";
+import type {
+  TxCallback,
+  TxCallbacks,
+  UnsignedTxData,
+} from "./CoherenceClient";
 import { CoherenceClient } from "./CoherenceClient";
 import { CoherenceLoader } from "./CoherenceLoader";
-import type { PrismEtf } from "./PrismEtf";
+import { generatePrismEtfAddress } from "./pda";
+import { PrismEtf } from "./PrismEtf";
 import { TxTag } from "./TxTag";
 import type { WeightedToken } from "./types";
-import { OrderStatus, OrderType } from "./types";
+import { enumLikeToString, OrderStatus, OrderType } from "./types";
 import {
   combineAndPartitionEnvelopes,
   delay,
   getDecimalValue,
   getNativeBalance,
+  getNativeValue,
 } from "./utils";
 
-const makeEtfFinalizedKey = (mint: PublicKey) => {
+export const makeEtfFinalizedKey = (mint: PublicKey) => {
   return `${TxTag.orderPrismEtfFinalized}-${mint.toString()}`;
 };
 
-const extractEtfMint = (tag: string) => {
+export const extractFinalizedEtfMint = (tag: string) => {
   // Length of TxTag + "-"
   if (!tag.startsWith(TxTag.orderPrismEtfFinalized)) return undefined;
   return new PublicKey(tag.slice(TxTag.orderPrismEtfFinalized.length + 1));
@@ -35,6 +42,7 @@ const extractEtfMint = (tag: string) => {
 
 export class CoherenceSDK extends CoherenceClient {
   beamsplitter: CoherenceBeamsplitter;
+  assetSource: AssetSource;
   etfPreBalance: number;
   etfPostBalance: number;
 
@@ -42,11 +50,12 @@ export class CoherenceSDK extends CoherenceClient {
     loader: CoherenceLoader,
     beamsplitter: CoherenceBeamsplitter,
     timeout: number,
+    assetSource: AssetSource,
     _postSendTxCallback?: TxCallback,
     _finishedTxCallback?: TxCallback
   ) {
     const postSendTxCallback: TxCallback = async ({ tag, txid }) => {
-      const mint = extractEtfMint(tag);
+      const mint = extractFinalizedEtfMint(tag);
       if (mint === undefined) return;
 
       const tokenAccount = await getATAAddress({
@@ -62,7 +71,7 @@ export class CoherenceSDK extends CoherenceClient {
     };
 
     const finishedTxCallback: TxCallback = async ({ tag, txid }) => {
-      const mint = extractEtfMint(tag);
+      const mint = extractFinalizedEtfMint(tag);
       if (mint === undefined) return;
 
       const tokenAccount = await getATAAddress({
@@ -91,6 +100,7 @@ export class CoherenceSDK extends CoherenceClient {
 
     super(loader, timeout, postSendTxCallback, finishedTxCallback);
 
+    this.assetSource = assetSource;
     this.beamsplitter = beamsplitter;
     this.etfPreBalance = 0;
     this.etfPostBalance = 0;
@@ -99,11 +109,13 @@ export class CoherenceSDK extends CoherenceClient {
   static async init({
     provider,
     timeout = 60000,
+    assetSource,
     postSendTxCallback,
     finishedTxCallback,
   }: {
     provider: Provider;
     timeout?: number;
+    assetSource?: AssetSource;
     postSendTxCallback?: TxCallback;
     finishedTxCallback?: TxCallback;
   }): Promise<CoherenceSDK> {
@@ -116,6 +128,7 @@ export class CoherenceSDK extends CoherenceClient {
       loader,
       beamsplitter,
       timeout,
+      assetSource || new JupiterSource(loader, timeout),
       postSendTxCallback,
       finishedTxCallback
     );
@@ -125,12 +138,14 @@ export class CoherenceSDK extends CoherenceClient {
     provider,
     signer,
     timeout = 60000,
+    assetSource,
     postSendTxCallback,
     finishedTxCallback,
   }: {
     provider: Provider;
     signer: Signer;
     timeout?: number;
+    assetSource?: AssetSource;
     postSendTxCallback?: TxCallback;
     finishedTxCallback?: TxCallback;
   }): Promise<CoherenceSDK> {
@@ -143,6 +158,7 @@ export class CoherenceSDK extends CoherenceClient {
       loader,
       beamsplitter,
       timeout,
+      assetSource || new JupiterSource(loader, timeout),
       postSendTxCallback,
       finishedTxCallback
     );
@@ -154,6 +170,14 @@ export class CoherenceSDK extends CoherenceClient {
     });
   }
 
+  async loadPrismEtf(prismEtfMint: PublicKey, userPrismEtf: UserPrismEtf) {
+    return await PrismEtf.loadPrismEtf({
+      beamsplitter: this.beamsplitter,
+      prismEtfMint,
+      userPrismEtf,
+    });
+  }
+
   // Create ETF
   async createAndListEtf({
     tokens,
@@ -161,14 +185,15 @@ export class CoherenceSDK extends CoherenceClient {
     signMessage,
     name,
     symbol,
+    ...rest
   }: {
     tokens: WeightedToken[];
     listingMessage?: string;
     signMessage: (s: Uint8Array) => Promise<Uint8Array>;
     name: string;
     symbol: string;
-  }): Promise<PublicKey> {
-    const prismEtfMint = await this.createPrismEtf({ tokens });
+  } & TxCallbacks): Promise<PublicKey> {
+    const prismEtfMint = await this.createPrismEtf({ tokens, ...rest });
     await this.listPrismEtf({
       prismEtfMint,
       listingMessage,
@@ -178,15 +203,17 @@ export class CoherenceSDK extends CoherenceClient {
       targetAllocations: tokens.map(({ mint, weight }) => {
         return { mint: mint.toString(), target: weight.toNumber() };
       }),
+      ...rest,
     });
     return prismEtfMint;
   }
 
   async createPrismEtf({
     tokens,
+    ...rest
   }: {
     tokens: WeightedToken[];
-  }): Promise<PublicKey> {
+  } & TxCallbacks): Promise<PublicKey> {
     const [initPrismEtfTx, prismEtfMint, prismEtfPda, weightedTokensAcct] =
       await this.beamsplitter.initPrismEtf({});
 
@@ -236,6 +263,7 @@ export class CoherenceSDK extends CoherenceClient {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      ...rest,
     });
 
     return prismEtfMint;
@@ -248,6 +276,8 @@ export class CoherenceSDK extends CoherenceClient {
     name,
     symbol,
     targetAllocations,
+    postSendTxCallback,
+    finishedTxCallback,
   }: {
     prismEtfMint: PublicKey;
     listingMessage?: string;
@@ -255,7 +285,7 @@ export class CoherenceSDK extends CoherenceClient {
     name: string;
     symbol: string;
     targetAllocations: UserPrismEtfPostBody["targetAllocations"];
-  }) {
+  } & TxCallbacks) {
     const message = new TextEncoder().encode(listingMessage);
     const signature = await signMessage(message);
 
@@ -267,17 +297,87 @@ export class CoherenceSDK extends CoherenceClient {
       targetAllocations,
     };
 
-    await this.postSendTxCallback?.({
-      tag: TxTag.listPrismEtf,
-      txid: signature.toString(),
-    });
+    await Promise.all([
+      postSendTxCallback?.({
+        tag: TxTag.listPrismEtf,
+        txid: signature.toString(),
+      }),
+      this.postSendTxCallback?.({
+        tag: TxTag.listPrismEtf,
+        txid: signature.toString(),
+      }),
+    ]);
 
     await addNewEtf(etfBody);
 
-    await this.finishedTxCallback?.({
-      tag: TxTag.listPrismEtf,
-      txid: signature.toString(),
+    await Promise.all([
+      finishedTxCallback?.({
+        tag: TxTag.listPrismEtf,
+        txid: signature.toString(),
+      }),
+      this.finishedTxCallback?.({
+        tag: TxTag.listPrismEtf,
+        txid: signature.toString(),
+      }),
+    ]);
+  }
+
+  // Delete ETF
+  async deleteAndUnlistEtf({
+    prismEtf,
+    ...rest
+  }: {
+    prismEtf: PrismEtf;
+  } & TxCallbacks): Promise<void> {
+    await this.deletePrismEtf({ prismEtf, ...rest });
+    await this.unlistPrismEtf({ prismEtfMint: prismEtf.prismEtfMint, ...rest });
+  }
+
+  async deletePrismEtf({
+    prismEtf,
+    ...rest
+  }: { prismEtf: PrismEtf } & TxCallbacks) {
+    await this.signAndSendTransactions({
+      unsignedTxsArr: [
+        [
+          {
+            data: prismEtf.closePrismEtf(),
+            tag: TxTag.deletePrismEtf,
+          },
+        ],
+      ],
+      ...rest,
     });
+  }
+
+  async unlistPrismEtf({
+    prismEtfMint,
+    postSendTxCallback,
+    finishedTxCallback,
+  }: { prismEtfMint: PublicKey } & TxCallbacks) {
+    await Promise.all([
+      postSendTxCallback?.({
+        tag: TxTag.unlistPrismEtf,
+        txid: "",
+      }),
+      this.postSendTxCallback?.({
+        tag: TxTag.unlistPrismEtf,
+        txid: "",
+      }),
+    ]);
+
+    await deleteEtf(prismEtfMint.toString());
+
+    await Promise.all([
+      finishedTxCallback?.({
+        tag: TxTag.unlistPrismEtf,
+        txid: "",
+      }),
+      this.finishedTxCallback?.({
+        tag: TxTag.unlistPrismEtf,
+        txid: "",
+      }),
+    ]);
   }
 
   // Buy/sell ETF
@@ -287,24 +387,29 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource,
     prismEtf,
     slippage,
+    ...rest
   }: {
     inputNativeAmount: number;
     inputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
-  }) {
+  } & TxCallbacks) {
+    this.resetBalances();
+
     const etfNativeAmount = await this.sourceInUnderlyingAssets({
       inputNativeAmount,
       inputMint,
-      assetSource,
+      assetSource: assetSource || this.assetSource,
       prismEtf,
       slippage,
+      ...rest,
     });
     await this.executeOrder({
       nativeAmount: etfNativeAmount,
       type: OrderType.CONSTRUCTION,
       prismEtf,
+      ...rest,
     });
 
     const boughtEtfNativeAmount = this.etfPostBalance - this.etfPreBalance;
@@ -318,24 +423,29 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource,
     prismEtf,
     slippage,
+    ...rest
   }: {
     nativeAmount: number;
     outputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
-  }) {
+  } & TxCallbacks) {
+    this.resetBalances();
+
     await this.executeOrder({
       nativeAmount: new BN(nativeAmount),
       type: OrderType.DECONSTRUCTION,
       prismEtf,
+      ...rest,
     });
     const outputNativeAmount = await this.sourceOutUnderlyingAssets({
       nativeAmount,
       outputMint,
-      assetSource,
+      assetSource: assetSource || this.assetSource,
       prismEtf,
       slippage,
+      ...rest,
     });
 
     return outputNativeAmount;
@@ -347,13 +457,14 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource,
     prismEtf,
     slippage,
+    ...rest
   }: {
     inputNativeAmount: number;
     inputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
-  }): Promise<BN> {
+  } & TxCallbacks): Promise<BN> {
     if (prismEtf.weightedTokensData === null)
       throw new Error("Weighted tokens not initialized");
 
@@ -362,36 +473,29 @@ export class CoherenceSDK extends CoherenceClient {
 
     const weightedTokens = weightedTokensArr.slice(0, weightedTokensLength);
 
-    const decimalWeightTokens = weightedTokens.map(({ mint, weight }) => {
-      const decimals = prismEtf.mintToDecimal[mint.toString()] as number;
+    const mintToTargetPercent = prismEtf.userPrismEtf.targetAllocations.reduce(
+      (acc, { mint, target }) => {
+        return { ...acc, [mint]: target / 100 };
+      },
+      {} as { [mint: string]: number }
+    );
+
+    const sources: SourceProps[] = weightedTokens.map(({ mint, weight }) => {
       return {
-        mint,
+        nativeAmount: Math.floor(
+          inputNativeAmount * (mintToTargetPercent[mint.toString()] as number)
+        ),
+        inputMint,
+        outputMint: mint,
         nativeWeight: weight.toNumber(),
-        decimalWeight: getDecimalValue(weight.toNumber(), decimals),
+        slippage,
       };
     });
-    const totalDecimalWeight = decimalWeightTokens.reduce(
-      (acc, { decimalWeight }) => {
-        return acc + decimalWeight;
-      },
-      0
-    );
 
-    const sources: SourceProps[] = decimalWeightTokens.map(
-      ({ mint, nativeWeight, decimalWeight }) => {
-        return {
-          nativeAmount: Math.floor(
-            inputNativeAmount * (decimalWeight / totalDecimalWeight)
-          ),
-          inputMint,
-          outputMint: mint,
-          nativeWeight,
-          slippage,
-        };
-      }
+    const etfNativeAmount = getNativeValue(
+      await (assetSource || this.assetSource).sourceInAll({ sources, ...rest }),
+      prismEtf.prismEtfDecimals
     );
-
-    const etfNativeAmount = await assetSource.sourceInAll(sources);
 
     return new BN(etfNativeAmount);
   }
@@ -402,13 +506,14 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource,
     prismEtf,
     slippage,
+    ...rest
   }: {
     nativeAmount: number;
     outputMint: PublicKey;
-    assetSource: AssetSource;
+    assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
-  }): Promise<BN> {
+  } & TxCallbacks): Promise<BN> {
     if (prismEtf.weightedTokensData === null)
       throw new Error("Weighted tokens not initialized");
 
@@ -417,7 +522,10 @@ export class CoherenceSDK extends CoherenceClient {
 
     const weightedTokens = weightedTokensArr.slice(0, weightedTokensLength);
 
-    const decimalAmount = getDecimalValue(nativeAmount, prismEtf.getDecimals());
+    const decimalAmount = getDecimalValue(
+      nativeAmount,
+      prismEtf.prismEtfDecimals
+    );
 
     const sources: SourceProps[] = weightedTokens.map(({ mint, weight }) => {
       const nativeWeight = weight.toNumber();
@@ -430,7 +538,12 @@ export class CoherenceSDK extends CoherenceClient {
       };
     });
 
-    const outputNativeAmount = await assetSource.sourceOutAll(sources);
+    const outputNativeAmount = await (
+      assetSource || this.assetSource
+    ).sourceOutAll({
+      sources,
+      ...rest,
+    });
 
     return new BN(outputNativeAmount);
   }
@@ -439,22 +552,34 @@ export class CoherenceSDK extends CoherenceClient {
     nativeAmount,
     type,
     prismEtf,
+    ...rest
   }: {
     nativeAmount: BN;
     type: OrderType;
     prismEtf: PrismEtf;
-  }) {
+  } & TxCallbacks) {
     const initOrderState = await prismEtf.initOrderState();
+
+    const hasPendingOrder =
+      prismEtf.orderStateData?.status !== undefined
+        ? enumLikeToString(prismEtf.orderStateData.status) ===
+          OrderStatus.PENDING
+        : false;
+
+    const amount =
+      hasPendingOrder && prismEtf.orderStateData?.amount
+        ? prismEtf.orderStateData.amount
+        : nativeAmount;
 
     const startOrder = await prismEtf.startOrder({
       type,
-      amount: nativeAmount,
+      amount,
     });
 
     let transferEnvelopes: TransactionEnvelope[];
     if (type === OrderType.CONSTRUCTION) {
       transferEnvelopes = await prismEtf.cohere({
-        orderStateAmount: nativeAmount,
+        orderStateAmount: amount,
       });
     } else {
       transferEnvelopes = await prismEtf.decohere({});
@@ -462,32 +587,34 @@ export class CoherenceSDK extends CoherenceClient {
 
     const finalizeOrder = await prismEtf.finalizeOrder({});
 
-    if (prismEtf.transferredTokensData === null) {
-      throw new Error("Transferred tokens not initialized");
-    }
+    let indicesToTransfer: number[] | undefined;
 
-    const { transferredTokens, length: transferredTokensLength } =
-      prismEtf.transferredTokensData;
-    const indicesToTransfer = transferredTokens
-      .slice(0, transferredTokensLength)
-      .reduce((acc, transferred, i) => {
-        if (
-          (type === OrderType.CONSTRUCTION && transferred) ||
-          (type === OrderType.DECONSTRUCTION && !transferred)
-        )
-          return acc;
-        return [...acc, i];
-      }, [] as number[]);
+    if (prismEtf.transferredTokensData !== null) {
+      const { transferredTokens, length: transferredTokensLength } =
+        prismEtf.transferredTokensData;
+      indicesToTransfer = transferredTokens
+        .slice(0, transferredTokensLength)
+        .reduce((acc, transferred, i) => {
+          if (
+            (type === OrderType.CONSTRUCTION && transferred) ||
+            (type === OrderType.DECONSTRUCTION && !transferred)
+          )
+            return acc;
+          return [...acc, i];
+        }, [] as number[]);
+    }
 
     const partitionedEnvelopes = combineAndPartitionEnvelopes([
       ...(prismEtf.orderStateData === null
         ? [initOrderState, startOrder]
-        : prismEtf.orderStateData.status === OrderStatus.PENDING
+        : !hasPendingOrder
         ? [startOrder]
         : []),
-      ...indicesToTransfer.map((i) => {
-        return transferEnvelopes[i] as TransactionEnvelope;
-      }),
+      ...(indicesToTransfer !== undefined
+        ? indicesToTransfer.map((i) => {
+            return transferEnvelopes[i] as TransactionEnvelope;
+          })
+        : transferEnvelopes),
       finalizeOrder,
     ]);
 
@@ -541,6 +668,28 @@ export class CoherenceSDK extends CoherenceClient {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      ...rest,
     });
+  }
+
+  resetBalances() {
+    this.etfPreBalance = 0;
+    this.etfPostBalance = 0;
+  }
+
+  async getAllEtfs() {
+    return await getAllEtfs();
+  }
+
+  async getEtf(mint: string) {
+    return await getEtf(mint);
+  }
+
+  async fetchPrismEtfDataFromSeeds(prismEtfMint: PublicKey) {
+    const [prismEtfPda] = await generatePrismEtfAddress(
+      prismEtfMint,
+      this.beamsplitter.beamsplitter
+    );
+    return await this.loader.fetchPrismEtfData(prismEtfPda);
   }
 }

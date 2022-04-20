@@ -4,8 +4,12 @@ export const getNativeBalance = async (
   connection: Connection,
   tokenAccount: PublicKey
 ) => {
-  return Number(
-    (await connection.getTokenAccountBalance(tokenAccount, "processed")).value
-      .amount || "0"
-  );
+  try {
+    return Number(
+      (await connection.getTokenAccountBalance(tokenAccount, "processed")).value
+        .amount || "0"
+    );
+  } catch (e) {
+    return 0;
+  }
 };

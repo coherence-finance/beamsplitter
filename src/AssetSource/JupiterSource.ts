@@ -1,7 +1,11 @@
 import { getATAAddress } from "@saberhq/token-utils";
 import { PublicKey, Transaction } from "@solana/web3.js";
 
-import type { TxCallback, UnsignedTxData } from "../CoherenceClient";
+import type {
+  TxCallback,
+  TxCallbacks,
+  UnsignedTxData,
+} from "../CoherenceClient";
 import { CoherenceClient } from "../CoherenceClient";
 import type { CoherenceLoader } from "../CoherenceLoader";
 import type { JupiterRoute } from "../JupiterApi";
@@ -117,7 +121,11 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
     this.mintToPostBalance = {};
   }
 
-  async sourceInAll(sources: SourceProps[]) {
+  async sourceInAll({
+    sources,
+    finishedTxCallback,
+    ...rest
+  }: { sources: SourceProps[] } & TxCallbacks) {
     this.resetMintToBalance();
 
     const keyToSwapTx = await this.makeKeyToSwapTx(sources);
@@ -126,7 +134,7 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
       sources.map((source) => {
         const key = getSourceKey(source);
         return {
-          tag: makeSourceInMintKey(source.inputMint),
+          tag: makeSourceInMintKey(source.outputMint),
           data: keyToSwapTx[key] as Transaction,
         };
       }),
@@ -134,9 +142,13 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      finishedTxCallback,
+      ...rest,
     });
 
-    const etfNativeAmount = sources.reduce((acc, source) => {
+    await finishedTxCallback?.({ tag: TxTag.sourceInAssetFinalized, txid: "" });
+
+    const etfDecimalAmount = sources.reduce((acc, source) => {
       const mint = source.outputMint.toString();
       const preBalance = this.mintToPreBalance[mint];
       const postBalance = this.mintToPostBalance[mint];
@@ -144,15 +156,19 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
       if (preBalance === undefined || postBalance === undefined) return acc;
 
       const balanceDiff = postBalance - preBalance;
-      const nativeAmountToMint = balanceDiff / source.nativeWeight;
+      const amount = balanceDiff / source.nativeWeight;
 
-      return Math.min(acc, nativeAmountToMint);
+      return Math.min(acc, amount);
     }, Number.MAX_SAFE_INTEGER);
 
-    return etfNativeAmount;
+    return etfDecimalAmount;
   }
 
-  async sourceOutAll(sources: SourceProps[]) {
+  async sourceOutAll({
+    sources,
+    finishedTxCallback,
+    ...rest
+  }: { sources: SourceProps[] } & TxCallbacks) {
     this.resetMintToBalance();
 
     const keyToSwapTx = await this.makeKeyToSwapTx(sources);
@@ -169,6 +185,13 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
+      finishedTxCallback,
+      ...rest,
+    });
+
+    await finishedTxCallback?.({
+      tag: TxTag.sourceOutAssetFinalized,
+      txid: "",
     });
 
     const outputMint = (sources[0] as SourceProps).outputMint.toString();

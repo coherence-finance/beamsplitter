@@ -28,21 +28,33 @@ export type SignedTxData = {
 
 export type TxCallback = (data: { tag: string; txid: string }) => Promise<void>;
 
+export type TxCallbacks = {
+  postSendTxCallback?: TxCallback;
+  finishedTxCallback?: TxCallback;
+};
+
 export class CoherenceClient {
+  postSendTxCallback?: TxCallback;
+  finishedTxCallback?: TxCallback;
+
   constructor(
     readonly loader: CoherenceLoader,
     readonly timeout: number,
-    readonly postSendTxCallback?: TxCallback,
-    readonly finishedTxCallback?: TxCallback
-  ) {}
+    postSendTxCallback?: TxCallback,
+    finishedTxCallback?: TxCallback
+  ) {
+    this.postSendTxCallback = postSendTxCallback;
+    this.finishedTxCallback = finishedTxCallback;
+  }
 
   async signAndSendTransactions({
     unsignedTxsArr,
+    ...rest
   }: {
     unsignedTxsArr: UnsignedTxData[][];
-  }) {
+  } & TxCallbacks) {
     const signedTxs = await this.signTransactions({ unsignedTxsArr });
-    await this.executeAndWaitForTxs(unsignedTxsArr, signedTxs);
+    await this.executeAndWaitForTxs({ unsignedTxsArr, signedTxs, ...rest });
   }
 
   async signTransactions({
@@ -79,10 +91,13 @@ export class CoherenceClient {
     return signedTxs;
   }
 
-  async executeAndWaitForTxs(
-    unsignedTxsArr: UnsignedTxData[][],
-    signedTxs: SignedTxData[]
-  ) {
+  async executeAndWaitForTxs({
+    unsignedTxsArr,
+    signedTxs,
+  }: {
+    unsignedTxsArr: UnsignedTxData[][];
+    signedTxs: SignedTxData[];
+  } & TxCallbacks) {
     for (const unsignedTxArr of unsignedTxsArr) {
       const uniqueTags = new Set(unsignedTxArr.map(({ tag }) => tag));
 
@@ -105,12 +120,14 @@ export class CoherenceClient {
     signedTransaction,
     timeout = this.timeout,
     confirmLevel = "processed",
+    postSendTxCallback,
+    finishedTxCallback,
   }: {
     tag: string;
     signedTransaction: Transaction;
     timeout?: number;
     confirmLevel?: TransactionConfirmationStatus;
-  }): Promise<TransactionSignature> {
+  } & TxCallbacks): Promise<TransactionSignature> {
     const rawTransaction = signedTransaction.serialize();
     const startTime = getUnixTs();
 
@@ -120,7 +137,10 @@ export class CoherenceClient {
       });
 
     try {
-      await this.postSendTxCallback?.({ tag, txid });
+      await Promise.all([
+        postSendTxCallback?.({ tag, txid }),
+        this.postSendTxCallback?.({ tag, txid }),
+      ]);
     } catch (e) {
       if (e instanceof Error) {
         console.log(`postSendTxCallback error ${e.message}`);
@@ -144,7 +164,10 @@ export class CoherenceClient {
         timeout,
         confirmLevel
       );
-      await this.finishedTxCallback?.({ tag, txid });
+      await Promise.all([
+        finishedTxCallback?.({ tag, txid }),
+        this.finishedTxCallback?.({ tag, txid }),
+      ]);
     } catch (err) {
       // @ts-ignore
       if (err.timeout) {

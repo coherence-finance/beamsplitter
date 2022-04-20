@@ -1,5 +1,7 @@
 import type { PublicKey, Transaction } from "@solana/web3.js";
 
+import type { TxCallbacks } from "../CoherenceClient";
+
 export interface SourceProps {
   nativeAmount: number;
   inputMint: PublicKey;
@@ -9,7 +11,11 @@ export interface SourceProps {
 }
 
 export interface AssetSource {
-  sourceInAll: (sources: SourceProps[]) => Promise<number>;
-  sourceOutAll: (sources: SourceProps[]) => Promise<number>;
+  sourceInAll: (
+    data: { sources: SourceProps[] } & TxCallbacks
+  ) => Promise<number>;
+  sourceOutAll: (
+    data: { sources: SourceProps[] } & TxCallbacks
+  ) => Promise<number>;
   sourceSingle: (source: SourceProps) => Promise<Transaction | undefined>;
 }

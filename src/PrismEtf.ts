@@ -19,11 +19,11 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 
+import type { UserPrismEtf } from "./CoherenceApi";
 import type { CoherenceBeamsplitter } from "./CoherenceBeamsplitter";
 import { generateOrderStateAddress, generatePrismEtfAddress } from "./pda";
 import type {
   BeamsplitterData,
-  BeamsplitterProgram,
   OrderStateData,
   PrismEtfData,
   TransferredTokensData,
@@ -36,42 +36,6 @@ import {
   TRANSFERRED_TOKENS_SIZE,
 } from "./types";
 
-const fetchPrismEtfData = async (
-  program: BeamsplitterProgram,
-  prismEtfPda: PublicKey
-): Promise<PrismEtfData | null> => {
-  return (await program.account.prismEtf.fetchNullable(
-    prismEtfPda
-  )) as PrismEtfData;
-};
-
-const fetchWeightedTokensData = async (
-  program: BeamsplitterProgram,
-  weightedTokens: PublicKey
-): Promise<WeightedTokensData | null> => {
-  return (await program.account.weightedTokens.fetchNullable(
-    weightedTokens
-  )) as WeightedTokensData;
-};
-
-const fetchOrderStateData = async (
-  program: BeamsplitterProgram,
-  orderStatePda: PublicKey
-): Promise<OrderStateData | null> => {
-  return (await program.account.orderState.fetchNullable(
-    orderStatePda
-  )) as OrderStateData;
-};
-
-const fetchTransferredTokensData = async (
-  program: BeamsplitterProgram,
-  transferredTokensAcct: PublicKey
-): Promise<TransferredTokensData | null> => {
-  return (await program.account.transferredTokens.fetchNullable(
-    transferredTokensAcct
-  )) as TransferredTokensData;
-};
-
 export type MintToDecimal = { [key: string]: number };
 
 const getDecimalsForMints = async (
@@ -82,9 +46,12 @@ const getDecimalsForMints = async (
 
   await Promise.all(
     mints.map(async (mint) => {
-      mintToDecimal[mint.toString()] = (
-        await getMintInfo(provider, mint)
-      ).decimals;
+      try {
+        mintToDecimal[mint.toString()] = (
+          await getMintInfo(provider, mint)
+        ).decimals;
+        // eslint-disable-next-line no-empty
+      } catch (e) {}
     })
   );
 
@@ -96,12 +63,15 @@ export class PrismEtf {
 
   constructor(
     readonly beamsplitter: CoherenceBeamsplitter,
+    readonly userPrismEtf: UserPrismEtf,
     readonly prismEtfMint: PublicKey,
     readonly prismEtfPda: PublicKey,
     readonly prismEtfData: PrismEtfData | null,
+    readonly prismEtfDecimals: number,
+    readonly prismEtfCirculatingSupply: number,
     readonly weightedTokensData: WeightedTokensData | null,
-    readonly orderStatePda: PublicKey,
-    readonly orderStateBump: number,
+    readonly orderStatePda: PublicKey | null,
+    readonly orderStateBump: number | null,
     readonly orderStateData: OrderStateData | null,
     transferredTokensAcct: PublicKey | undefined,
     readonly transferredTokensData: TransferredTokensData | null,
@@ -113,59 +83,66 @@ export class PrismEtf {
   static async loadPrismEtf({
     beamsplitter,
     prismEtfMint,
+    userPrismEtf,
   }: {
     readonly beamsplitter: CoherenceBeamsplitter;
     readonly prismEtfMint: PublicKey;
+    readonly userPrismEtf: UserPrismEtf;
   }): Promise<PrismEtf> {
     const [prismEtfPda] = await generatePrismEtfAddress(
       prismEtfMint,
       beamsplitter.beamsplitter
     );
-    const prismEtfData = await fetchPrismEtfData(
-      beamsplitter.loader.program,
+    const prismEtfData = await beamsplitter.loader.fetchPrismEtfData(
       prismEtfPda
     );
     const weightedTokensData =
       prismEtfData !== null
-        ? await fetchWeightedTokensData(
-            beamsplitter.loader.program,
+        ? await beamsplitter.loader.fetchWeightedTokensData(
             prismEtfData.weightedTokens
           )
         : null;
 
-    const [orderStatePda, orderStateBump] = await generateOrderStateAddress(
-      prismEtfMint,
-      beamsplitter.beamsplitter,
-      beamsplitter.loader.getUserPublicKey(),
-      0
-    );
+    const [orderStatePda, orderStateBump] =
+      beamsplitter.loader.getUserPublicKey() !== undefined
+        ? await generateOrderStateAddress(
+            prismEtfMint,
+            beamsplitter.beamsplitter,
+            beamsplitter.loader.getUserPublicKey(),
+            0
+          )
+        : [null, null];
     const orderStateData =
-      prismEtfData !== null
-        ? await fetchOrderStateData(beamsplitter.loader.program, orderStatePda)
+      orderStatePda !== null
+        ? await beamsplitter.loader.fetchOrderStateData(orderStatePda)
         : null;
     const transferredTokensAcct = orderStateData?.transferredTokens;
     const transferredTokensData =
       transferredTokensAcct !== undefined
-        ? await fetchTransferredTokensData(
-            beamsplitter.loader.program,
+        ? await beamsplitter.loader.fetchTransferredTokensData(
             transferredTokensAcct
           )
         : null;
     const mintToDecimal = await getDecimalsForMints(
       beamsplitter.loader.provider,
-      [
-        ...(weightedTokensData?.weightedTokens
-          .slice(0, weightedTokensData?.length ?? 0)
-          .map((t) => t.mint) ?? []),
-        prismEtfMint,
-      ]
+      weightedTokensData?.weightedTokens
+        .slice(0, weightedTokensData?.length ?? 0)
+        .map((t) => t.mint) ?? []
+    );
+
+    const prismEtfMintInfo = await getMintInfo(
+      beamsplitter.loader.provider,
+      prismEtfMint
     );
 
     return new PrismEtf(
       beamsplitter,
+      userPrismEtf,
       prismEtfMint,
       prismEtfPda,
       prismEtfData,
+      prismEtfMintInfo.decimals,
+      prismEtfMintInfo.supply.toNumber(),
       weightedTokensData,
       orderStatePda,
       orderStateBump,
@@ -213,7 +190,13 @@ export class PrismEtf {
       );
     }
 
-    this.transferredTokensAcct = transferredTokensKP.publicKey;
+    if (this.orderStatePda === null || this.orderStateBump === null) {
+      throw new Error("User wallet is not connected.");
+    }
+
+    if (this.transferredTokensAcct === undefined) {
+      this.transferredTokensAcct = transferredTokensKP.publicKey;
+    }
 
     initOrderStateEnvelope.append(
       this.getProgramInstructions().initOrderState(this.orderStateBump, 0, {
@@ -249,6 +232,10 @@ export class PrismEtf {
 
     if (this.transferredTokensAcct === undefined) {
       throw new Error("Transferred tokens was not initalized.");
+    }
+
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
     }
 
     const { address: ordererEtfAta, instruction: createATATx } =
@@ -302,6 +289,10 @@ export class PrismEtf {
       throw new Error("Transferred tokens was not initalized.");
     }
 
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
+    }
+
     const { weightedTokens, length } = this.weightedTokensData;
     const constructTxChunks: TransactionEnvelope[] = [];
 
@@ -331,7 +322,7 @@ export class PrismEtf {
 
       const approvedAmount = orderStateAmount
         .mul(new BN(weight))
-        .div(new BN(10 ** this.getDecimals()))
+        .div(new BN(10 ** this.prismEtfDecimals))
         .add(new BN(1));
 
       constructEnvelope.append(
@@ -388,6 +379,10 @@ export class PrismEtf {
 
     if (this.transferredTokensAcct === undefined) {
       throw new Error("Transferred tokens was not initalized.");
+    }
+
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
     }
 
     const { weightedTokens, length } = this.weightedTokensData;
@@ -466,6 +461,10 @@ export class PrismEtf {
 
     if (this.transferredTokensAcct === undefined) {
       throw new Error("Transferred tokens was not initalized.");
+    }
+
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
     }
 
     const beamsplitterOwner = beamsplitterData.owner;
@@ -586,6 +585,10 @@ export class PrismEtf {
       throw new Error("Transferred tokens was not initaliazed.");
     }
 
+    if (this.orderStatePda === null) {
+      throw new Error("User wallet is not connected.");
+    }
+
     return this.makeProviderEnvelope([
       this.getProgramInstructions().closeOrderState({
         accounts: {
@@ -648,9 +651,5 @@ export class PrismEtf {
     payer?: PublicKey;
   }) {
     return this.beamsplitter.loader.getOrCreateATA(props);
-  }
-
-  getDecimals(): number {
-    return this.mintToDecimal[this.prismEtfMint.toString()] as number;
   }
 }

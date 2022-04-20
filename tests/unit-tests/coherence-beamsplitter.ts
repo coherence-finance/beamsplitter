@@ -16,7 +16,7 @@ import { Keypair } from "@solana/web3.js";
 import { BN } from "bn.js";
 import chai, { assert, expect } from "chai";
 
-import type { WeightedToken } from "../../src";
+import type { UserPrismEtf, WeightedToken } from "../../src";
 import {
   enumLikeToString,
   OrderType,
@@ -44,6 +44,7 @@ export default function constructDeconstruct() {
       prismEtf = await PrismEtf.loadPrismEtf({
         beamsplitter: coherenceHelper.sdk.beamsplitter,
         prismEtfMint,
+        userPrismEtf: {} as UserPrismEtf,
       });
     };
 

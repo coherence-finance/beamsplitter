@@ -17,7 +17,14 @@ import type {
 
 import { IDL } from "./coherence_beamsplitter";
 import { PROGRAM_ID } from "./constants";
-import type { BeamsplitterProgram } from "./types";
+import type {
+  BeamsplitterData,
+  BeamsplitterProgram,
+  OrderStateData,
+  PrismEtfData,
+  TransferredTokensData,
+  WeightedTokensData,
+} from "./types";
 
 export class CoherenceLoader {
   readonly provider: AugmentedProvider;
@@ -43,7 +50,7 @@ export class CoherenceLoader {
   }
 
   getUserPublicKey(): PublicKey {
-    return this.provider.walletKey;
+    return this.provider.wallet?.publicKey;
   }
 
   getConnection(): Connection {
@@ -69,5 +76,53 @@ export class CoherenceLoader {
 
   async getMintInfo({ mint }: { mint: PublicKey }) {
     return saberGetMintInfo(this.provider, mint);
+  }
+
+  async fetchBeamsplitterData(
+    beamsplitterPda: PublicKey
+  ): Promise<BeamsplitterData | null> {
+    return (await this.getProgramAccounts().beamsplitter.fetchNullable(
+      beamsplitterPda
+    )) as BeamsplitterData;
+  }
+
+  async fetchPrismEtfData(
+    prismEtfPda: PublicKey
+  ): Promise<PrismEtfData | null> {
+    return (await this.getProgramAccounts().prismEtf.fetchNullable(
+      prismEtfPda
+    )) as PrismEtfData;
+  }
+
+  async fetchWeightedTokensData(
+    weightedTokensAcct: PublicKey
+  ): Promise<WeightedTokensData | null> {
+    return (await this.getProgramAccounts().weightedTokens.fetchNullable(
+      weightedTokensAcct
+    )) as WeightedTokensData;
+  }
+
+  async fetchOrderStateData(
+    orderStatePda: PublicKey
+  ): Promise<OrderStateData | null> {
+    return (await this.getProgramAccounts().orderState.fetchNullable(
+      orderStatePda
+    )) as OrderStateData;
+  }
+
+  async fetchTransferredTokensData(
+    transferredTokensAcct: PublicKey
+  ): Promise<TransferredTokensData | null> {
+    return (await this.getProgramAccounts().transferredTokens.fetchNullable(
+      transferredTokensAcct
+    )) as TransferredTokensData;
+  }
+
+  getProgramAccounts() {
+    return this.program.account;
+  }
+
+  getProgramInstructions() {
+    return this.program.instruction;
   }
 }
