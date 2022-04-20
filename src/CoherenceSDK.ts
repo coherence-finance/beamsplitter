@@ -137,7 +137,7 @@ export class CoherenceSDK extends CoherenceClient {
   static async initWithSigner({
     provider,
     signer,
-    timeout = 60000,
+    timeout = 90000,
     assetSource,
     postSendTxCallback,
     finishedTxCallback,
