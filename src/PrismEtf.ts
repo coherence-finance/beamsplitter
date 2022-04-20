@@ -555,12 +555,12 @@ export class PrismEtf {
     );
   }
 
-  async closePrismEtfAtas(): Promise<TransactionEnvelope> {
+  async closePrismEtfAtas(): Promise<TransactionEnvelope[]> {
     if (this.prismEtfData === null) {
       throw new Error("PrismEtf not intialized");
     }
 
-    const closePrismEtfAtasBatch = this.makeProviderEnvelope([]);
+    const closePrismEtfAtasBatch: TransactionEnvelope[] = [];
 
     if (this.weightedTokensData === null) {
       throw new Error("Weighted Tokens does not exist");
@@ -571,19 +571,21 @@ export class PrismEtf {
         mint: weightedToken.mint,
         owner: this.prismEtfPda,
       });
-      closePrismEtfAtasBatch.append(
-        this.getProgramInstructions().closePrismAta({
-          accounts: {
-            prismEtfMint: this.prismEtfMint,
-            manager: this.getUserPublicKey(),
-            prismEtf: this.prismEtfPda,
-            assetAtaMint: weightedToken.mint,
-            prismAssetAta: weightedTokenATA,
-            beamsplitter: this.getBeamsplitter(),
-            tokenProgram: TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
-          },
-        })
+      closePrismEtfAtasBatch.push(
+        this.makeProviderEnvelope([
+          this.getProgramInstructions().closePrismAta({
+            accounts: {
+              prismEtfMint: this.prismEtfMint,
+              manager: this.getUserPublicKey(),
+              prismEtf: this.prismEtfPda,
+              //assetAtaMint: weightedToken.mint,
+              prismAssetAta: weightedTokenATA,
+              beamsplitter: this.getBeamsplitter(),
+              tokenProgram: TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
+            },
+          }),
+        ])
       );
     }
 

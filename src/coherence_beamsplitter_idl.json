@@ -612,11 +612,6 @@
           "isSigner": false
         },
         {
-          "name": "assetAtaMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "prismAssetAta",
           "isMut": true,
           "isSigner": false

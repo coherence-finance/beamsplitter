@@ -946,6 +946,12 @@ export default function constructDeconstruct() {
         });
       await expectTX(finalizePrismEtf).to.be.fulfilled;
 
+      const closePrismEtfAtas = await prismEtf.closePrismEtfAtas();
+
+      /*await Promise.all(
+        closePrismEtfAtas.map((chunk) => expectTX(chunk).to.be.fulfilled)
+      );*/
+
       const closePrismEtf = prismEtf.closePrismEtf();
 
       await expectTX(closePrismEtf).to.be.fulfilled;

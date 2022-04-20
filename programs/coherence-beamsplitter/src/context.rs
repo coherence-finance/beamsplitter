@@ -534,11 +534,8 @@ pub struct ClosePrismATA<'info> {
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut, has_one = manager)]
     pub prism_etf: Box<Account<'info, PrismEtf>>,
 
-    pub asset_ata_mint: Account<'info, Mint>,
-
-    #[account(associated_token::mint = asset_ata_mint, associated_token::authority = prism_etf, mut)]
+    #[account(mut)]
     pub prism_asset_ata: Box<Account<'info, TokenAccount>>,
-
     /// The [Beamsplitter] [Account] that holds all of the Program's funds
     #[account(
         seeds = [

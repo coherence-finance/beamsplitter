@@ -612,11 +612,6 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "assetAtaMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "prismAssetAta",
           "isMut": true,
           "isSigner": false
@@ -1924,11 +1919,6 @@ export const IDL: CoherenceBeamsplitter = {
         {
           "name": "prismEtf",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "assetAtaMint",
-          "isMut": false,
           "isSigner": false
         },
         {
