@@ -134,7 +134,7 @@ export class JupiterSource extends CoherenceClient implements AssetSource {
       sources.map((source) => {
         const key = getSourceKey(source);
         return {
-          tag: makeSourceInMintKey(source.inputMint),
+          tag: makeSourceInMintKey(source.outputMint),
           data: keyToSwapTx[key] as Transaction,
         };
       }),
