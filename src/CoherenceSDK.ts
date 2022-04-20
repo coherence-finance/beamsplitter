@@ -181,6 +181,7 @@ export class CoherenceSDK extends CoherenceClient {
   // Create ETF
   async createAndListEtf({
     tokens,
+    targetAllocations,
     listingMessage,
     signMessage,
     name,
@@ -188,6 +189,7 @@ export class CoherenceSDK extends CoherenceClient {
     ...rest
   }: {
     tokens: WeightedToken[];
+    targetAllocations: UserPrismEtfPostBody["targetAllocations"];
     listingMessage?: string;
     signMessage: (s: Uint8Array) => Promise<Uint8Array>;
     name: string;
@@ -200,9 +202,7 @@ export class CoherenceSDK extends CoherenceClient {
       signMessage,
       name,
       symbol,
-      targetAllocations: tokens.map(({ mint, weight }) => {
-        return { mint: mint.toString(), target: weight.toNumber() };
-      }),
+      targetAllocations,
       ...rest,
     });
     return prismEtfMint;
