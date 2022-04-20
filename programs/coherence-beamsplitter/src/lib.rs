@@ -610,6 +610,7 @@ pub mod coherence_beamsplitter {
             PRISM_ETF_PDA_SEED,
             &ctx.accounts.prism_etf_mint.key().to_bytes(),
             &ctx.accounts.beamsplitter.key().to_bytes(),
+            &[ctx.accounts.prism_etf.bump],
         ];
         let signer_seeds = &[&seeds[..]];
 

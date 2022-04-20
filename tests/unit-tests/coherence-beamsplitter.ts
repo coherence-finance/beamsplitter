@@ -2,7 +2,8 @@
 import "chai-bn";
 
 import { chaiSolana, expectTX } from "@saberhq/chai-solana";
-import { PublicKey, TransactionEnvelope } from "@saberhq/solana-contrib";
+import type { PublicKey } from "@saberhq/solana-contrib";
+import { TransactionEnvelope } from "@saberhq/solana-contrib";
 import {
   createInitMintInstructions,
   createMintToInstruction,
@@ -925,17 +926,26 @@ export default function constructDeconstruct() {
 
       await refreshPrismEtf();
 
+      const tokenCloseKP = Keypair.generate();
+      const tokenCloseMintTx = await createInitMintInstructions({
+        provider: coherenceHelper.provider,
+        mintKP: tokenCloseKP,
+        decimals: decimalsA,
+        mintAuthority: coherenceHelper.authority,
+      });
+      await expectTX(tokenCloseMintTx).to.be.fulfilled;
+
       const pushTokens = await coherenceHelper.sdk.beamsplitter.pushTokens({
         prismEtfMint,
         prismEtfPda,
         weightedTokensAcct: testWeightedTokens,
         weightedTokens: [
           {
-            mint: new PublicKey(0),
+            mint: tokenCloseKP.publicKey,
             weight: new BN(1),
           },
         ],
-        shouldCreateAtas: false,
+        shouldCreateAtas: true,
       });
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       await expectTX(pushTokens[0]!).to.be.fulfilled;
@@ -946,11 +956,13 @@ export default function constructDeconstruct() {
         });
       await expectTX(finalizePrismEtf).to.be.fulfilled;
 
+      await refreshPrismEtf();
+
       const closePrismEtfAtas = await prismEtf.closePrismEtfAtas();
 
-      /*await Promise.all(
+      await Promise.all(
         closePrismEtfAtas.map((chunk) => expectTX(chunk).to.be.fulfilled)
-      );*/
+      );
 
       const closePrismEtf = prismEtf.closePrismEtf();
 

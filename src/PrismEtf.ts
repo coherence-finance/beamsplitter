@@ -566,7 +566,10 @@ export class PrismEtf {
       throw new Error("Weighted Tokens does not exist");
     }
 
-    for (const weightedToken of this.weightedTokensData.weightedTokens) {
+    for (const weightedToken of this.weightedTokensData.weightedTokens.slice(
+      0,
+      this.weightedTokensData.length
+    )) {
       const weightedTokenATA = await getATAAddress({
         mint: weightedToken.mint,
         owner: this.prismEtfPda,
