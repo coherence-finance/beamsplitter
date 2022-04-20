@@ -594,6 +594,57 @@ export type CoherenceBeamsplitter = {
       "args": []
     },
     {
+      "name": "closePrismAta",
+      "accounts": [
+        {
+          "name": "weightedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "etfAtaMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "closePrismEtf",
       "accounts": [
         {
@@ -1116,6 +1167,9 @@ export type CoherenceBeamsplitter = {
           },
           {
             "name": "FINISHED"
+          },
+          {
+            "name": "CLOSED"
           }
         ]
       }
@@ -1860,6 +1914,57 @@ export const IDL: CoherenceBeamsplitter = {
       "args": []
     },
     {
+      "name": "closePrismAta",
+      "accounts": [
+        {
+          "name": "weightedTokens",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "prismEtf",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "etfAtaMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "prismEtfAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "beamsplitter",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "closePrismEtf",
       "accounts": [
         {
@@ -2382,6 +2487,9 @@ export const IDL: CoherenceBeamsplitter = {
           },
           {
             "name": "FINISHED"
+          },
+          {
+            "name": "CLOSED"
           }
         ]
       }

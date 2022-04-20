@@ -556,12 +556,16 @@ export class PrismEtf {
     );
   }
 
-  closePrismEtf(): TransactionEnvelope {
+  closePrismEtf(): [TransactionEnvelope[], TransactionEnvelope] {
     if (this.prismEtfData === null) {
       throw new Error("PrismEtf not intialized");
     }
 
-    return this.makeProviderEnvelope([
+    const envelope = this.makeProviderEnvelope([]);
+
+    1
+
+    envelope.append(
       this.getProgramInstructions().closePrismEtf({
         accounts: {
           manager: this.getUserPublicKey(),
@@ -571,8 +575,10 @@ export class PrismEtf {
           beamsplitter: this.getBeamsplitter(),
           systemProgram: SystemProgram.programId,
         },
-      }),
-    ]);
+      })
+    );
+
+    return envelope.partition();
   }
 
   closeOrderState(): TransactionEnvelope {

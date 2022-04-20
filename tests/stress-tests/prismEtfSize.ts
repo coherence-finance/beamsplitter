@@ -79,7 +79,6 @@ export default function prismEtfSize() {
         prismEtf.weightedTokensData?.weightedTokens[i]?.weight.eq(new BN(i + 1))
       );
     }
-    console.log("LO43");
 
     const finalizePrismEtfTx =
       await coherenceHelper.sdk.beamsplitter.finalizePrismEtf({

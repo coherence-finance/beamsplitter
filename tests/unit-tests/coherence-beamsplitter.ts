@@ -32,7 +32,6 @@ export default function constructDeconstruct() {
     let prismEtfMint: PublicKey;
     let tokenAATA: PublicKey;
     let tokenBATA: PublicKey;
-    let tokenBMint: PublicKey;
     let weightedTokens: WeightedToken[];
     let prismEtf: PrismEtf;
 
@@ -96,8 +95,6 @@ export default function constructDeconstruct() {
         decimals: decimalsB,
         mintAuthority: coherenceHelper.authority,
       });
-
-      tokenBMint = tokenBKP.publicKey;
 
       await expectTX(tokenBMintTx).to.be.fulfilled;
 
@@ -196,9 +193,6 @@ export default function constructDeconstruct() {
     });
 
     it(`Construct two asset Prism ETF`, async () => {
-      const _scalar =
-        10 **
-        (await getMintInfo(coherenceHelper.provider, prismEtfMint)).decimals;
       const AMOUNT_TO_CONSTRUCT = new BN(1800266);
 
       const tokenABalBefore = (
