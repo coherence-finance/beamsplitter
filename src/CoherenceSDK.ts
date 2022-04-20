@@ -21,7 +21,7 @@ import { generatePrismEtfAddress } from "./pda";
 import { PrismEtf } from "./PrismEtf";
 import { TxTag } from "./TxTag";
 import type { WeightedToken } from "./types";
-import { OrderStatus, OrderType } from "./types";
+import { enumLikeToString, OrderStatus, OrderType } from "./types";
 import {
   combineAndPartitionEnvelopes,
   delay,
@@ -560,7 +560,16 @@ export class CoherenceSDK extends CoherenceClient {
   } & TxCallbacks) {
     const initOrderState = await prismEtf.initOrderState();
 
-    const amount = prismEtf.orderStateData?.amount ?? nativeAmount;
+    const hasPendingOrder =
+      prismEtf.orderStateData?.status !== undefined
+        ? enumLikeToString(prismEtf.orderStateData.status) ===
+          OrderStatus.PENDING
+        : false;
+
+    const amount =
+      hasPendingOrder && prismEtf.orderStateData?.amount
+        ? prismEtf.orderStateData.amount
+        : nativeAmount;
 
     const startOrder = await prismEtf.startOrder({
       type,
@@ -598,7 +607,7 @@ export class CoherenceSDK extends CoherenceClient {
     const partitionedEnvelopes = combineAndPartitionEnvelopes([
       ...(prismEtf.orderStateData === null
         ? [initOrderState, startOrder]
-        : prismEtf.orderStateData.status !== OrderStatus.PENDING
+        : !hasPendingOrder
         ? [startOrder]
         : []),
       ...(indicesToTransfer !== undefined
