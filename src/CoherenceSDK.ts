@@ -246,7 +246,14 @@ export class CoherenceSDK extends CoherenceClient {
             }),
           ]
         : [
-            partitionedEnvelopes.slice(0, -1).map((env, i) => {
+            partitionedEnvelopes.slice(0, 1).map((env) => {
+              return {
+                data: env,
+                tag: `${TxTag.createPrismEtfPushTokens}-start`,
+                groupTag: TxTag.createPrismEtfPushTokens,
+              };
+            }),
+            partitionedEnvelopes.slice(1, -1).map((env, i) => {
               return {
                 data: env,
                 tag: `${TxTag.createPrismEtfPushTokens}-${i}`,
