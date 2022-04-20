@@ -395,6 +395,8 @@ export class CoherenceSDK extends CoherenceClient {
     prismEtf: PrismEtf;
     slippage: number;
   } & TxCallbacks) {
+    this.resetBalances();
+
     const etfNativeAmount = await this.sourceInUnderlyingAssets({
       inputNativeAmount,
       inputMint,
@@ -429,6 +431,8 @@ export class CoherenceSDK extends CoherenceClient {
     prismEtf: PrismEtf;
     slippage: number;
   } & TxCallbacks) {
+    this.resetBalances();
+
     await this.executeOrder({
       nativeAmount: new BN(nativeAmount),
       type: OrderType.DECONSTRUCTION,
@@ -657,6 +661,11 @@ export class CoherenceSDK extends CoherenceClient {
       unsignedTxsArr,
       ...rest,
     });
+  }
+
+  resetBalances() {
+    this.etfPreBalance = 0;
+    this.etfPostBalance = 0;
   }
 
   async getAllEtfs() {

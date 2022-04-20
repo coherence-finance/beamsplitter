@@ -1,6 +1,6 @@
 {
   "name": "@coherence-finance/sdk",
-  "version": "0.0.60",
+  "version": "0.0.61",
   "description": "SDK for Beamsplitter",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
