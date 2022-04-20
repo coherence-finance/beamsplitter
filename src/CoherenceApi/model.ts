@@ -6,4 +6,5 @@ export interface UserPrismEtf {
   info?: string;
   listingBid: number;
   targetAllocations: { mint: string; target: number }[];
+  highlighted: boolean;
 }
