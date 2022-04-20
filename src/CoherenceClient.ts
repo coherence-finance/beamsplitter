@@ -94,6 +94,7 @@ export class CoherenceClient {
   async executeAndWaitForTxs({
     unsignedTxsArr,
     signedTxs,
+    ...rest
   }: {
     unsignedTxsArr: UnsignedTxData[][];
     signedTxs: SignedTxData[];
@@ -108,6 +109,7 @@ export class CoherenceClient {
             await this.sendSignedTransaction({
               tag: groupTag || tag,
               signedTransaction: tx,
+              ...rest,
             });
           }
         })
