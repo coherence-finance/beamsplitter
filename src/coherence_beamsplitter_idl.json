@@ -597,11 +597,6 @@
       "name": "closePrismAta",
       "accounts": [
         {
-          "name": "weightedTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
@@ -617,12 +612,12 @@
           "isSigner": false
         },
         {
-          "name": "etfAtaMint",
+          "name": "assetAtaMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "prismEtfAta",
+          "name": "prismAssetAta",
           "isMut": true,
           "isSigner": false
         },

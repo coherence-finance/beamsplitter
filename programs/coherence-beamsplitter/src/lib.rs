@@ -601,7 +601,7 @@ pub mod coherence_beamsplitter {
         ctx.accounts.prism_etf.status = PrismEtfStatus::CLOSED;
 
         let close_token_account = CloseAccount {
-            account: ctx.accounts.prism_etf_ata.to_account_info(),
+            account: ctx.accounts.prism_asset_ata.to_account_info(),
             destination: ctx.accounts.manager.to_account_info(),
             authority: ctx.accounts.prism_etf.to_account_info(),
         };

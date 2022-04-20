@@ -337,15 +337,35 @@ export class CoherenceSDK extends CoherenceClient {
     prismEtf,
     ...rest
   }: { prismEtf: PrismEtf } & TxCallbacks) {
+    const partitionedEnvelopes = combineAndPartitionEnvelopes([
+      await prismEtf.closePrismEtfAtas(),
+      prismEtf.closePrismEtf(),
+    ]);
     await this.signAndSendTransactions({
-      unsignedTxsArr: [
-        [
-          {
-            data: prismEtf.closePrismEtf(),
-            tag: TxTag.deletePrismEtf,
-          },
-        ],
-      ],
+      unsignedTxsArr:
+        partitionedEnvelopes.length === 1
+          ? [
+              partitionedEnvelopes.map((data) => {
+                return {
+                  data,
+                  tag: TxTag.closePrismEtf,
+                };
+              }),
+            ]
+          : [
+              partitionedEnvelopes.slice(0, 1).map((data, i) => {
+                return {
+                  data,
+                  tag: `${TxTag.closePrismEtfAta}-${i}`,
+                };
+              }),
+              partitionedEnvelopes.slice(1).map((data) => {
+                return {
+                  data,
+                  tag: TxTag.closePrismEtf,
+                };
+              }),
+            ],
       ...rest,
     });
   }

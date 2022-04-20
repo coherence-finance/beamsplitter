@@ -555,16 +555,47 @@ export class PrismEtf {
     );
   }
 
-  closePrismEtf(): [TransactionEnvelope[], TransactionEnvelope] {
+  async closePrismEtfAtas(): Promise<TransactionEnvelope> {
     if (this.prismEtfData === null) {
       throw new Error("PrismEtf not intialized");
     }
 
-    const envelope = this.makeProviderEnvelope([]);
+    const closePrismEtfAtasBatch = this.makeProviderEnvelope([]);
 
-    1
+    if (this.weightedTokensData === null) {
+      throw new Error("Weighted Tokens does not exist");
+    }
 
-    envelope.append(
+    for (const weightedToken of this.weightedTokensData.weightedTokens) {
+      const weightedTokenATA = await getATAAddress({
+        mint: weightedToken.mint,
+        owner: this.prismEtfPda,
+      });
+      closePrismEtfAtasBatch.append(
+        this.getProgramInstructions().closePrismAta({
+          accounts: {
+            prismEtfMint: this.prismEtfMint,
+            manager: this.getUserPublicKey(),
+            prismEtf: this.prismEtfPda,
+            assetAtaMint: weightedToken.mint,
+            prismAssetAta: weightedTokenATA,
+            beamsplitter: this.getBeamsplitter(),
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          },
+        })
+      );
+    }
+
+    return closePrismEtfAtasBatch;
+  }
+
+  closePrismEtf(): TransactionEnvelope {
+    if (this.prismEtfData === null) {
+      throw new Error("PrismEtf not intialized");
+    }
+
+    return this.makeProviderEnvelope([
       this.getProgramInstructions().closePrismEtf({
         accounts: {
           manager: this.getUserPublicKey(),
@@ -574,10 +605,8 @@ export class PrismEtf {
           beamsplitter: this.getBeamsplitter(),
           systemProgram: SystemProgram.programId,
         },
-      })
-    );
-
-    return envelope.partition();
+      }),
+    ]);
   }
 
   closeOrderState(): TransactionEnvelope {

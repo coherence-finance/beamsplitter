@@ -1,5 +1,6 @@
 export const TxTag = {
   closePrismEtf: "closePrismEtf",
+  closePrismEtfAta: "closePrismEtfAta",
   createPrismEtfPushTokens: "createPrismEtfPushTokens",
   createPrismEtfFinalized: "createPrismEtfFinalized",
   deletePrismEtf: "deletePrismEtf",

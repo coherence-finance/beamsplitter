@@ -597,11 +597,6 @@ export type CoherenceBeamsplitter = {
       "name": "closePrismAta",
       "accounts": [
         {
-          "name": "weightedTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
@@ -617,12 +612,12 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "etfAtaMint",
+          "name": "assetAtaMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "prismEtfAta",
+          "name": "prismAssetAta",
           "isMut": true,
           "isSigner": false
         },
@@ -1917,11 +1912,6 @@ export const IDL: CoherenceBeamsplitter = {
       "name": "closePrismAta",
       "accounts": [
         {
-          "name": "weightedTokens",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "prismEtfMint",
           "isMut": false,
           "isSigner": false
@@ -1937,12 +1927,12 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         },
         {
-          "name": "etfAtaMint",
+          "name": "assetAtaMint",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "prismEtfAta",
+          "name": "prismAssetAta",
           "isMut": true,
           "isSigner": false
         },
