@@ -594,7 +594,7 @@ export class CoherenceSDK extends CoherenceClient {
     const partitionedEnvelopes = combineAndPartitionEnvelopes([
       ...(prismEtf.orderStateData === null
         ? [initOrderState, startOrder]
-        : prismEtf.orderStateData.status === OrderStatus.PENDING
+        : prismEtf.orderStateData.status !== OrderStatus.PENDING
         ? [startOrder]
         : []),
       ...(indicesToTransfer !== undefined
