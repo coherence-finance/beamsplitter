@@ -7,17 +7,15 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import { Token, u64 } from "@solana/spl-token";
-import type {
-  PublicKey,
-  Signer,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import type { Signer, TransactionInstruction } from "@solana/web3.js";
 import {
   Keypair,
+  PublicKey,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
+import axios from "axios";
 import BN from "bn.js";
 
 import type { UserPrismEtf } from "./CoherenceApi";
@@ -590,16 +588,18 @@ export class PrismEtf {
         owner: this.prismEtfPda,
       });
       if (dest === undefined) {
-        const mint = await getMintInfo(
-          this.beamsplitter.loader.provider,
-          weightedToken.mint
+        console.log(
+          `https://public-api.solscan.io/token/holders?tokenholders=${weightedToken.mint.toString()}`
         );
-        if (mint.mintAuthority === null) {
-          throw new Error(
-            "Asset mint has no authority, provide account for dest"
-          );
+        const tokenHolders = (
+          await axios.get(
+            `https://public-api.solscan.io/token/holders?tokenholders=${weightedToken.mint.toString()}`
+          )
+        ).data as { data: { address: string }[] };
+        if (tokenHolders.data[0] === undefined) {
+          throw new Error("Found no token holder ATA for given address");
         }
-        dest = mint.mintAuthority;
+        dest = new PublicKey(tokenHolders.data[0].address);
       }
       const { address: destTokenATA, instruction } = await getOrCreateATA({
         provider: this.beamsplitter.loader.provider,

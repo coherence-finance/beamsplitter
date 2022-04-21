@@ -959,6 +959,7 @@ export default function constructDeconstruct() {
       await refreshPrismEtf();
 
       const closePrismEtfAtas = await prismEtf.closePrismEtfAtas({
+        dest: coherenceHelper.authority,
         shouldCreateAtas: true,
       });
 
