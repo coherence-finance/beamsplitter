@@ -958,7 +958,9 @@ export default function constructDeconstruct() {
 
       await refreshPrismEtf();
 
-      const closePrismEtfAtas = await prismEtf.closePrismEtfAtas();
+      const closePrismEtfAtas = await prismEtf.closePrismEtfAtas({
+        shouldCreateAtas: true,
+      });
 
       await Promise.all(
         closePrismEtfAtas.map((chunk) => expectTX(chunk).to.be.fulfilled)

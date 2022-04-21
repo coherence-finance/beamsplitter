@@ -607,6 +607,11 @@
           "isSigner": true
         },
         {
+          "name": "destAssetAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "prismEtf",
           "isMut": true,
           "isSigner": false
@@ -632,7 +637,12 @@
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "transferCrumbs",
+          "type": "bool"
+        }
+      ]
     },
     {
       "name": "closePrismEtf",

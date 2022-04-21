@@ -607,6 +607,11 @@ export type CoherenceBeamsplitter = {
           "isSigner": true
         },
         {
+          "name": "destAssetAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "prismEtf",
           "isMut": true,
           "isSigner": false
@@ -632,7 +637,12 @@ export type CoherenceBeamsplitter = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "transferCrumbs",
+          "type": "bool"
+        }
+      ]
     },
     {
       "name": "closePrismEtf",
@@ -1917,6 +1927,11 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": true
         },
         {
+          "name": "destAssetAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "prismEtf",
           "isMut": true,
           "isSigner": false
@@ -1942,7 +1957,12 @@ export const IDL: CoherenceBeamsplitter = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "transferCrumbs",
+          "type": "bool"
+        }
+      ]
     },
     {
       "name": "closePrismEtf",

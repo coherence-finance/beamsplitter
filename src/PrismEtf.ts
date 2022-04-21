@@ -3,6 +3,7 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getATAAddress,
   getMintInfo,
+  getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import { Token, u64 } from "@solana/spl-token";
@@ -555,7 +556,15 @@ export class PrismEtf {
     );
   }
 
-  async closePrismEtfAtas(): Promise<TransactionEnvelope[]> {
+  async closePrismEtfAtas({
+    dest,
+    transferCrumbs = true,
+    shouldCreateAtas = false, // Will create ata for crumbs
+  }: {
+    dest?: PublicKey;
+    transferCrumbs?: boolean;
+    shouldCreateAtas?: boolean;
+  }): Promise<TransactionEnvelope[]> {
     if (this.prismEtfData === null) {
       throw new Error("PrismEtf not intialized");
     }
@@ -566,29 +575,55 @@ export class PrismEtf {
       throw new Error("Weighted Tokens does not exist");
     }
 
+    const owner = this.getBeamsplitterData()?.owner;
+    if (owner === undefined) {
+      throw new Error("Beamsplitter owner undefined.");
+    }
+
     for (const weightedToken of this.weightedTokensData.weightedTokens.slice(
       0,
       this.weightedTokensData.length
     )) {
+      const chunk = this.makeProviderEnvelope([]);
       const weightedTokenATA = await getATAAddress({
         mint: weightedToken.mint,
         owner: this.prismEtfPda,
       });
+      if (dest === undefined) {
+        const mint = await getMintInfo(
+          this.beamsplitter.loader.provider,
+          weightedToken.mint
+        );
+        if (mint.mintAuthority === null) {
+          throw new Error(
+            "Asset mint has no authority, provide account for dest"
+          );
+        }
+        dest = mint.mintAuthority;
+      }
+      const { address: destTokenATA, instruction } = await getOrCreateATA({
+        provider: this.beamsplitter.loader.provider,
+        mint: weightedToken.mint,
+        owner: dest,
+      });
+      if (shouldCreateAtas && instruction) {
+        chunk.append(instruction);
+      }
       closePrismEtfAtasBatch.push(
-        this.makeProviderEnvelope([
-          this.getProgramInstructions().closePrismAta({
+        chunk.append(
+          this.getProgramInstructions().closePrismAta(transferCrumbs, {
             accounts: {
               prismEtfMint: this.prismEtfMint,
               manager: this.getUserPublicKey(),
+              destAssetAta: destTokenATA,
               prismEtf: this.prismEtfPda,
-              //assetAtaMint: weightedToken.mint,
               prismAssetAta: weightedTokenATA,
               beamsplitter: this.getBeamsplitter(),
               tokenProgram: TOKEN_PROGRAM_ID,
               systemProgram: SystemProgram.programId,
             },
-          }),
-        ])
+          })
+        )
       );
     }
 

@@ -529,6 +529,9 @@ pub struct ClosePrismATA<'info> {
 
     pub manager: Signer<'info>,
 
+    #[account(mut)]
+    pub dest_asset_ata: Box<Account<'info, TokenAccount>>,
+
     // ========================= PDA's =========================
     /// The Prism ETF [Account] that this instruction uses
     #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut, has_one = manager)]
