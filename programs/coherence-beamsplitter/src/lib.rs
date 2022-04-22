@@ -594,17 +594,11 @@ pub mod coherence_beamsplitter {
         Ok(())
     }
 
-    pub fn close_prism_ata(ctx: Context<ClosePrismATA>) -> Result<()> {
+    pub fn close_prism_ata(ctx: Context<ClosePrismATA>, transfer_crumbs: bool) -> Result<()> {
         if ctx.accounts.prism_etf_mint.supply != 0 {
             return Err(BeamsplitterErrors::NonZeroSupply.into());
         }
         ctx.accounts.prism_etf.status = PrismEtfStatus::CLOSED;
-
-        let close_token_account = CloseAccount {
-            account: ctx.accounts.prism_asset_ata.to_account_info(),
-            destination: ctx.accounts.manager.to_account_info(),
-            authority: ctx.accounts.prism_etf.to_account_info(),
-        };
 
         let seeds = &[
             PRISM_ETF_PDA_SEED,
@@ -613,6 +607,27 @@ pub mod coherence_beamsplitter {
             &[ctx.accounts.prism_etf.bump],
         ];
         let signer_seeds = &[&seeds[..]];
+
+        if ctx.accounts.prism_asset_ata.amount > 0 && transfer_crumbs {
+            let transfer_accounts = Transfer {
+                to: ctx.accounts.dest_asset_ata.to_account_info(),
+                authority: ctx.accounts.prism_etf.to_account_info(),
+                from: ctx.accounts.prism_asset_ata.to_account_info(),
+            };
+
+            let transfer_ctx = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                transfer_accounts,
+                signer_seeds,
+            );
+            transfer(transfer_ctx, ctx.accounts.prism_asset_ata.amount)?;
+        }
+
+        let close_token_account = CloseAccount {
+            account: ctx.accounts.prism_asset_ata.to_account_info(),
+            destination: ctx.accounts.manager.to_account_info(),
+            authority: ctx.accounts.prism_etf.to_account_info(),
+        };
 
         let close_ctx = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),

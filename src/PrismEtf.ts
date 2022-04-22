@@ -3,20 +3,19 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getATAAddress,
   getMintInfo,
+  getOrCreateATA,
   TOKEN_PROGRAM_ID,
 } from "@saberhq/token-utils";
 import { Token, u64 } from "@solana/spl-token";
-import type {
-  PublicKey,
-  Signer,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import type { Signer, TransactionInstruction } from "@solana/web3.js";
 import {
   Keypair,
+  PublicKey,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
   SYSVAR_RENT_PUBKEY,
 } from "@solana/web3.js";
+import axios from "axios";
 import BN from "bn.js";
 
 import type { UserPrismEtf } from "./CoherenceApi";
@@ -555,7 +554,15 @@ export class PrismEtf {
     );
   }
 
-  async closePrismEtfAtas(): Promise<TransactionEnvelope[]> {
+  async closePrismEtfAtas({
+    dest,
+    transferCrumbs = true,
+    shouldCreateAtas = false, // Will create ata for crumbs
+  }: {
+    dest?: PublicKey;
+    transferCrumbs?: boolean;
+    shouldCreateAtas?: boolean;
+  }): Promise<TransactionEnvelope[]> {
     if (this.prismEtfData === null) {
       throw new Error("PrismEtf not intialized");
     }
@@ -566,29 +573,57 @@ export class PrismEtf {
       throw new Error("Weighted Tokens does not exist");
     }
 
+    const owner = this.getBeamsplitterData()?.owner;
+    if (owner === undefined) {
+      throw new Error("Beamsplitter owner undefined.");
+    }
+
     for (const weightedToken of this.weightedTokensData.weightedTokens.slice(
       0,
       this.weightedTokensData.length
     )) {
+      const chunk = this.makeProviderEnvelope([]);
       const weightedTokenATA = await getATAAddress({
         mint: weightedToken.mint,
         owner: this.prismEtfPda,
       });
+      if (dest === undefined) {
+        console.log(
+          `https://public-api.solscan.io/token/holders?tokenholders=${weightedToken.mint.toString()}`
+        );
+        const tokenHolders = (
+          await axios.get(
+            `https://public-api.solscan.io/token/holders?tokenholders=${weightedToken.mint.toString()}`
+          )
+        ).data as { data: { address: string }[] };
+        if (tokenHolders.data[0] === undefined) {
+          throw new Error("Found no token holder ATA for given address");
+        }
+        dest = new PublicKey(tokenHolders.data[0].address);
+      }
+      const { address: destTokenATA, instruction } = await getOrCreateATA({
+        provider: this.beamsplitter.loader.provider,
+        mint: weightedToken.mint,
+        owner: dest,
+      });
+      if (shouldCreateAtas && instruction) {
+        chunk.append(instruction);
+      }
       closePrismEtfAtasBatch.push(
-        this.makeProviderEnvelope([
-          this.getProgramInstructions().closePrismAta({
+        chunk.append(
+          this.getProgramInstructions().closePrismAta(transferCrumbs, {
             accounts: {
               prismEtfMint: this.prismEtfMint,
               manager: this.getUserPublicKey(),
+              destAssetAta: destTokenATA,
               prismEtf: this.prismEtfPda,
-              //assetAtaMint: weightedToken.mint,
               prismAssetAta: weightedTokenATA,
               beamsplitter: this.getBeamsplitter(),
               tokenProgram: TOKEN_PROGRAM_ID,
               systemProgram: SystemProgram.programId,
             },
-          }),
-        ])
+          })
+        )
       );
     }
 
