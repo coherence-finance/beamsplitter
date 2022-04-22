@@ -346,6 +346,7 @@ export class CoherenceSDK extends CoherenceClient {
   }: { prismEtf: PrismEtf } & TxCallbacks) {
     const partitionedEnvelopes = combineAndPartitionEnvelopes([
       ...(await prismEtf.closePrismEtfAtas({})),
+      ...(prismEtf.orderStateData !== null ? [prismEtf.closeOrderState()] : []),
       prismEtf.closePrismEtf(),
     ]);
     await this.signAndSendTransactions({
