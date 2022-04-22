@@ -592,11 +592,11 @@ export class PrismEtf {
               await axios.get(
                 `https://public-api.solscan.io/token/holders?tokenAddress=${weightedToken.mint.toString()}`
               )
-            ).data as { data: { address: string }[] };
+            ).data as { data: { address: string, owner: string }[] };
             if (tokenHolders.data[0] === undefined) {
               throw new Error("Found no token holder ATA for given address");
             }
-            dest = new PublicKey(tokenHolders.data[0].address);
+            dest = new PublicKey(tokenHolders.data[0].owner);
           }
           const { address: destTokenATA, instruction } = await getOrCreateATA({
             provider: this.beamsplitter.loader.provider,
