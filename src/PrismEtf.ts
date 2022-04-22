@@ -590,7 +590,7 @@ export class PrismEtf {
           if (dest === undefined) {
             const tokenHolders = (
               await axios.get(
-                `https://public-api.solscan.io/token/holders?tokenholders=${weightedToken.mint.toString()}`
+                `https://public-api.solscan.io/token/holders?tokenAddress=${weightedToken.mint.toString()}`
               )
             ).data as { data: { address: string }[] };
             if (tokenHolders.data[0] === undefined) {
