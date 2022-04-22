@@ -587,24 +587,27 @@ export class PrismEtf {
             mint: weightedToken.mint,
             owner: this.prismEtfPda,
           });
+          let destTokenATA: PublicKey;
           if (dest === undefined) {
             const tokenHolders = (
               await axios.get(
                 `https://public-api.solscan.io/token/holders?tokenAddress=${weightedToken.mint.toString()}`
               )
-            ).data as { data: { address: string, owner: string }[] };
+            ).data as { data: { address: string; owner: string }[] };
             if (tokenHolders.data[0] === undefined) {
               throw new Error("Found no token holder ATA for given address");
             }
-            dest = new PublicKey(tokenHolders.data[0].owner);
-          }
-          const { address: destTokenATA, instruction } = await getOrCreateATA({
-            provider: this.beamsplitter.loader.provider,
-            mint: weightedToken.mint,
-            owner: dest,
-          });
-          if (shouldCreateAtas && instruction) {
-            chunk.append(instruction);
+            destTokenATA = new PublicKey(tokenHolders.data[0].address);
+          } else {
+            const { address, instruction } = await getOrCreateATA({
+              provider: this.beamsplitter.loader.provider,
+              mint: weightedToken.mint,
+              owner: dest,
+            });
+            if (shouldCreateAtas && instruction) {
+              chunk.append(instruction);
+            }
+            destTokenATA = address;
           }
           closePrismEtfAtasBatch.push(
             chunk.append(
