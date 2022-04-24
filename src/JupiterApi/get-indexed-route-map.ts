@@ -15,12 +15,14 @@ export interface JupiterIndexedRouteMapResponse {
   };
 }
 
-export const getIndexedRouteMap = async (): Promise<
-  JupiterIndexedRouteMapResponse | undefined
-> => {
+export const getIndexedRouteMap = async (
+  onlyDirectRoutes = true
+): Promise<JupiterIndexedRouteMapResponse | undefined> => {
   try {
     const response = await axios.get<JupiterIndexedRouteMapResponse>(
-      "https://quote-api.jup.ag/v1/indexed-route-map?onlyDirectRoutes=true"
+      `https://quote-api.jup.ag/v1/indexed-route-map?onlyDirectRoutes=${
+        onlyDirectRoutes ? "true" : "false"
+      }`
     );
     return response.data;
   } catch (e) {
