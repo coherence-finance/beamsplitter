@@ -11,13 +11,14 @@ export const getValidSwapRoutes = async (
   outputMint: string,
   amount: number,
   slippage: number,
-  feeBps?: number
+  feeBps?: number,
+  onlyDirectRoutes = true
 ): Promise<JupiterRoute[] | undefined> => {
   try {
     const response = await axios.get<JupiterValidSwapsResponse>(
-      `https://quote-api.jup.ag/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippage=${slippage}&onlyDirectRoutes=true${
-        feeBps !== undefined ? `&feeBps=${feeBps}` : ""
-      }`
+      `https://quote-api.jup.ag/v1/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippage=${slippage}&onlyDirectRoutes=${
+        onlyDirectRoutes ? "true" : "false"
+      }${feeBps !== undefined ? `&feeBps=${feeBps}` : ""}`
     );
     console.log();
     return response.data.data;

@@ -10,7 +10,8 @@ export interface JupiterSerializedSwap {
 
 export const getSerializedSwaps = async (
   userPublicKey: string,
-  route: JupiterRoute
+  route: JupiterRoute,
+  wrapUnwrapSOL = false
 ): Promise<JupiterSerializedSwap | undefined> => {
   try {
     const response = await axios.post<JupiterSerializedSwap>(
@@ -21,7 +22,7 @@ export const getSerializedSwaps = async (
         // user public key to be used for the swap
         userPublicKey,
         // auto wrap and unwrap SOL
-        wrapUnwrapSOL: false,
+        wrapUnwrapSOL,
       }
     );
 
