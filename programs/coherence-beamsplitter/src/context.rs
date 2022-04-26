@@ -524,6 +524,35 @@ pub struct SetDeconstruction<'info> {
 }
 
 #[derive(Accounts)]
+pub struct ClosePrismATA<'info> {
+    pub prism_etf_mint: Account<'info, Mint>,
+
+    pub manager: Signer<'info>,
+
+    #[account(mut)]
+    pub dest_asset_ata: Box<Account<'info, TokenAccount>>,
+
+    // ========================= PDA's =========================
+    /// The Prism ETF [Account] that this instruction uses
+    #[account(seeds = [b"PrismEtf".as_ref(), &prism_etf_mint.key().to_bytes(), &beamsplitter.key().to_bytes()], bump = prism_etf.bump, mut, has_one = manager)]
+    pub prism_etf: Box<Account<'info, PrismEtf>>,
+
+    #[account(mut)]
+    pub prism_asset_ata: Box<Account<'info, TokenAccount>>,
+    /// The [Beamsplitter] [Account] that holds all of the Program's funds
+    #[account(
+        seeds = [
+            b"Beamsplitter".as_ref(),
+        ],
+        bump = beamsplitter.bump,
+    )]
+    pub beamsplitter: Box<Account<'info, Beamsplitter>>,
+
+    pub token_program: Program<'info, Token>,
+
+    pub system_program: Program<'info, System>,
+}
+#[derive(Accounts)]
 pub struct ClosePrismEtf<'info> {
     #[account(mut, close = manager)]
     pub weighted_tokens: AccountLoader<'info, WeightedTokens>,

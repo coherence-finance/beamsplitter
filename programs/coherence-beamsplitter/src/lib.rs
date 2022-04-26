@@ -38,7 +38,9 @@ pub mod coherence_beamsplitter {
         ops::{Mul, MulAssign, SubAssign},
     };
 
-    use anchor_spl::token::{burn, mint_to, transfer, Burn, MintTo, Transfer};
+    use anchor_spl::token::{
+        burn, close_account, mint_to, transfer, Burn, CloseAccount, MintTo, Transfer,
+    };
 
     use rust_decimal::{prelude::ToPrimitive, Decimal};
     const BEAMSPLITTER_PDA_SEED: &[u8] = b"Beamsplitter" as &[u8];
@@ -589,6 +591,50 @@ pub mod coherence_beamsplitter {
 
         order_state.status = OrderStatus::SUCCEEDED;
 
+        Ok(())
+    }
+
+    pub fn close_prism_ata(ctx: Context<ClosePrismATA>, transfer_crumbs: bool) -> Result<()> {
+        if ctx.accounts.prism_etf_mint.supply != 0 {
+            return Err(BeamsplitterErrors::NonZeroSupply.into());
+        }
+        ctx.accounts.prism_etf.status = PrismEtfStatus::CLOSED;
+
+        let seeds = &[
+            PRISM_ETF_PDA_SEED,
+            &ctx.accounts.prism_etf_mint.key().to_bytes(),
+            &ctx.accounts.beamsplitter.key().to_bytes(),
+            &[ctx.accounts.prism_etf.bump],
+        ];
+        let signer_seeds = &[&seeds[..]];
+
+        if ctx.accounts.prism_asset_ata.amount > 0 && transfer_crumbs {
+            let transfer_accounts = Transfer {
+                to: ctx.accounts.dest_asset_ata.to_account_info(),
+                authority: ctx.accounts.prism_etf.to_account_info(),
+                from: ctx.accounts.prism_asset_ata.to_account_info(),
+            };
+
+            let transfer_ctx = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                transfer_accounts,
+                signer_seeds,
+            );
+            transfer(transfer_ctx, ctx.accounts.prism_asset_ata.amount)?;
+        }
+
+        let close_token_account = CloseAccount {
+            account: ctx.accounts.prism_asset_ata.to_account_info(),
+            destination: ctx.accounts.manager.to_account_info(),
+            authority: ctx.accounts.prism_etf.to_account_info(),
+        };
+
+        let close_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            close_token_account,
+            signer_seeds,
+        );
+        close_account(close_ctx)?;
         Ok(())
     }
 

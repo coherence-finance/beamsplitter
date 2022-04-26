@@ -5,6 +5,7 @@ use anchor_lang::{AnchorDeserialize, AnchorSerialize};
 pub enum PrismEtfStatus {
     UNFINISHED,
     FINISHED,
+    CLOSED,
 }
 impl Default for PrismEtfStatus {
     fn default() -> Self {
