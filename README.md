@@ -1,4 +1,4 @@
-![BeamSplitter Logo](https://github.com/coherence-finance/beamsplitter/blob/logo/%20beamsplitter.png?raw=true)
+![BeamSplitter Logo](https://github.com/coherence-finance/beamsplitter/blob/logo/beamsplitter.png?raw=true)
 [![npm version](https://badge.fury.io/js/@coherence-finance%2Fsdk.svg)](https://badge.fury.io/js/@coherence-finance%2Fsdk)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Discord Support](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/P6aesCTJ)
