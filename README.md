@@ -1,9 +1,10 @@
-# Beamsplitter
+![BeamSplitter Logo](https://github.com/coherence-finance/beamsplitter/blob/logo/beamsplitter.png?raw=true)
+
 [![npm version](https://badge.fury.io/js/@coherence-finance%2Fsdk.svg)](https://badge.fury.io/js/@coherence-finance%2Fsdk)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Discord Support](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/P6aesCTJ)
 
-Beamsplitter is Coherence's cryptocurrency ETF program on [Solana](https://solana.com/). This monorepo contains the on-chain program as well as the client sdk for interacting with Beamsplitter. It uses, [Anchor](https://project-serum.github.io/anchor/), a framework that simplifies development on Solana. You can use the program to construct and deconstruct on-chain ETF-like tokens.
+BeamSplitter is Coherence's cryptocurrency ETF program on [Solana](https://solana.com/). This monorepo contains the on-chain program as well as the client sdk for interacting with Beamsplitter. It uses, [Anchor](https://project-serum.github.io/anchor/), a framework that simplifies development on Solana. You can use the program to construct and deconstruct on-chain ETF-like tokens.
 
 ## Installing the SDK (Off-Chain)
 
