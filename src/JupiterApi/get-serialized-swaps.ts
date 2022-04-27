@@ -6,6 +6,7 @@ export interface JupiterSerializedSwap {
   setupTransaction?: string;
   swapTransaction: string;
   cleanupTransaction?: string;
+  error?: string;
 }
 
 export const getSerializedSwaps = async (
