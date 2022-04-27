@@ -57,6 +57,21 @@ export class CoherenceClient {
     await this.executeAndWaitForTxs({ unsignedTxsArr, signedTxs, ...rest });
   }
 
+  async signAndSendTransactionsCatchErrs({
+    unsignedTxsArr,
+    ...rest
+  }: {
+    unsignedTxsArr: UnsignedTxData[][];
+    onError?: (e: Error) => void;
+  } & TxCallbacks) {
+    const signedTxs = await this.signTransactions({ unsignedTxsArr });
+    await this.executeAndWaitForTxsCatchErrs({
+      unsignedTxsArr,
+      signedTxs,
+      ...rest,
+    });
+  }
+
   async signTransactions({
     unsignedTxsArr,
   }: {
@@ -111,6 +126,38 @@ export class CoherenceClient {
               signedTransaction: tx,
               ...rest,
             });
+          }
+        })
+      );
+    }
+  }
+
+  async executeAndWaitForTxsCatchErrs({
+    unsignedTxsArr,
+    signedTxs,
+    onError,
+    ...rest
+  }: {
+    unsignedTxsArr: UnsignedTxData[][];
+    signedTxs: SignedTxData[];
+    onError?: (e: Error) => void;
+  } & TxCallbacks) {
+    for (const unsignedTxArr of unsignedTxsArr) {
+      const uniqueTags = new Set(unsignedTxArr.map(({ tag }) => tag));
+
+      await Promise.all(
+        Array.from(uniqueTags).map(async (tag) => {
+          const _txs = signedTxs.filter((d) => d.tag === tag);
+          for (const { tx, groupTag } of _txs) {
+            try {
+              await this.sendSignedTransaction({
+                tag: groupTag || tag,
+                signedTransaction: tx,
+                ...rest,
+              });
+            } catch (e) {
+              onError?.(e as Error);
+            }
           }
         })
       );
