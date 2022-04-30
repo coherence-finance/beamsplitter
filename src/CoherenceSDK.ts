@@ -415,6 +415,7 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource,
     prismEtf,
     slippage,
+    etfNativeAmount,
     ...rest
   }: {
     inputNativeAmount: number;
@@ -422,19 +423,29 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
+    etfNativeAmount?: BN;
   } & TxCallbacks) {
     this.resetBalances();
 
-    const etfNativeAmount = await this.sourceInUnderlyingAssets({
-      inputNativeAmount,
-      inputMint,
-      assetSource: assetSource || this.assetSource,
-      prismEtf,
-      slippage,
-      ...rest,
-    });
+    const hasPendingOrder =
+      prismEtf.orderStateData?.status !== undefined
+        ? enumLikeToString(prismEtf.orderStateData.status) ===
+          OrderStatus.PENDING
+        : false;
+
+    if (!hasPendingOrder && etfNativeAmount === undefined) {
+      etfNativeAmount = await this.sourceInUnderlyingAssets({
+        inputNativeAmount,
+        inputMint,
+        assetSource: assetSource || this.assetSource,
+        prismEtf,
+        slippage,
+        ...rest,
+      });
+    }
     await this.executeOrder({
-      nativeAmount: etfNativeAmount,
+      hasPendingOrder,
+      nativeAmount: etfNativeAmount as BN,
       type: OrderType.CONSTRUCTION,
       prismEtf,
       ...rest,
@@ -451,6 +462,7 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource,
     prismEtf,
     slippage,
+    skipSourcing = false,
     ...rest
   }: {
     nativeAmount: number;
@@ -458,25 +470,34 @@ export class CoherenceSDK extends CoherenceClient {
     assetSource?: AssetSource;
     prismEtf: PrismEtf;
     slippage: number;
+    skipSourcing?: boolean;
   } & TxCallbacks) {
     this.resetBalances();
 
+    const hasPendingOrder =
+      prismEtf.orderStateData?.status !== undefined
+        ? enumLikeToString(prismEtf.orderStateData.status) ===
+          OrderStatus.PENDING
+        : false;
+
     await this.executeOrder({
+      hasPendingOrder,
       nativeAmount: new BN(nativeAmount),
       type: OrderType.DECONSTRUCTION,
       prismEtf,
       ...rest,
     });
-    const outputNativeAmount = await this.sourceOutUnderlyingAssets({
-      nativeAmount,
-      outputMint,
-      assetSource: assetSource || this.assetSource,
-      prismEtf,
-      slippage,
-      ...rest,
-    });
-
-    return outputNativeAmount;
+    if (skipSourcing) {
+      const outputNativeAmount = await this.sourceOutUnderlyingAssets({
+        nativeAmount,
+        outputMint,
+        assetSource: assetSource || this.assetSource,
+        prismEtf,
+        slippage,
+        ...rest,
+      });
+      return outputNativeAmount;
+    }
   }
 
   async sourceInUnderlyingAssets({
@@ -577,22 +598,18 @@ export class CoherenceSDK extends CoherenceClient {
   }
 
   async executeOrder({
+    hasPendingOrder,
     nativeAmount,
     type,
     prismEtf,
     ...rest
   }: {
+    hasPendingOrder: boolean;
     nativeAmount: BN;
     type: OrderType;
     prismEtf: PrismEtf;
   } & TxCallbacks) {
     const initOrderState = await prismEtf.initOrderState();
-
-    const hasPendingOrder =
-      prismEtf.orderStateData?.status !== undefined
-        ? enumLikeToString(prismEtf.orderStateData.status) ===
-          OrderStatus.PENDING
-        : false;
 
     const amount =
       hasPendingOrder && prismEtf.orderStateData?.amount
