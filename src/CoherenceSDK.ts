@@ -597,18 +597,17 @@ export class CoherenceSDK extends CoherenceClient {
     return new BN(outputNativeAmount);
   }
 
-  async executeOrder({
+  async makeExecuteOrder({
     hasPendingOrder,
     nativeAmount,
     type,
     prismEtf,
-    ...rest
   }: {
     hasPendingOrder: boolean;
     nativeAmount: BN;
     type: OrderType;
     prismEtf: PrismEtf;
-  } & TxCallbacks) {
+  }) {
     const initOrderState = await prismEtf.initOrderState();
 
     const amount =
@@ -710,6 +709,28 @@ export class CoherenceSDK extends CoherenceClient {
               };
             }),
           ];
+
+    return unsignedTxsArr;
+  }
+
+  async executeOrder({
+    hasPendingOrder,
+    nativeAmount,
+    type,
+    prismEtf,
+    ...rest
+  }: {
+    hasPendingOrder: boolean;
+    nativeAmount: BN;
+    type: OrderType;
+    prismEtf: PrismEtf;
+  } & TxCallbacks) {
+    const unsignedTxsArr = await this.makeExecuteOrder({
+      hasPendingOrder,
+      nativeAmount,
+      type,
+      prismEtf,
+    });
 
     await this.signAndSendTransactions({
       unsignedTxsArr,
