@@ -602,11 +602,13 @@ export class CoherenceSDK extends CoherenceClient {
     nativeAmount,
     type,
     prismEtf,
+    shouldCreateAtas,
   }: {
     hasPendingOrder: boolean;
     nativeAmount: BN;
     type: OrderType;
     prismEtf: PrismEtf;
+    shouldCreateAtas?: boolean;
   }) {
     const initOrderState = await prismEtf.initOrderState();
 
@@ -624,12 +626,13 @@ export class CoherenceSDK extends CoherenceClient {
     if (type === OrderType.CONSTRUCTION) {
       transferEnvelopes = await prismEtf.cohere({
         orderStateAmount: amount,
+        shouldCreateAtas,
       });
     } else {
-      transferEnvelopes = await prismEtf.decohere({});
+      transferEnvelopes = await prismEtf.decohere({ shouldCreateAtas });
     }
 
-    const finalizeOrder = await prismEtf.finalizeOrder({});
+    const finalizeOrder = await prismEtf.finalizeOrder({ shouldCreateAtas });
 
     let indicesToTransfer: number[] | undefined;
 
