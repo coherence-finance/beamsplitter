@@ -39,6 +39,14 @@ export const WEIGHTED_TOKENS_CAPACITY = parseInt(
   )?.value ?? "1"
 );
 
+export const PRISM_ETF_SIZE = parseInt(
+  (CoherenceBeamsplitterIDL as unknown as CoherenceBeamsplitter).constants.find(
+    (constant) => {
+      return constant.name === "_PRISM_ETF_SIZE";
+    }
+  )?.value ?? "1"
+);
+
 export const WEIGHTED_TOKEN_BYTE_SIZE = 40; // WeightedToken Struct size in bytes, u64 (8 bytes) + Pubkey (32 bytes)
 export const WEIGHTED_TOKENS_BYTE_SIZE = 4; // Weighted tokens metadata size in bytes, u16 + u16
 
