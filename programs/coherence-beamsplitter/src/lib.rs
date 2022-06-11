@@ -143,7 +143,7 @@ pub mod coherence_beamsplitter {
         }
 
         for (idx, weighted_token) in new_tokens.iter().enumerate() {
-            if weighted_token.weight <= 0 {
+            if weighted_token.weight == 0 {
                 return Err(BeamsplitterErrors::ZeroWeight.into());
             }
             if weighted_tokens.length >= weighted_tokens.capacity {
@@ -206,7 +206,7 @@ pub mod coherence_beamsplitter {
             return Err(BeamsplitterErrors::PrismEtfNotFinished.into());
         }
 
-        if amount <= 0 {
+        if amount == 0 {
             return Err(BeamsplitterErrors::ZeroOrder.into());
         }
 
